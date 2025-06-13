@@ -1,4 +1,5 @@
 # Course Compass
+#### Meta University Capstone Project
 #### By Dante Capobianco
 
 ## Overview
