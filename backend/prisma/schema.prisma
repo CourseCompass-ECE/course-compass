@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,4 +5,90 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum Designation {
+  COMPUTER
+  ELECTRICAL
+}
+
+enum Area {
+  PHOTONICS_SEMICONDUCTOR
+  ENERGY_ELECTROMAGNETICS
+  ANALOG_DIGITAL
+  CONTROL_COMM_SIGNAL
+  HARDWARE_NETWORKS
+  SOFTWARE
+}
+
+enum MinorOrCertificate {
+  MINOR
+  CERTIFICATE
+}
+
+model User {
+  id Int @id @default(autoincrement())
+  firstName String
+  lastName String
+  emailUsername String
+  password String
+  pfpUrl String
+  interests String[]
+  skills String[]
+  desiredDesignation Designation
+  desiredMinorsCertificates MinorCertificate[]
+  learningGoal String
+  timetables Timetable[]
+}
+
+model Course {
+  id Int @id @default(autoincrement())
+  minorsCertificates MinorCertificate[]
+  timetableCourses TimetableCourse[]
+  description String
+  area Area[]
+  code String
+  title String
+  prerequisites Course[] @relation("Prerequisites")
+  prerequisitesOfOthers Course[] @relation("Prerequisites")
+  corequisites Course[] @relation("Corequisites")
+  corequisitesOfOthers Course[] @relation("Corequisites")
+  exclusions Course[] @relation("Exclusions")
+  exclusionsOfOthers Course[] @relation("Exclusions")
+  recommendedPrep Course[] @relation("RecommendedPrep")
+  recommendedPrepOfOthers Course[] @relation("RecommendedPrep")
+  lectureHours Int @default(0)
+  tutorialHours Int @default(0)
+  practicalHours Int @default(0)
+  isInShoppingCart Boolean @default(false)
+  isFavorited Boolean @default(false)
+}
+
+model Timetable {
+  id Int @id @default(autoincrement())
+  courses TimetableCourse[]
+  designation Designation?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
+  updatedAt DateTime @updatedAt @default(now())
+  title String
+  description String?
+  isConflictFree Boolean @default(false)
+}
+
+model TimetableCourse {
+  id Int @id @default(autoincrement())
+  semester Int
+  course Course @relation(fields: [courseId], references: [id])
+  courseId Int
+  timetable Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  timetableId Int
+}
+
+model MinorCertificate {
+  id Int @id @default(autoincrement())
+  courses Course[]
+  users User[]
+  title String
+  minorOrCertificate MinorOrCertificate
 }
