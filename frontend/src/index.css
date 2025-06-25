@@ -2,8 +2,26 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
+  --title-font: "Poppins", sans-serif;
+  --subtitle-font: "Playfair Display", serif;;
+  --header-font: "Instrument Sans", sans-serif;
+  --text-font: "Amiko", sans-serif;
+
+  --title-size: 100px;
+  --subtitle-size: 32px;
+  --header-size: 28px;
+  --subheader-size: 20px;
+  --text-size: 16px;
+  --small-text-size: 12px;
+
+  --background-light: #F0F7FF;
+  --background-mixed: #dbeafa;
+  --background-darker: #c6e2ff;
+  --main-color: #101010;
+  --sub-color: #252525;
 }
 
 body {
-  margin: 10vh;
+  margin: 0;
 }
