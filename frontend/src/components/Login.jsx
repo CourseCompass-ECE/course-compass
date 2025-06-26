@@ -50,7 +50,7 @@ const Login = () => {
             onChange={(event) => setPassword(event.target.value)}
           />
           <span
-            class="material-symbols-outlined login-password-eye-icon"
+            className="material-symbols-outlined login-password-eye-icon"
             onClick={() => setIsPasswordVisible(!isPasswordVisible)}
           >
             {isPasswordVisible ? "visibility_off" : "visibility"}
