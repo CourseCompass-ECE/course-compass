@@ -35,10 +35,14 @@ model User {
   pfpUrl String
   interests String[]
   skills String[]
+  eceAreas Area[]
   desiredDesignation Designation
   desiredMinorsCertificates MinorCertificate[]
   learningGoal String
   timetables Timetable[]
+  shoppingCart Course[] @relation("ShoppingCart")
+  favorites Course[] @relation("Favorites")
+  rejectedRecommendations Course[] @relation("RejectedRecommendations")
 }
 
 model Course {
@@ -60,8 +64,9 @@ model Course {
   lectureHours Int @default(0)
   tutorialHours Int @default(0)
   practicalHours Int @default(0)
-  isInShoppingCart Boolean @default(false)
-  isFavorited Boolean @default(false)
+  inUserShoppingCart User[] @relation("ShoppingCart")
+  inUserFavorites User[] @relation("Favorites")
+  inUserRejectedRecommendations User[] @relation("RejectedRecommendations")
 }
 
 model Timetable {
