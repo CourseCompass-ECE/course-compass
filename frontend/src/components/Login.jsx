@@ -1,22 +1,22 @@
 import { useState } from "react";
 
 const Login = () => {
-  const [emailUsername, setEmailUsername] = useState("");
-  const [emailUsernameError, setEmailUsernameError] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-  const EMAIL_USERNAME_EMPTY_ERROR = "Email or username is required";
+  const EMAIL_EMPTY_ERROR = "Email is required";
   const PASSWORD_EMPTY_ERROR = "Password is required";
 
   const login = (event) => {
     event.preventDefault();
-    setEmailUsernameError("");
+    setEmailError("");
     setPasswordError("");
 
-    if (!emailUsername) {
-      setEmailUsernameError(EMAIL_USERNAME_EMPTY_ERROR);
+    if (!email) {
+      setEmailError(EMAIL_EMPTY_ERROR);
       return;
     } else if (!password) {
       setPasswordError(PASSWORD_EMPTY_ERROR);
@@ -31,12 +31,12 @@ const Login = () => {
         <input
           type="text"
           className="text-input"
-          placeholder="Email or Username"
-          value={emailUsername}
+          placeholder="Email"
+          value={email}
           maxLength={254}
-          onChange={(event) => setEmailUsername(event.target.value)}
+          onChange={(event) => setEmail(event.target.value)}
         />
-        <span className="text-input-error">{emailUsernameError}</span>
+        <span className="text-input-error">{emailError}</span>
       </div>
 
       <div className="text-input-container">
