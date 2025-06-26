@@ -4,7 +4,7 @@
   text-rendering: optimizeLegibility;
 
   --title-font: "Poppins", sans-serif;
-  --subtitle-font: "Playfair Display", serif;;
+  --subtitle-font: "Playfair Display", serif;
   --header-font: "Instrument Sans", sans-serif;
   --text-font: "Amiko", sans-serif;
 
@@ -12,14 +12,23 @@
   --subtitle-size: 32px;
   --header-size: 28px;
   --subheader-size: 20px;
-  --text-size: 16px;
+  --large-text-size: 18px;
+  --med-text-size: 16px;
   --small-text-size: 12px;
 
-  --background-light: #F0F7FF;
-  --background-mixed: #dbeafa;
+  --icon-med: 24px;
+
+  --background-light: #f0f7ff;
+  --background-mixed: #d3e7fc;
   --background-darker: #c6e2ff;
+  --background-neutral-light: #e8e8e8;
+
   --main-color: #101010;
   --sub-color: #252525;
+  --dark-gray: #6d6d6d;
+  --gray: #a9a8a8;
+  --light-gray: #d9d9d9;
+  --error-red: rgb(178, 47, 47);
 }
 
 body {
