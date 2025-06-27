@@ -9,18 +9,25 @@ const CreateAccount = () => {
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const progressBarItems = [
+    "Personal",
+    "Profile Picture",
+    "Interests + Skills",
+    "Degree",
+    "Learning Goal",
+  ];
 
   const createAccount = (event) => {
     event.preventDefault();
   };
 
   return (
-    <>
+    <div className="create-account">
       <form
         className="create-account-form"
         onSubmit={(event) => createAccount(event)}
       >
-        <h1 className="create-account-form-title">Create Account</h1>
+        <h1 className="create-account-form-title">Get Started</h1>
         <div className="text-input-container">
           <input
             type="text"
@@ -69,10 +76,25 @@ const CreateAccount = () => {
           Continue
         </button>
       </form>
-      <aside>
-        
+      <aside className="create-account-progress-bar-container">
+        <ul className="create-account-progress-bar-content">
+          {progressBarItems.map((item, index) => (
+            <li
+              key={index}
+              className="create-account-progress-bar-content-item"
+            >
+              {item}
+            </li>
+          ))}
+        </ul>
+        <div className="create-account-progress-bar">
+          <div
+            className="create-account-progress"
+            style={{ width: `${15 * currentStep}vw` }}
+          />
+        </div>
       </aside>
-    </>
+    </div>
   );
 };
 

@@ -46,11 +46,12 @@ const RootLayout = () => {
 
               {headerIcons.map((icon, index) => (
                 <li
+                  key={index}
                   className="header-li"
                   style={isUserLoggedIn ? {} : { display: "none" }}
                 >
                   <Link className="header-link" to={headerIconsPath[index]}>
-                    <span class="material-symbols-outlined header-icon">
+                    <span className="material-symbols-outlined header-icon">
                       {icon}
                     </span>
                   </Link>
