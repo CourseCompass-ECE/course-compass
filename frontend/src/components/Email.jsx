@@ -1,11 +1,4 @@
-import { useEffect } from "react";
-
-const Email = (props) => {
-
-  useEffect(() => {
-    props.setIsUserLoggedIn(true);
-  }, []);
-
+const Email = () => {
   return <div>Email</div>;
 };
 

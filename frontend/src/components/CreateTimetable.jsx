@@ -1,10 +1,4 @@
-import { useEffect } from "react";
-
-const CreateTimetable = (props) => {
-  useEffect(() => {
-    props.setIsUserLoggedIn(true);
-  }, []);
-
+const CreateTimetable = () => {
   return <div>Create Timetable</div>;
 };
 

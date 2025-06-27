@@ -1,11 +1,4 @@
-import { useEffect } from "react";
-
-const Explore = (props) => {
-
-  useEffect(() => {
-    props.setIsUserLoggedIn(true);
-  }, []);
-
+const Explore = () => {
   return <div>Explore</div>;
 };
 

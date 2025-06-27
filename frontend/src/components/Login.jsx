@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-const Login = (props) => {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
@@ -23,10 +23,6 @@ const Login = (props) => {
       return;
     }
   };
-
-  useEffect(() => {
-    props.setIsUserLoggedIn(false);
-  }, [])
 
   return (
     <form className="login-form" onSubmit={(event) => login(event)}>

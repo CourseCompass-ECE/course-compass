@@ -1,10 +1,4 @@
-import { useEffect } from "react";
-
-const CreateAccount = (props) => {
-
-  useEffect(() => {
-    props.setIsUserLoggedIn(false);
-  }, []);
+const CreateAccount = () => {
 
   return <div>Create Account</div>;
 };

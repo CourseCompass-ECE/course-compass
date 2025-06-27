@@ -1,10 +1,4 @@
-import { useEffect } from "react";
-
-const LandingPage = (props) => {
-  useEffect(() => {
-    props.setIsUserLoggedIn(false);
-  }, []);
-
+const LandingPage = () => {
   return <div>Landing Page</div>;
 };
 
