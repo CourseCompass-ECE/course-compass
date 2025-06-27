@@ -29,6 +29,7 @@
   --gray: #a9a8a8;
   --light-gray: #d9d9d9;
   --error-red: rgb(178, 47, 47);
+  --correct-green: rgb(42, 159, 42);
 }
 
 body {
