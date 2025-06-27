@@ -186,10 +186,16 @@ footer {
   font-weight: 600;
 }
 
+.submission-error {
+  margin: 63px 0 0 0;
+  width: 225px;
+  text-align: center;
+}
+
 .form-btn {
   width: 225px;
   height: 45px;
-  margin-top: 20px;
+  margin-top: 10px;
   border-radius: 20px;
   font-size: var(--subheader-size);
   font-family: var(--header-font);
