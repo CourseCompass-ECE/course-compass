@@ -1,6 +1,6 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Path } from "./utils/enums";
+import { Path, Messages } from "./utils/enums";
 
 const RootLayout = () => {
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
@@ -66,12 +66,8 @@ const RootLayout = () => {
       </main>
       <footer>
         {/* Todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
-        <div>
-          <span>
-            {isUserLoggedIn ? "USER LOGGED IN" : "USER NOT LOGGED IN"}
-          </span>
-        </div>
-        <h2 className="footer-text">&copy; 2025 CourseCompass</h2>
+        <div className="footer-text footer-tagline">{Messages.TAGLINE}</div>
+        <div className="footer-text">&copy; 2025 CourseCompass</div>
       </footer>
     </div>
   );
