@@ -1,5 +1,5 @@
 header {
-  height: 15vh;
+  height: 13vh;
   width: 100%;
   background-image: url("/compass.png");
   background-repeat: no-repeat;
@@ -11,13 +11,59 @@ header {
 }
 
 .header-content-container {
-  z-index: 4;
   position: absolute;
   color: white;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-title {
+  all: unset;
+  margin-left: 5vw;
+  font-size: var(--header-size);
+  font-family: var(--title-font);
+  cursor: pointer;
+}
+
+.header-title-compass {
+  font-size: var(--subheader-size);
+}
+
+.header-ul {
+  list-style-type: none;
+  margin: 0 5vw 0 0;
+  padding: 0;
+  height: 50px;
+  display: flex;
+  align-items: center;
+}
+
+.header-li {
+  display: inline-block;
+  margin-left: 40px;
+}
+
+.header-link {
+  all: unset;
+  font-size: var(--subheader-size);
+  font-family: var(--header-font);
+  cursor: pointer;
+}
+
+.header-icon {
+  font-size: var(--header-size);
+  padding-top: 3px;
+}
+
+.header-link:hover {
+  color: var(--background-darker)
 }
 
 main {
-  height: 77vh;
+  height: 79vh;
   background-color: var(--background-light);
 }
 
