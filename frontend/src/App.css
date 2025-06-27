@@ -10,6 +10,12 @@ header {
   position: relative;
 }
 
+.header-content-container {
+  z-index: 4;
+  position: absolute;
+  color: white;
+}
+
 main {
   height: 77vh;
   background-color: var(--background-light);
