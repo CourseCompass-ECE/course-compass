@@ -127,6 +127,10 @@ footer {
   font-weight: normal;
 }
 
+.create-account-form-title {
+  margin: 0 0 5vh 0;
+}
+
 .login-password-container,
 .create-account-password-container {
   position: relative;
@@ -233,4 +237,29 @@ footer {
   height: 100%;
   border-radius: 20px;
   background-color: var(--background-mixed);
+}
+
+.password-requirements-container {
+  display: flex;
+  justify-content: flex-start;
+  width: 25vw;
+}
+
+.password-requirements-ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.password-requirement-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.password-requirements-li {
+  font-family: var(--header-font);
+  font-size: var(--med-text-size);
+  color: var(--main-color);
 }

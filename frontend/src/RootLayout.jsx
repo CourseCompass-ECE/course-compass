@@ -1,12 +1,17 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { Path, Messages } from "./utils/enums";
+import { Path } from "./utils/enums";
+import { TAGLINE } from "./utils/constants";
 
 const RootLayout = () => {
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
   const location = useLocation();
   const headerIcons = ["mail", "shopping_cart", "account_circle"];
   const headerIconsPath = [Path.EMAIL, Path.SHOPPING_CART, Path.PROFILE];
+  const EXPLORE = "Explore";
+  const LOGIN = "Login";
+  const TIMETABLES = "Timetables";
+  const CREATE_ACCOUNT = "Create Account";
 
   useEffect(() => {
     setIsUserLoggedIn(location.pathname.includes("/user"));
@@ -31,7 +36,7 @@ const RootLayout = () => {
                   className="header-link"
                   to={isUserLoggedIn ? Path.EXPLORE : Path.LOGIN}
                 >
-                  {isUserLoggedIn ? "Explore" : "Login"}
+                  {isUserLoggedIn ? EXPLORE : LOGIN}
                 </Link>
               </li>
 
@@ -40,7 +45,7 @@ const RootLayout = () => {
                   className="header-link"
                   to={isUserLoggedIn ? Path.TIMETABLES : Path.CREATE_ACCOUNT}
                 >
-                  {isUserLoggedIn ? "Timetables" : "Create Account"}
+                  {isUserLoggedIn ? TIMETABLES : CREATE_ACCOUNT}
                 </Link>
               </li>
 
@@ -67,7 +72,7 @@ const RootLayout = () => {
       </main>
       <footer>
         {/* Todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
-        <div className="footer-text footer-tagline">{Messages.TAGLINE}</div>
+        <div className="footer-text footer-tagline">{TAGLINE}</div>
         <div className="footer-text">&copy; 2025 CourseCompass</div>
       </footer>
     </div>

@@ -22,6 +22,8 @@ const Login = () => {
       setPasswordError(PASSWORD_EMPTY_ERROR);
       return;
     }
+
+    const userEmail = email.trim();
   };
 
   return (

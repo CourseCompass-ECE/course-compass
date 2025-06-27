@@ -12,7 +12,3 @@ export const Path = {
   CREATE_TIMETABLE: "/user/timetables/create",
   TIMETABLE: "/user/timetables/timetable",
 };
-
-export const Messages = {
-  TAGLINE: "Guaranteeing you navigate course selection with passion & confidence"
-}
