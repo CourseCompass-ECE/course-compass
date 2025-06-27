@@ -1,0 +1,76 @@
+import { Outlet, useLocation, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Path, Messages } from "./utils/enums";
+
+const RootLayout = () => {
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+  const location = useLocation();
+  const headerIcons = ["mail", "shopping_cart", "account_circle"];
+  const headerIconsPath = [Path.EMAIL, Path.SHOPPING_CART, Path.PROFILE];
+
+  useEffect(() => {
+    setIsUserLoggedIn(location.pathname.includes("/user"));
+  }, [location.pathname]);
+
+  return (
+    <div>
+      <header>
+        <div className="glassmorphism" />
+        <div className="header-content-container">
+          <Link
+            className="header-title"
+            to={isUserLoggedIn ? Path.EXPLORE : Path.LANDING_PAGE}
+          >
+            C<span className="header-title-compass">🧭</span>urseC
+            <span className="header-title-compass">🧭</span>mpass
+          </Link>
+          <nav>
+            <ul className="header-ul">
+              <li className="header-li">
+                <Link
+                  className="header-link"
+                  to={isUserLoggedIn ? Path.EXPLORE : Path.LOGIN}
+                >
+                  {isUserLoggedIn ? "Explore" : "Login"}
+                </Link>
+              </li>
+
+              <li className="header-li">
+                <Link
+                  className="header-link"
+                  to={isUserLoggedIn ? Path.TIMETABLES : Path.CREATE_ACCOUNT}
+                >
+                  {isUserLoggedIn ? "Timetables" : "Create Account"}
+                </Link>
+              </li>
+
+              {headerIcons.map((icon, index) => (
+                <li
+                  className="header-li"
+                  style={isUserLoggedIn ? {} : { display: "none" }}
+                >
+                  <Link className="header-link" to={headerIconsPath[index]}>
+                    <span class="material-symbols-outlined header-icon">
+                      {icon}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+        {/* Todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
+      </header>
+      <main>
+        <Outlet />
+      </main>
+      <footer>
+        {/* Todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
+        <div className="footer-text footer-tagline">{Messages.TAGLINE}</div>
+        <div className="footer-text">&copy; 2025 CourseCompass</div>
+      </footer>
+    </div>
+  );
+};
+
+export default RootLayout;

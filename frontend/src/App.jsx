@@ -1,29 +1,80 @@
 import "./App.css";
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router-dom";
-import { routes } from "./utils/routes";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import Login from "./components/Login";
+import LandingPage from "./components/LandingPage";
+import CreateAccount from "./components/CreateAccount";
+import Explore from "./components/Explore";
+import ExploreCourse from "./components/ExploreCourse";
+import Profile from "./components/Profile";
+import ShoppingCart from "./components/ShoppingCart";
+import Email from "./components/Email";
+import CreateEmail from "./components/CreateEmail";
+import Timetables from "./components/Timetables";
+import CreateTimetable from "./components/CreateTimetable";
+import Timetable from "./components/Timetable";
+import { Path } from "./utils/enums";
+import RootLayout from "./RootLayout";
 
 function App() {
-  const router = createBrowserRouter(routes);
+  const router = createBrowserRouter([
+    {
+      path: "/",
+      element: <RootLayout />,
+      children: [
+        {
+          path: Path.LOGIN,
+          element: <Login />,
+        },
+        {
+          path: Path.LANDING_PAGE,
+          element: <LandingPage />,
+        },
+        {
+          path: Path.CREATE_ACCOUNT,
+          element: <CreateAccount />,
+        },
+        {
+          path: Path.EXPLORE,
+          element: <Explore />,
+        },
+        {
+          path: Path.EXPLORE_COURSE,
+          element: <ExploreCourse />,
+        },
+        {
+          path: Path.PROFILE,
+          element: <Profile />,
+        },
+        {
+          path: Path.SHOPPING_CART,
+          element: <ShoppingCart />,
+        },
+        {
+          path: Path.EMAIL,
+          element: <Email />,
+        },
+        {
+          path: Path.CREATE_EMAIL,
+          element: <CreateEmail />,
+        },
+        {
+          path: Path.TIMETABLES,
+          element: <Timetables />,
+        },
+        {
+          path: Path.CREATE_TIMETABLE,
+          element: <CreateTimetable />,
+        },
+        {
+          path: Path.TIMETABLE,
+          element: <Timetable />,
+        },
+        // Todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0
+      ],
+    },
+  ]);
 
-  return (
-    <div>
-      <header>
-        <div className="glassmorphism" />
-        {/* Todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
-      </header>
-      <main>
-        <RouterProvider router={router} />
-      </main>
-      <footer>
-        {/* Todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
-        <div></div>
-        <h2 className="footer-text">&copy; 2025 CourseCompass</h2>
-      </footer>
-    </div>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;
