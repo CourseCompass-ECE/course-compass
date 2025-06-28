@@ -11,4 +11,5 @@ export const Path = {
   TIMETABLES: "/user/timetables",
   CREATE_TIMETABLE: "/user/timetables/create",
   TIMETABLE: "/user/timetables/timetable",
+  LOGOUT: "/user/logout"
 };

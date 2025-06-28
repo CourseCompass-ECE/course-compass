@@ -2,9 +2,12 @@ import { Outlet, useLocation, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Path } from "./utils/enums";
 import { TAGLINE } from "./utils/constants";
+import { useNavigate } from "react-router-dom";
 
 const RootLayout = () => {
+  const navigate = useNavigate();
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
   const location = useLocation();
   const headerIcons = ["mail", "shopping_cart", "account_circle"];
   const headerIconsPath = [Path.EMAIL, Path.SHOPPING_CART, Path.PROFILE];
@@ -12,6 +15,27 @@ const RootLayout = () => {
   const LOGIN = "Login";
   const TIMETABLES = "Timetables";
   const CREATE_ACCOUNT = "Create Account";
+  const LOGOUT_ERROR = "Error logging out";
+
+  const logout = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${Path.LOGOUT}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        navigate(Path.LOGIN);
+      } else {
+        setLogoutError(LOGOUT_ERROR);
+      }
+    } catch (error) {
+      setLogoutError(LOGOUT_ERROR);
+    }
+  };
 
   useEffect(() => {
     setIsUserLoggedIn(location.pathname.includes("/user"));
@@ -62,6 +86,18 @@ const RootLayout = () => {
                   </Link>
                 </li>
               ))}
+              <li
+                className="header-li logout"
+                style={isUserLoggedIn ? {} : { display: "none" }}
+              >
+                <span
+                  className="material-symbols-outlined header-icon"
+                  onClick={logout}
+                >
+                  logout
+                </span>
+                <div className="logout-error">{logoutError}</div>
+              </li>
             </ul>
           </nav>
         </div>

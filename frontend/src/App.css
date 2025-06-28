@@ -53,6 +53,16 @@ header {
   cursor: pointer;
 }
 
+.logout {
+  font-size: var(--subheader-size);
+  font-family: var(--header-font);
+  cursor: pointer;
+}
+
+.logout:hover {
+  color: var(--background-darker);
+}
+
 .header-icon {
   font-size: var(--header-size);
   padding-top: 3px;
@@ -183,6 +193,11 @@ footer {
   margin: 32px 0 0 5px;
   font-size: var(--small-text-size);
   color: var(--error-red);
+  font-weight: 600;
+}
+
+.logout-error {
+  font-size: var(--small-text-size);
   font-weight: 600;
 }
 
