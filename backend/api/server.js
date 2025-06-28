@@ -9,7 +9,9 @@ const {
 const {
   DUPLICATE_EMAIL_ERROR,
   INVALID_LOGIN_ERROR,
+  LOGGED_IN
 } = require("../../frontend/src/utils/constants");
+const {Path} = require("../../frontend/src/utils/enums")
 
 const express = require("express");
 const helmet = require("helmet");
@@ -25,6 +27,7 @@ const User = require("./user-model");
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const SESSION_COOKIE_NAME = "sessionId";
+const NO_USER_FOUND = "No user found";
 
 const fullNameValid = (fullName) => {
   return fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length >= 2;
@@ -71,7 +74,23 @@ server.use(
   })
 );
 
-server.post("/create-account", async (req, res, next) => {
+server.get(Path.CHECK_CREDENTIALS, async (req, res, next) => {
+  if (req.session.user) {
+    res.status(200).json({message: LOGGED_IN})
+  } else {
+    next(new Error(NO_USER_FOUND))
+  }
+});
+
+server.use("/", (req, res, next) => {
+  if ((req.path.includes("user") && !req.session.user) || (!req.path.includes("user") && req.session.user)) {
+    next({ status: 401, message: "Unauthorized" })
+  }
+
+  next('route');
+});
+
+server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
   let newUser = req.body;
 
   try {
@@ -104,7 +123,7 @@ server.post("/create-account", async (req, res, next) => {
   }
 });
 
-server.post("/login", async (req, res, next) => {
+server.post(Path.LOGIN, async (req, res, next) => {
   const userCredentials = req.body;
 
   try {
@@ -128,10 +147,9 @@ server.post("/login", async (req, res, next) => {
   }
 });
 
-server.delete('/user/logout', (req, res, next) => {
+server.delete(Path.LOGOUT, (req, res, next) => {
   req.session.destroy((err) => {
     if (err) {
-      console.log(err)
       next(err);
     }
     res.clearCookie(SESSION_COOKIE_NAME);

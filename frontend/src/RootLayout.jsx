@@ -1,7 +1,7 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Path } from "./utils/enums";
-import { TAGLINE } from "./utils/constants";
+import { TAGLINE, LOGGED_IN } from "./utils/constants";
 import { useNavigate } from "react-router-dom";
 
 const RootLayout = () => {
@@ -37,8 +37,41 @@ const RootLayout = () => {
     }
   };
 
+  const checkUserLoggedIn = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${Path.CHECK_CREDENTIALS}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return data?.message === LOGGED_IN;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      return false;
+    }
+  };
+
   useEffect(() => {
-    setIsUserLoggedIn(location.pathname.includes("/user"));
+    const userAuthentication = async () => {
+      const userLoggedIn = await checkUserLoggedIn();
+      const onPageWhereUserLoggedIn = location.pathname.includes("/user");
+      
+      if (!userLoggedIn && onPageWhereUserLoggedIn) {
+        navigate(Path.LOGIN);
+      } else if (userLoggedIn && !onPageWhereUserLoggedIn) {
+        navigate(Path.EXPLORE);
+      }
+      setIsUserLoggedIn(onPageWhereUserLoggedIn);
+    };
+
+    userAuthentication();
   }, [location.pathname]);
 
   return (
