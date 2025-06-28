@@ -6,6 +6,10 @@ const {
   LOWERCASE_LETTER,
   NUMBER,
 } = require("../../frontend/src/utils/regex");
+const {
+  DUPLICATE_EMAIL_ERROR,
+  INVALID_LOGIN_ERROR,
+} = require("../../frontend/src/utils/constants");
 
 const express = require("express");
 const helmet = require("helmet");
@@ -20,7 +24,6 @@ const User = require("./user-model");
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
-const DUPLICATE_EMAIL_ERROR = "Email is already in use";
 
 const fullNameValid = (fullName) => {
   return fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length >= 2;
@@ -52,6 +55,20 @@ const corsOptions = {
 server.use(cors(corsOptions));
 
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
+server.use(
+  session({
+    name: "sessionId",
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.PRODUCTION ? true : false,
+      sameSite: "none",
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 2,
+    },
+  })
+);
 
 server.post("/create-account", async (req, res, next) => {
   let newUser = req.body;
@@ -71,14 +88,15 @@ server.post("/create-account", async (req, res, next) => {
       !emailValid(newUser?.email) ||
       !passwordValid(newUser?.password)
     ) {
-      throw new Error({ message: INVALID_USER_DETAILS_ERROR });
+      throw new Error(INVALID_USER_DETAILS_ERROR);
     }
 
     const hash = await argon2.hash(newUser.password);
-    newUser = {...newUser, password: hash}
+    newUser = { ...newUser, password: hash };
 
     const created = await User.create(newUser);
-    res.status(201).json(created);
+    req.session.user = created;
+    res.status(201).json({ id: created.id });
   } catch (err) {
     if (err?.code === "P2002") err.message = DUPLICATE_EMAIL_ERROR;
     next(err);
@@ -89,10 +107,22 @@ server.post("/login", async (req, res, next) => {
   const userCredentials = req.body;
 
   try {
-    const created = await User.create(newUser);
-    res.status(201).json(created);
+    const user = await User.findUserByEmail(userCredentials?.email);
+    if (!user) {
+      throw new Error(INVALID_LOGIN_ERROR);
+    }
+
+    const isPasswordValid = await argon2.verify(
+      user.password,
+      userCredentials?.password
+    );
+    if (!isPasswordValid) {
+      throw new Error(INVALID_LOGIN_ERROR);
+    }
+
+    req.session.user = user;
+    res.status(201).json({ id: user.id });
   } catch (err) {
-    if (err?.code === "P2002") err.message = DUPLICATE_EMAIL_ERROR;
     next(err);
   }
 });

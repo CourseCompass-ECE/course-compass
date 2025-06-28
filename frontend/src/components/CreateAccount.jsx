@@ -9,6 +9,7 @@ import {
 } from "../utils/regex";
 import { Path } from "../utils/enums";
 import { useNavigate } from "react-router-dom";
+import { GENERIC_ERROR, DUPLICATE_EMAIL_ERROR, EMAIL_ERROR } from "../utils/constants";
 
 const CreateAccount = () => {
   const navigate = useNavigate();
@@ -29,11 +30,7 @@ const CreateAccount = () => {
   });
   const [submissionError, setSubmissionError] = useState("");
   const FULL_NAME_ERROR = "Please enter your full name";
-  const EMAIL_ERROR = "Please enter a valid email address";
   const PASSWORD_ERROR = "Please enter a valid password";
-  const DUPLICATE_EMAIL_ERROR = "Email is already in use";
-  const GENERIC_ACCOUNT_CREATION_ERROR =
-    "Something went wrong. Please try again";
   const progressBarItems = [
     "Personal",
     "Profile Picture",
@@ -104,6 +101,7 @@ const CreateAccount = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(newUser),
+          credentials: "include"
         }
       );
 
@@ -114,11 +112,11 @@ const CreateAccount = () => {
         setSubmissionError(
           data.message === DUPLICATE_EMAIL_ERROR
             ? DUPLICATE_EMAIL_ERROR
-            : GENERIC_ACCOUNT_CREATION_ERROR
+            : GENERIC_ERROR
         );
       }
     } catch (error) {
-      setSubmissionError(GENERIC_ACCOUNT_CREATION_ERROR);
+      setSubmissionError(GENERIC_ERROR);
     }
   };
 
