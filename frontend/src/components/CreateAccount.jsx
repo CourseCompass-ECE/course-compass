@@ -7,8 +7,12 @@ import {
   LOWERCASE_LETTER,
   NUMBER,
 } from "../utils/regex";
+import { Path } from "../utils/enums";
+import { useNavigate } from "react-router-dom";
+import { GENERIC_ERROR, DUPLICATE_EMAIL_ERROR, EMAIL_ERROR } from "../utils/constants";
 
 const CreateAccount = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [fullName, setFullName] = useState("");
   const [fullNameError, setFullNameError] = useState("");
@@ -24,8 +28,8 @@ const CreateAccount = () => {
     number: false,
     specialChar: false,
   });
+  const [submissionError, setSubmissionError] = useState("");
   const FULL_NAME_ERROR = "Please enter your full name";
-  const EMAIL_ERROR = "Please enter a valid email address";
   const PASSWORD_ERROR = "Please enter a valid password";
   const progressBarItems = [
     "Personal",
@@ -48,17 +52,19 @@ const CreateAccount = () => {
     newRequirementsStatus.uppercase = UPPERCASE_LETTER.test(password);
     newRequirementsStatus.lowercase = LOWERCASE_LETTER.test(password);
     newRequirementsStatus.number = NUMBER.test(password);
-    newRequirementsStatus.specialChar = !ALPHANUMERIC_REGEX.test(password) && password.length > 0;
+    newRequirementsStatus.specialChar =
+      !ALPHANUMERIC_REGEX.test(password) && password.length > 0;
     setPasswordRequirementsMet(newRequirementsStatus);
 
     setPassword(password);
   };
 
-  const createAccount = (event) => {
+  const createAccount = async (event) => {
     event.preventDefault();
     setFullNameError("");
     setEmailError("");
     setPasswordError("");
+    setSubmissionError("");
 
     if (fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length < 2) {
       setFullNameError(FULL_NAME_ERROR);
@@ -73,6 +79,45 @@ const CreateAccount = () => {
 
     const userFullName = fullName.trim();
     const userEmail = email.trim();
+
+    try {
+      const newUser = {
+        fullName: userFullName,
+        email: userEmail,
+        password,
+        pfpUrl: "placeholder",
+        interests: [],
+        skills: [],
+        eceAreas: [],
+        desiredDesignation: "COMPUTER", // placeholder choice (between COMPUTER & ELECTRICAL)
+        learningGoal: "placeholder",
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${Path.CREATE_ACCOUNT}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newUser),
+          credentials: "include"
+        }
+      );
+
+      if (response.ok) {
+        navigate(Path.EXPLORE);
+      } else {
+        const data = await response.json();
+        setSubmissionError(
+          data.message === DUPLICATE_EMAIL_ERROR
+            ? DUPLICATE_EMAIL_ERROR
+            : GENERIC_ERROR
+        );
+      }
+    } catch (error) {
+      setSubmissionError(GENERIC_ERROR);
+    }
   };
 
   return (
@@ -151,9 +196,13 @@ const CreateAccount = () => {
           <span className="text-input-error">{passwordError}</span>
         </div>
 
-        <button type="submit" className="form-btn">
-          Continue
-        </button>
+        <div className="text-input-container">
+          <button type="submit" className="form-btn">
+            Continue
+          </button>
+          <span className="text-input-error submission-error">{submissionError}</span>
+        </div>
+
       </form>
       <aside className="create-account-progress-bar-container">
         <ul className="create-account-progress-bar-content">

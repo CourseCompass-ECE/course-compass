@@ -53,6 +53,16 @@ header {
   cursor: pointer;
 }
 
+.logout {
+  font-size: var(--subheader-size);
+  font-family: var(--header-font);
+  cursor: pointer;
+}
+
+.logout:hover {
+  color: var(--background-darker);
+}
+
 .header-icon {
   font-size: var(--header-size);
   padding-top: 3px;
@@ -186,10 +196,21 @@ footer {
   font-weight: 600;
 }
 
+.logout-error {
+  font-size: var(--small-text-size);
+  font-weight: 600;
+}
+
+.submission-error {
+  margin: 63px 0 0 0;
+  width: 225px;
+  text-align: center;
+}
+
 .form-btn {
   width: 225px;
   height: 45px;
-  margin-top: 20px;
+  margin-top: 10px;
   border-radius: 20px;
   font-size: var(--subheader-size);
   font-family: var(--header-font);
