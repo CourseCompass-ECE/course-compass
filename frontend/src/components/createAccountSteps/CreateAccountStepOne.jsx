@@ -6,8 +6,8 @@ import {
   UPPERCASE_LETTER,
   LOWERCASE_LETTER,
   NUMBER,
-} from "../utils/regex";
-import { EMAIL_ERROR } from "../utils/constants";
+} from "../../utils/regex";
+import { EMAIL_ERROR } from "../../utils/constants";
 
 const CreateAccountStepOne = (props) => {
   const [fullNameError, setFullNameError] = useState("");
@@ -50,7 +50,6 @@ const CreateAccountStepOne = (props) => {
     setFullNameError("");
     setEmailError("");
     setPasswordError("");
-    setSubmissionError("");
 
     if (props.fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length < 2) {
       setFullNameError(FULL_NAME_ERROR);
@@ -65,7 +64,7 @@ const CreateAccountStepOne = (props) => {
 
     props.setFullName(props.fullName.trim());
     props.setEmail(props.email.trim());
-    props.setCurrentStep(props.currentStep++);
+    props.setCurrentStep(props.currentStep + 1);
   };
 
   return (

@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Path } from "../utils/enums";
 import { useNavigate } from "react-router-dom";
-import { GENERIC_ERROR, DUPLICATE_EMAIL_ERROR } from "../utils/constants";
-import CreateAccountStepOne from "./CreateAccountStepOne";
+import CreateAccountStepOne from "./createAccountSteps/CreateAccountStepOne";
+import CreateAccountStepTwo from "./createAccountSteps/CreateAccountStepTwo";
+import CreateAccountStepThree from "./createAccountSteps/CreateAccountStepThree";
+import CreateAccountStepFour from "./createAccountSteps/CreateAccountStepFour";
+import CreateAccountStepFive from "./createAccountSteps/CreateAccountStepFive";
 
 const CreateAccount = () => {
   const navigate = useNavigate();
@@ -18,55 +20,35 @@ const CreateAccount = () => {
     "Learning Goal",
   ];
 
-  const [submissionError, setSubmissionError] = useState("");
-  const submitStepFive = async (event) => {
-    event.preventDefault();
-
-    try {
-      const newUser = {
-        fullName: fullName,
-        email: email,
-        password,
-        pfpUrl: "placeholder",
-        interests: [],
-        skills: [],
-        eceAreas: [],
-        desiredDesignation: "COMPUTER", // placeholder choice (between COMPUTER & ELECTRICAL)
-        learningGoal: "placeholder",
-      };
-
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_URL}${Path.CREATE_ACCOUNT}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(newUser),
-          credentials: "include",
-        }
-      );
-
-      if (response.ok) {
-        navigate(Path.EXPLORE);
-      } else {
-        const data = await response.json();
-        setSubmissionError(
-          data.message === DUPLICATE_EMAIL_ERROR
-            ? DUPLICATE_EMAIL_ERROR
-            : GENERIC_ERROR
-        );
-      }
-    } catch (error) {
-      setSubmissionError(GENERIC_ERROR);
-      //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 (in PR notes)
-    }
-  };
-
   const renderPage = () => {
     switch (currentStep) {
       case 1:
-        return <CreateAccountStepOne />;
+        return (
+          <CreateAccountStepOne
+            fullName={fullName}
+            setFullName={setFullName}
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            currentStep={currentStep}
+            setCurrentStep={setCurrentStep}
+          />
+        );
+      case 2:
+        return <CreateAccountStepTwo />;
+      case 3:
+        return <CreateAccountStepThree />;
+      case 4:
+        return <CreateAccountStepFour />;
+      case 5:
+        return (
+          <CreateAccountStepFive
+            fullName={fullName}
+            email={email}
+            password={password}
+          />
+        );
       default:
         return <></>;
     }
