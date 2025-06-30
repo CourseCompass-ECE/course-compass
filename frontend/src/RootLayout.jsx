@@ -1,8 +1,9 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Path } from "./utils/enums";
-import { TAGLINE, LOGGED_IN } from "./utils/constants";
+import { TAGLINE } from "./utils/constants";
 import { useNavigate } from "react-router-dom";
+import { checkUserLoggedIn } from "./utils/functions";
 
 const RootLayout = () => {
   const navigate = useNavigate();
@@ -37,38 +38,17 @@ const RootLayout = () => {
     }
   };
 
-  const checkUserLoggedIn = async () => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_URL}${Path.CHECK_CREDENTIALS}`,
-        {
-          method: "GET",
-          credentials: "include",
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        return data?.message === LOGGED_IN;
-      } else {
-        return false;
-      }
-    } catch (error) {
-      return false;
-    }
-  };
-
   useEffect(() => {
     const userAuthentication = async () => {
-      const userLoggedIn = await checkUserLoggedIn();
+      const loggedInStatus = await checkUserLoggedIn();
       const onPageWhereUserLoggedIn = location.pathname.includes("/user");
       
-      if (!userLoggedIn && onPageWhereUserLoggedIn) {
+      if (!loggedInStatus && onPageWhereUserLoggedIn) {
         navigate(Path.LOGIN);
-      } else if (userLoggedIn && !onPageWhereUserLoggedIn) {
+      } else if (loggedInStatus && !onPageWhereUserLoggedIn) {
         navigate(Path.EXPLORE);
       }
-      setIsUserLoggedIn(onPageWhereUserLoggedIn);
+      setIsUserLoggedIn(loggedInStatus);
     };
 
     userAuthentication();

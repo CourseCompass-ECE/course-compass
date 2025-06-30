@@ -14,12 +14,14 @@ import CreateTimetable from "./components/CreateTimetable";
 import Timetable from "./components/Timetable";
 import { Path } from "./utils/enums";
 import RootLayout from "./RootLayout";
+import ErrorPage from "./components/ErrorPage";
 
 function App() {
   const router = createBrowserRouter([
     {
       path: "/",
       element: <RootLayout />,
+      errorElement: <ErrorPage />,
       children: [
         {
           path: Path.LOGIN,

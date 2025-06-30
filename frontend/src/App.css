@@ -199,6 +199,9 @@ footer {
 .logout-error {
   font-size: var(--small-text-size);
   font-weight: 600;
+  position: absolute;
+  margin-left: -35px;
+  color: var(--logout-error-red);
 }
 
 .submission-error {
@@ -283,4 +286,75 @@ footer {
   font-family: var(--header-font);
   font-size: var(--med-text-size);
   color: var(--main-color);
+}
+
+.error-page-container {
+  background-color: var(--background-light);
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.error-page-title {
+  font-family: var(--title-font);
+  font-size: var(--title-size);
+  font-weight: normal;
+  display: flex;
+  gap: 10px;
+  margin-top: 10vh;
+}
+
+.error-page-compass {
+  font-size: 68px;
+}
+
+@keyframes swing {
+  20% {
+    transform: rotate(110deg);
+  }
+  40% {
+    transform: rotate(40deg);
+  }
+  60% {
+    transform: rotate(90deg);
+  }
+  80% {
+    transform: rotate(68deg);
+  }
+  90% {
+    transform: rotate(72deg);
+  }
+  100% {
+    transform: rotate(70deg);
+  }
+}
+
+.error-page-swing {
+  animation-name: swing;
+  animation-duration: 5s;
+  transform-origin: center left;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+.error-page-message {
+  position: absolute;
+  bottom: 15vh;
+  font-size: var(--header-size);
+  font-family: var(--header-font);
+  font-weight: normal;
+}
+
+.error-page-link {
+  all: unset;
+  text-decoration: underline;
+  cursor: pointer;
+
+}
+
+.error-page-link:hover {
+  color: var(--background-dark);
 }
