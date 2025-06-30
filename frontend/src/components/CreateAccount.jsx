@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import CreateAccountStepOne from "./createAccountSteps/CreateAccountStepOne";
 import CreateAccountStepTwo from "./createAccountSteps/CreateAccountStepTwo";
 import CreateAccountStepThree from "./createAccountSteps/CreateAccountStepThree";
@@ -7,11 +6,11 @@ import CreateAccountStepFour from "./createAccountSteps/CreateAccountStepFour";
 import CreateAccountStepFive from "./createAccountSteps/CreateAccountStepFive";
 
 const CreateAccount = () => {
-  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [pfpUrl, setPfpUrl] = useState("");
   const progressBarItems = [
     "Personal",
     "Profile Picture",
@@ -36,7 +35,14 @@ const CreateAccount = () => {
           />
         );
       case 2:
-        return <CreateAccountStepTwo />;
+        return (
+          <CreateAccountStepTwo
+            setCurrentStep={setCurrentStep}
+            currentStep={currentStep}
+            pfpUrl={pfpUrl}
+            setPfpUrl={setPfpUrl}
+          />
+        );
       case 3:
         return <CreateAccountStepThree />;
       case 4:
@@ -56,6 +62,15 @@ const CreateAccount = () => {
 
   return (
     <div className="create-account">
+      <button
+        className="create-account-back-container"
+        style={currentStep === 1 ? { display: "none" } : {}}
+        onClick={() => setCurrentStep(currentStep - 1)}
+      >
+        <span className="material-symbols-outlined create-account-back-icon">
+          west
+        </span>
+      </button>
       {renderPage()}
       <aside className="create-account-progress-bar-container">
         <ul className="create-account-progress-bar-content">

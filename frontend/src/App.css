@@ -122,6 +122,7 @@ footer {
 
 .create-account-form {
   height: 88%;
+  justify-content: flex-start;
 }
 
 .create-account {
@@ -138,7 +139,7 @@ footer {
 }
 
 .create-account-form-title {
-  margin: 0 0 5vh 0;
+  margin: 10vh 0 2vh 0;
 }
 
 .login-password-container,
@@ -161,6 +162,23 @@ footer {
 .create-account-password-eye-icon.material-symbols-outlined:hover {
   color: var(--sub-color);
   font-variation-settings: "FILL" 100;
+}
+
+.create-account-back-container {
+  position: absolute;
+  margin: 4vh 0 0 4vh;
+  background-color: transparent;
+  border: none;
+}
+
+.create-account-back-icon {
+  font-size: var(--subtitle-size);
+  color: var(--main-color);
+  cursor: pointer;
+}
+
+.create-account-back-icon:hover {
+  color: var(--dark-gray);
 }
 
 .text-input-container {
@@ -227,6 +245,11 @@ footer {
   background-color: var(--background-darker);
 }
 
+.create-account-btn {
+  position: absolute;
+  bottom: 20%;
+}
+
 .create-account-progress-bar-container {
   height: 12%;
   display: flex;
@@ -286,6 +309,48 @@ footer {
   font-family: var(--header-font);
   font-size: var(--med-text-size);
   color: var(--main-color);
+}
+
+.create-account-pfp-button {
+  all: unset;
+  width: 18vw;
+  height: 18vw;
+  position: relative;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.create-account-pfp-img {
+  width: 18vw;
+  height: 18vw;
+  border-radius: 50%;
+  border: 2px solid var(--gray);
+  object-fit: cover;
+}
+
+.create-account-text {
+  position: absolute;
+  left: 4.5vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 9vw;
+  height: 4vw;
+  bottom: 0;
+  font-family: var(--header-font);
+  font-size: var(--large-text-size);
+  background-color: var(--background-mixed);
+  border-radius: 100% 100% 100% 100%;
+}
+
+.create-account-pfp-file {
+  display: none;
+}
+
+.create-account-pfp-error {
+  margin: 10px 0 0 0;
+  text-align: center;
+  width: 18vw;
 }
 
 .error-page-container {
@@ -352,7 +417,6 @@ footer {
   all: unset;
   text-decoration: underline;
   cursor: pointer;
-
 }
 
 .error-page-link:hover {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ONE_OR_MORE_WHITESPACE_REGEX,
   EMAIL_REGEX,
@@ -21,6 +21,7 @@ const CreateAccountStepOne = (props) => {
     number: false,
     specialChar: false,
   });
+  const STEP_TITLE = "Let's Get Started";
   const FULL_NAME_ERROR = "Please enter your full name";
   const PASSWORD_ERROR = "Please enter a valid password";
 
@@ -45,7 +46,7 @@ const CreateAccountStepOne = (props) => {
     props.setPassword(password);
   };
 
-  const submitStepOne = async (event) => {
+  const submitStepOne = (event) => {
     event.preventDefault();
     setFullNameError("");
     setEmailError("");
@@ -67,12 +68,16 @@ const CreateAccountStepOne = (props) => {
     props.setCurrentStep(props.currentStep + 1);
   };
 
+  useEffect(() => {
+    handlePasswordChange(props.password);
+  }, []);
+
   return (
     <form
       className="create-account-form"
       onSubmit={(event) => submitStepOne(event)}
     >
-      <h1 className="create-account-form-title">Get Started</h1>
+      <h1 className="create-account-form-title">{STEP_TITLE}</h1>
       <div className="text-input-container">
         <input
           type="text"
@@ -142,7 +147,7 @@ const CreateAccountStepOne = (props) => {
         <span className="text-input-error">{passwordError}</span>
       </div>
 
-      <div className="text-input-container">
+      <div className="text-input-container create-account-btn">
         <button type="submit" className="form-btn">
           Continue
         </button>
