@@ -106,6 +106,7 @@ server.use("/", (req, res, next) => {
 
 server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
   let newUser = req.body;
+  console.log(newUser?.pfpUrl )
 
   try {
     if (
@@ -122,10 +123,7 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
         newUser?.desiredCertificates,
         MINORS_CERTIFICATES_MIN_LENGTH
       ) ||
-      !arrayValid(newUser?.learningGoal, LEARNING_GOAL_MIN_LENGTH) ||
-      !fullNameValid(newUser?.fullName) ||
-      !emailValid(newUser?.email) ||
-      !passwordValid(newUser?.password)
+      !arrayValid(newUser?.learningGoal, LEARNING_GOAL_MIN_LENGTH)
     ) {
       throw new Error(INVALID_USER_DETAILS_ERROR);
     }

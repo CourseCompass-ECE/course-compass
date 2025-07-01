@@ -5,9 +5,20 @@ import {
   DUPLICATE_EMAIL_ERROR,
   DESIGNATIONS,
 } from "../../utils/constants";
+import { initializeApp } from "firebase/app";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+};
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
 
 const CreateAccountStepFive = (props) => {
-  const [learningGoalText, setLearningGoalText] = useState("");
   const [learningGoalError, setLearningGoalError] = useState("");
   const [submissionError, setSubmissionError] = useState("");
 
@@ -23,7 +34,7 @@ const CreateAccountStepFive = (props) => {
     event.preventDefault();
     setLearningGoalError("");
 
-    let learningGoal = learningGoalText
+    let learningGoal = props.learningGoalText
       .split(",")
       .filter((concept) => concept.trim() !== "");
     learningGoal.forEach(
@@ -36,11 +47,19 @@ const CreateAccountStepFive = (props) => {
     }
 
     try {
+      const storageRef = ref(storage, "images/" + props.pfp.name);
+      let pfpUrl;
+      await uploadBytes(storageRef, props.pfp).then(async (snapshot) => {
+        await getDownloadURL(snapshot.ref).then((downloadURL) => {
+          pfpUrl = downloadURL;
+        });
+      });
+
       const newUser = {
         fullName: props.fullName,
         email: props.email,
         password: props.password,
-        pfpUrl: props.pfpUrl,
+        pfpUrl: pfpUrl,
         interests: props.interests,
         skills: props.skills,
         eceAreas: props.eceAreas,
@@ -91,9 +110,9 @@ const CreateAccountStepFive = (props) => {
           type="text"
           className="text-input"
           placeholder={LEARNING_GOAL}
-          value={learningGoalText}
+          value={props.learningGoalText}
           maxLength={150}
-          onChange={(event) => setLearningGoalText(event.target.value)}
+          onChange={(event) => props.setLearningGoalText(event.target.value)}
         />
         <span className="text-input-error">{learningGoalError}</span>
       </div>

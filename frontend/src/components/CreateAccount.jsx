@@ -10,13 +10,15 @@ const CreateAccount = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [pfpUrl, setPfpUrl] = useState("");
+  const [pfp, setPfp] = useState(null);
+  const [pfpPreview, setPfpPreview] = useState("")
   const [eceAreas, setEceAreas] = useState([]);
   const [interests, setInterests] = useState([]);
   const [skills, setSkills] = useState([]);
   const [desiredDesignation, setDesiredDesignation] = useState("");
   const [desiredMinors, setDesiredMinors] = useState([]);
   const [desiredCertificates, setDesiredCertificates] = useState([]);
+  const [learningGoalText, setLearningGoalText] = useState("");
   const progressBarItems = [
     "Personal",
     "Profile Picture",
@@ -45,8 +47,10 @@ const CreateAccount = () => {
           <CreateAccountStepTwo
             setCurrentStep={setCurrentStep}
             currentStep={currentStep}
-            pfpUrl={pfpUrl}
-            setPfpUrl={setPfpUrl}
+            pfp={pfp}
+            setPfp={setPfp}
+            pfpPreview={pfpPreview}
+            setPfpPreview={setPfpPreview}
           />
         );
       case 3:
@@ -81,13 +85,15 @@ const CreateAccount = () => {
             fullName={fullName}
             email={email}
             password={password}
-            pfpUrl={pfpUrl}
+            pfp={pfp}
             eceAreas={eceAreas}
             interests={interests}
             skills={skills}
             desiredDesignation={desiredDesignation}
             desiredMinors={desiredMinors}
             desiredCertificates={desiredCertificates}
+            learningGoalText={learningGoalText}
+            setLearningGoalText={setLearningGoalText}
           />
         );
       default:
