@@ -1,6 +1,7 @@
 export const TAGLINE =
   "Guaranteeing you navigate course selection with passion & confidence";
 export const GENERIC_ERROR = "Something went wrong. Please try again";
+export const ERROR_MESSAGE_MARGIN_TOP = "79px";
 export const DUPLICATE_EMAIL_ERROR = "Email is already in use";
 export const INVALID_LOGIN_ERROR = "Invalid login details. Please try again";
 export const EMAIL_ERROR = "Please enter a valid email address";
@@ -17,6 +18,38 @@ export const DESIGNATIONS = {
   COMPUTER: "Computer Engineering",
   ELECTRICAL: "Electrical Engineering",
 };
+
+export const MINORS = [
+  "Advanced Manufacturing",
+  "Artificial Intelligence Engineering",
+  "Bioengineering",
+  "Biomedical Engineering",
+  "Engineering Business",
+  "Environmental Engineering",
+  "Global Leadership",
+  "Music Performance",
+  "Nanoengineering",
+  "Robotics & Mechatronics",
+  "Sustainable Energy",
+];
+
+export const CERTIFICATES = [
+  "Artificial Intelligence Engineering",
+  "Communication",
+  "Electric Vehicle Design",
+  "Engineering Business",
+  "Engineering Leadership",
+  "Entrepreneurship, Innovation and Small Business",
+  "Forensic Engineering",
+  "Global Engineering",
+  "Justice, Equity, Diversity and Inclusion in Engineering",
+  "Mineral Resources",
+  "Music Technology",
+  "Nuclear Engineering",
+  "Public Health & Engineering",
+  "Public Policy and Engineering",
+  "Renewable Resources Engineering",
+];
 
 // Source: https://www.bitglint.com/academic-interests-list/
 // Generic interests are at the top of the list
