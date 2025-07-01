@@ -11,6 +11,9 @@ const CreateAccount = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pfpUrl, setPfpUrl] = useState("");
+  const [eceAreas, setEceAreas] = useState([]);
+  const [interests, setInterests] = useState([]);
+  const [skills, setSkills] = useState([]);
   const progressBarItems = [
     "Personal",
     "Profile Picture",
@@ -44,7 +47,18 @@ const CreateAccount = () => {
           />
         );
       case 3:
-        return <CreateAccountStepThree />;
+        return (
+          <CreateAccountStepThree
+            setCurrentStep={setCurrentStep}
+            currentStep={currentStep}
+            eceAreas={eceAreas}
+            setEceAreas={setEceAreas}
+            interests={interests}
+            setInterests={setInterests}
+            skills={skills}
+            setSkills={setSkills}
+          />
+        );
       case 4:
         return <CreateAccountStepFour />;
       case 5:

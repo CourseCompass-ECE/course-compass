@@ -6,13 +6,24 @@ const CreateAccountStepTwo = (props) => {
   const PFP_ALT = "User's profile picture";
   const PFP_PLACEHOLDER_URL = "/placeholderPfp.png";
   const PFP_ERROR = "Please add a profile picture";
+  const IMAGE_PNG = "image/png";
+  const IMAGE_JPG = "image/jpeg";
 
   const handleAddPfp = () => {
     const imageFiles = document.getElementById("create-account-pfp-file").files;
-    if (imageFiles.length > 0) {
-      props.setPfpUrl(URL.createObjectURL(imageFiles[0]));
-    } else {
-      props.setPfpUrl("");
+    if (
+      imageFiles.length > 0 &&
+      (imageFiles[0].type === IMAGE_JPG || imageFiles[0].type === IMAGE_PNG)
+    ) {
+      const reader = new FileReader();
+      reader.readAsDataURL(imageFiles[0]);
+      reader.addEventListener(
+        "load",
+        () => {
+          props.setPfpUrl(reader.result);
+        },
+        false
+      );
     }
   };
 
@@ -47,10 +58,12 @@ const CreateAccountStepTwo = (props) => {
           type="file"
           id="create-account-pfp-file"
           className="create-account-pfp-file"
-          accept="image/png, image/jpeg"
+          accept={`${IMAGE_PNG}, ${IMAGE_JPG}`}
           onChange={handleAddPfp}
         />
-        <span className="text-input-error create-account-pfp-error">{pfpError}</span>
+        <span className="text-input-error create-account-pfp-error">
+          {pfpError}
+        </span>
       </div>
 
       <div className="text-input-container create-account-btn">

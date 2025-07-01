@@ -422,3 +422,12 @@ footer {
 .error-page-link:hover {
   color: var(--background-dark);
 }
+
+.dropdown-container {
+  margin-bottom: 30px;
+}
+
+.dropdown-input {
+  margin-bottom: 15px;
+  cursor: pointer;
+}
