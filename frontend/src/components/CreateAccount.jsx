@@ -6,7 +6,7 @@ import CreateAccountStepFour from "./createAccountSteps/CreateAccountStepFour";
 import CreateAccountStepFive from "./createAccountSteps/CreateAccountStepFive";
 
 const CreateAccount = () => {
-  const [currentStep, setCurrentStep] = useState(5);
+  const [currentStep, setCurrentStep] = useState(1);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

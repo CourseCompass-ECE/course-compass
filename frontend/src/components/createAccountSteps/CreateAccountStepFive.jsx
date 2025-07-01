@@ -100,7 +100,7 @@ const CreateAccountStepFive = (props) => {
 
       <div className="text-input-container create-account-btn">
         <button type="submit" className="form-btn">
-          Continue
+          Create Account
         </button>
         <span className="text-input-error submission-error create-account-submission-error">
           {submissionError}

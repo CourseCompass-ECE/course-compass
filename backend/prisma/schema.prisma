@@ -95,4 +95,6 @@ model MinorCertificate {
   users User[]
   title String
   minorOrCertificate MinorOrCertificate
+
+  @@unique([title, minorOrCertificate])
 }

@@ -6,9 +6,10 @@
     "dev": "node --watch index.js",
     "start": "node index.js",
     "build": "npm install && npm run db:init",
+    "db:seed": "node prisma/seed",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset --force",
-    "db:init": "npm run db:reset && npm run db:migrate",
+    "db:init": "npm run db:reset && npm run db:migrate && npm run db:seed",
     "psql": "psql coursecompass -U coursecompassuser"
   },
   "keywords": [],
@@ -22,6 +23,7 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
+    "firebase": "^11.10.0",
     "helmet": "^8.1.0",
     "morgan": "^1.10.0"
   },
