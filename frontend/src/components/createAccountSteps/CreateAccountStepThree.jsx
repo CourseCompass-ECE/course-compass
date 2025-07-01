@@ -1,11 +1,20 @@
 import DropdownItems from "../DropdownItems";
 import { ECE_AREAS, SKILLS, INTERESTS } from "../../utils/constants";
+import { useState } from "react";
 
 const CreateAccountStepThree = (props) => {
+  const [eceAreasError, setEceAreasError] = useState("");
+  const [interestsError, setInterestsError] = useState("");
+  const [skillsError, setSkillsError] = useState("");
+
   const STEP_TITLE = "Share Your Interests + Current Skills";
   const ECE_AREAS_TEXT = "ECE Areas (minimum of 2)";
   const INTERESTS_TEXT = "Interests (minimum of 5)";
   const SKILLS_TEXT = "Skills (minimum of 5)";
+  const ERROR_MESSAGE_MARGIN_TOP = "79px";
+  const ECE_AREAS_ERROR_MESSAGE = "Please add a minimum of 2 ECE areas";
+  const INTERESTS_ERROR_MESSAGE = "Please add a minimum of 5 interests";
+  const SKILLS_ERROR_MESSAGE = "Please add a minimum of 5 skills";
 
   const handleRemoveEceArea = (eceAreaKey) => {
     props.setEceAreas(props.eceAreas.filter((area) => area !== eceAreaKey));
@@ -18,13 +27,26 @@ const CreateAccountStepThree = (props) => {
   };
 
   const handleRemoveSkill = (skillToRemove) => {
-    props.setSkills(
-      props.skills.filter((skill) => skill !== skillToRemove)
-    );
+    props.setSkills(props.skills.filter((skill) => skill !== skillToRemove));
   };
 
   const submitStepThree = (event) => {
     event.preventDefault();
+    setEceAreasError("");
+    setInterestsError("");
+    setSkillsError("");
+
+    if (props.eceAreas.length < 2) {
+      setEceAreasError(ECE_AREAS_ERROR_MESSAGE);
+      return;
+    } else if (props.interests.length < 5) {
+      setInterestsError(INTERESTS_ERROR_MESSAGE);
+      return;
+    } else if (props.skills.length < 5) {
+      setSkillsError(SKILLS_ERROR_MESSAGE);
+      return;
+    }
+
     props.setCurrentStep(props.currentStep + 1);
   };
 
@@ -60,6 +82,17 @@ const CreateAccountStepThree = (props) => {
           removeItem={handleRemoveEceArea}
           isEceAreaDropdown={true}
         />
+
+        <span
+          className="text-input-error"
+          style={
+            props.eceAreas.length > 0
+              ? { marginTop: ERROR_MESSAGE_MARGIN_TOP }
+              : {}
+          }
+        >
+          {eceAreasError}
+        </span>
       </div>
 
       <div className="text-input-container dropdown-container">
@@ -88,6 +121,17 @@ const CreateAccountStepThree = (props) => {
           removeItem={handleRemoveInterest}
           isEceAreaDropdown={false}
         />
+
+        <span
+          className="text-input-error"
+          style={
+            props.interests.length > 0
+              ? { marginTop: ERROR_MESSAGE_MARGIN_TOP }
+              : {}
+          }
+        >
+          {interestsError}
+        </span>
       </div>
 
       <div className="text-input-container dropdown-container">
@@ -101,13 +145,13 @@ const CreateAccountStepThree = (props) => {
           <option value="" disabled>
             {SKILLS_TEXT}
           </option>
-          {SKILLS.filter(
-            (skill) => !props.skills.includes(skill)
-          ).map((skill, index) => (
-            <option key={index} value={skill}>
-              {skill}
-            </option>
-          ))}
+          {SKILLS.filter((skill) => !props.skills.includes(skill)).map(
+            (skill, index) => (
+              <option key={index} value={skill}>
+                {skill}
+              </option>
+            )
+          )}
         </select>
 
         <DropdownItems
@@ -116,6 +160,17 @@ const CreateAccountStepThree = (props) => {
           removeItem={handleRemoveSkill}
           isEceAreaDropdown={false}
         />
+
+        <span
+          className="text-input-error"
+          style={
+            props.skills.length > 0
+              ? { marginTop: ERROR_MESSAGE_MARGIN_TOP }
+              : {}
+          }
+        >
+          {skillsError}
+        </span>
       </div>
 
       <div className="text-input-container create-account-btn">
