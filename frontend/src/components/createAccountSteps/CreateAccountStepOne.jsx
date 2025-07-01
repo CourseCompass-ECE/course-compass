@@ -24,6 +24,9 @@ const CreateAccountStepOne = (props) => {
   const STEP_TITLE = "Let's Get Started";
   const FULL_NAME_ERROR = "Please enter your full name";
   const PASSWORD_ERROR = "Please enter a valid password";
+  const FULL_NAME = "Full Name";
+  const EMAIL = "Email";
+  const PASSWORD = "Password";
 
   const passwordRequirements = [
     "At least 8 characters",
@@ -82,7 +85,7 @@ const CreateAccountStepOne = (props) => {
         <input
           type="text"
           className="text-input"
-          placeholder="Full Name"
+          placeholder={FULL_NAME}
           value={props.fullName}
           maxLength={100}
           onChange={(event) => props.setFullName(event.target.value)}
@@ -94,7 +97,7 @@ const CreateAccountStepOne = (props) => {
         <input
           type="text"
           className="text-input"
-          placeholder="Email"
+          placeholder={EMAIL}
           value={props.email}
           maxLength={254}
           onChange={(event) => props.setEmail(event.target.value)}
@@ -132,7 +135,7 @@ const CreateAccountStepOne = (props) => {
           <input
             type={isPasswordVisible ? "text" : "password"}
             className="text-input"
-            placeholder="Password"
+            placeholder={PASSWORD}
             value={props.password}
             maxLength={30}
             onChange={(event) => handlePasswordChange(event.target.value)}

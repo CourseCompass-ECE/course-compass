@@ -6,7 +6,7 @@ import CreateAccountStepFour from "./createAccountSteps/CreateAccountStepFour";
 import CreateAccountStepFive from "./createAccountSteps/CreateAccountStepFive";
 
 const CreateAccount = () => {
-  const [currentStep, setCurrentStep] = useState(4);
+  const [currentStep, setCurrentStep] = useState(5);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -81,6 +81,13 @@ const CreateAccount = () => {
             fullName={fullName}
             email={email}
             password={password}
+            pfpUrl={pfpUrl}
+            eceAreas={eceAreas}
+            interests={interests}
+            skills={skills}
+            desiredDesignation={desiredDesignation}
+            desiredMinors={desiredMinors}
+            desiredCertificates={desiredCertificates}
           />
         );
       default:
