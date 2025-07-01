@@ -14,6 +14,9 @@ const CreateAccount = () => {
   const [eceAreas, setEceAreas] = useState([]);
   const [interests, setInterests] = useState([]);
   const [skills, setSkills] = useState([]);
+  const [desiredDesignation, setDesiredDesignation] = useState("");
+  const [desiredMinors, setDesiredMinors] = useState([]);
+  const [desiredCertificates, setDesiredCertificates] = useState([]);
   const progressBarItems = [
     "Personal",
     "Profile Picture",
@@ -60,7 +63,18 @@ const CreateAccount = () => {
           />
         );
       case 4:
-        return <CreateAccountStepFour />;
+        return (
+          <CreateAccountStepFour
+            setCurrentStep={setCurrentStep}
+            currentStep={currentStep}
+            desiredDesignation={desiredDesignation}
+            setDesiredDesignation={setDesiredDesignation}
+            desiredMinors={desiredMinors}
+            setDesiredMinors={setDesiredMinors}
+            desiredCertificates={desiredCertificates}
+            setDesiredCertificates={setDesiredCertificates}
+          />
+        );
       case 5:
         return (
           <CreateAccountStepFive

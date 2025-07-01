@@ -432,6 +432,10 @@ footer {
   cursor: pointer;
 }
 
+.dropdown-without-items-list {
+  cursor: pointer;
+}
+
 .dropdown-items-container {
   display: flex;
   gap: 10px;
