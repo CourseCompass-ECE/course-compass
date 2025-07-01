@@ -6,7 +6,7 @@ import CreateAccountStepFour from "./createAccountSteps/CreateAccountStepFour";
 import CreateAccountStepFive from "./createAccountSteps/CreateAccountStepFive";
 
 const CreateAccount = () => {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(5);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,6 +14,9 @@ const CreateAccount = () => {
   const [eceAreas, setEceAreas] = useState([]);
   const [interests, setInterests] = useState([]);
   const [skills, setSkills] = useState([]);
+  const [desiredDesignation, setDesiredDesignation] = useState("");
+  const [desiredMinors, setDesiredMinors] = useState([]);
+  const [desiredCertificates, setDesiredCertificates] = useState([]);
   const progressBarItems = [
     "Personal",
     "Profile Picture",
@@ -60,13 +63,31 @@ const CreateAccount = () => {
           />
         );
       case 4:
-        return <CreateAccountStepFour />;
+        return (
+          <CreateAccountStepFour
+            setCurrentStep={setCurrentStep}
+            currentStep={currentStep}
+            desiredDesignation={desiredDesignation}
+            setDesiredDesignation={setDesiredDesignation}
+            desiredMinors={desiredMinors}
+            setDesiredMinors={setDesiredMinors}
+            desiredCertificates={desiredCertificates}
+            setDesiredCertificates={setDesiredCertificates}
+          />
+        );
       case 5:
         return (
           <CreateAccountStepFive
             fullName={fullName}
             email={email}
             password={password}
+            pfpUrl={pfpUrl}
+            eceAreas={eceAreas}
+            interests={interests}
+            skills={skills}
+            desiredDesignation={desiredDesignation}
+            desiredMinors={desiredMinors}
+            desiredCertificates={desiredCertificates}
           />
         );
       default:

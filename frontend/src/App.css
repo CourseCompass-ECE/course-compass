@@ -142,6 +142,20 @@ footer {
   margin: 10vh 0 2vh 0;
 }
 
+.create-account-step-five-title {
+  margin-bottom: 0vh;
+}
+
+.create-account-form-subtitle {
+  font-size: var(--subheader-size);
+  font-family: var(--header-font);
+  color: var(--main-color);
+  font-weight: normal;
+  margin-bottom: 5vh;
+  max-width: 80vw;
+  text-align: center;
+}
+
 .login-password-container,
 .create-account-password-container {
   position: relative;
@@ -226,6 +240,11 @@ footer {
   margin: 63px 0 0 0;
   width: 225px;
   text-align: center;
+}
+
+.create-account-submission-error {
+  width: 325px;
+  margin-left: -50px;
 }
 
 .form-btn {
@@ -429,6 +448,10 @@ footer {
 
 .dropdown-input {
   margin-bottom: 15px;
+  cursor: pointer;
+}
+
+.dropdown-without-items-list {
   cursor: pointer;
 }
 

@@ -1,5 +1,5 @@
 import DropdownItems from "../DropdownItems";
-import { ECE_AREAS, SKILLS, INTERESTS } from "../../utils/constants";
+import { ECE_AREAS, SKILLS, INTERESTS, ERROR_MESSAGE_MARGIN_TOP } from "../../utils/constants";
 import { useState } from "react";
 
 const CreateAccountStepThree = (props) => {
@@ -11,7 +11,6 @@ const CreateAccountStepThree = (props) => {
   const ECE_AREAS_TEXT = "ECE Areas (minimum of 2)";
   const INTERESTS_TEXT = "Interests (minimum of 5)";
   const SKILLS_TEXT = "Skills (minimum of 5)";
-  const ERROR_MESSAGE_MARGIN_TOP = "79px";
   const ECE_AREAS_ERROR_MESSAGE = "Please add a minimum of 2 ECE areas";
   const INTERESTS_ERROR_MESSAGE = "Please add a minimum of 5 interests";
   const SKILLS_ERROR_MESSAGE = "Please add a minimum of 5 skills";

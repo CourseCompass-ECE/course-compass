@@ -37,7 +37,7 @@ model User {
   eceAreas Area[]
   desiredDesignation Designation
   desiredMinorsCertificates MinorCertificate[]
-  learningGoal String
+  learningGoal String[]
   timetables Timetable[]
   shoppingCart Course[] @relation("ShoppingCart")
   favorites Course[] @relation("Favorites")
