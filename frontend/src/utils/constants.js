@@ -6,6 +6,26 @@ export const DUPLICATE_EMAIL_ERROR = "Email is already in use";
 export const INVALID_LOGIN_ERROR = "Invalid login details. Please try again";
 export const EMAIL_ERROR = "Please enter a valid email address";
 export const LOGGED_IN = "Logged In";
+export const ALL_EMAIL_TOPICS = "All Email Topics";
+export const EMAIL_TOPICS = [
+  ALL_EMAIL_TOPICS,
+  "Course Selection Advice",
+  "Course Availability",
+  "Course Information",
+  "Course Registration Inquiry",
+  "Course Requirements",
+  "Degree Requirements",
+  "Designation Inquiry",
+  "Minors/Certificates Inquiry",
+  "Electives Inquiry",
+  "Humanities Inquiry",
+  "Timetable Conflicts",
+  "Timetable Inquiry",
+  "Waitlist Inquiry",
+  "Course Drop Inquiry",
+  "Other",
+];
+
 export const ECE_AREAS = {
   PHOTONICS_SEMICONDUCTOR: "Photonics & Semiconductor Physics",
   ENERGY_ELECTROMAGNETICS: "Electromagnetics & Energy Systems",

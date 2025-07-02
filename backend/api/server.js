@@ -110,7 +110,7 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
   try {
     if (
       !fullNameValid(newUser?.fullName) ||
-      !emailValid(newUser?.email) ||
+      !emailValid(newUser?.email.trim()) ||
       !passwordValid(newUser?.password) ||
       !newUser?.pfpUrl ||
       !arrayValid(newUser?.interests, SKILLS_INTERESTS_MIN_LENGTH) ||
@@ -128,7 +128,7 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
     }
 
     const hash = await argon2.hash(newUser.password);
-    newUser = { ...newUser, password: hash };
+    newUser = { ...newUser, email: newUser?.email.trim(), password: hash };
 
     const created = await User.create(newUser);
     req.session.user = created;
