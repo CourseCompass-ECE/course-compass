@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Path } from "../../utils/enums";
+import {useNavigate} from "react-router-dom"
 import {
   GENERIC_ERROR,
   DUPLICATE_EMAIL_ERROR,
@@ -19,6 +20,7 @@ const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
 
 const CreateAccountStepFive = (props) => {
+  const navigate = useNavigate();
   const [learningGoalError, setLearningGoalError] = useState("");
   const [submissionError, setSubmissionError] = useState("");
 

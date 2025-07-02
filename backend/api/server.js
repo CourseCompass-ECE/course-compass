@@ -106,7 +106,6 @@ server.use("/", (req, res, next) => {
 
 server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
   let newUser = req.body;
-  console.log(newUser?.pfpUrl )
 
   try {
     if (
