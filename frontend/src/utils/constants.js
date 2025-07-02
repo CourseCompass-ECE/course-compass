@@ -6,8 +6,9 @@ export const DUPLICATE_EMAIL_ERROR = "Email is already in use";
 export const INVALID_LOGIN_ERROR = "Invalid login details. Please try again";
 export const EMAIL_ERROR = "Please enter a valid email address";
 export const LOGGED_IN = "Logged In";
+export const ALL_EMAIL_TOPICS = "All Email Topics";
 export const EMAIL_TOPICS = [
-  "All Email Topics",
+  ALL_EMAIL_TOPICS,
   "Course Selection Advice",
   "Course Availability",
   "Course Information",

@@ -493,6 +493,7 @@ footer {
   flex-direction: column;
   align-items: center;
   overflow: scroll;
+  height: 100%;
 }
 
 .page-title {
@@ -537,4 +538,40 @@ footer {
 .email-topic-dropdown {
   margin-bottom: 0px;
   cursor: pointer;
+}
+
+.create-email-form {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  margin-left: 5vw;
+  gap: 30px;
+}
+
+.create-email-section-spacing {
+  margin-bottom: 50px;
+}
+
+.create-email-section-spacing-top {
+  margin-top: 50px;
+}
+
+.add-email-address-btn {
+  width: 250px;
+  font-size: var(--large-text-size);
+  margin: 0;
+}
+
+.create-email-body {
+  background-color: transparent;
+  width: 40vw;
+  max-width: 40vw;
+  min-width: 40vw;
+  min-height: 25px;
+}
+
+.create-email-btn {
+  width: 100vw;
+  margin: 0 0 5vh -5vw;
+  align-items: center;
 }

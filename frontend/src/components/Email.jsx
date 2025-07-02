@@ -1,17 +1,22 @@
 import { useState } from "react";
-import { EMAIL_TOPICS } from "../utils/constants";
+import { EMAIL_TOPICS, ALL_EMAIL_TOPICS } from "../utils/constants";
+import { useNavigate } from "react-router-dom";
+import { Path } from "../utils/enums";
 
 const Email = () => {
-  const [selectedTopic, setSelectedTopic] = useState("All Email Topics");
+  const navigate = useNavigate();
+  const [selectedTopic, setSelectedTopic] = useState(ALL_EMAIL_TOPICS);
   const TITLE = "Email";
   const BUTTON_TEXT = "Create Email";
   const SENT_EMAILS = "Sent Emails";
-  const EMAIL_TOPIC = "Email Topic";
 
   return (
     <div className="page-container">
       <h1 className="page-title">{TITLE}</h1>
-      <button className="create-btn">
+      <button
+        className="create-btn"
+        onClick={() => navigate(Path.CREATE_EMAIL)}
+      >
         <span className="material-symbols-outlined">add_2</span>
         {BUTTON_TEXT}
       </button>
