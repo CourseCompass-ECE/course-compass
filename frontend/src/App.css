@@ -185,13 +185,15 @@ footer {
   border: none;
 }
 
-.create-account-back-icon, .email-remove {
+.create-account-back-icon,
+.email-remove {
   font-size: var(--subtitle-size);
   color: var(--main-color);
   cursor: pointer;
 }
 
-.create-account-back-icon:hover, .email-remove:hover {
+.create-account-back-icon:hover,
+.email-remove:hover {
   color: var(--dark-gray);
 }
 
@@ -582,7 +584,7 @@ footer {
 
 .disable-add-email {
   background-color: var(--background-light);
-  cursor:default;
+  cursor: default;
 }
 
 .disable-add-email:hover {
@@ -601,7 +603,7 @@ footer {
 .email-list-btn {
   height: 35px;
   width: 80px;
-  font-size: var(--large-text-size)
+  font-size: var(--large-text-size);
 }
 
 .email-list-btn-selected {
@@ -609,7 +611,7 @@ footer {
 }
 
 .email-remove {
-  font-size: var(--header-size)
+  font-size: var(--header-size);
 }
 
 .dropdown-input-error {
@@ -626,4 +628,67 @@ footer {
   color: var(--error-red);
   font-weight: 600;
   margin-top: 5px;
+}
+
+.fetch-emails-error {
+  position: relative;
+  align-self: flex-start;
+  margin-left: 5vw;
+}
+
+.sent-emails-container {
+  width: 100vw;
+  height: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  gap: 20px;
+}
+
+.sent-email-container {
+  width: 28vw;
+  height: 35vh;
+  border: 2px solid var(--light-gray);
+  background-color: var(--background-mixed);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.no-emails-message {
+  align-self: flex-start;
+  margin-left: 5vw;
+  font-size: var(--subheader-size);
+  font-weight: normal;
+  font-family: var(--header-font);
+}
+
+.email-title {
+  margin: 5px 0 20px 0;
+  font-family: var(--header-font);
+  font-weight: normal;
+  font-size: var(--subheader-size);
+  overflow: scroll;
+  white-space: nowrap;
+}
+
+.email-header {
+  margin: 10px 0 10px 0;
+  font-family: var(--header-font);
+  font-weight: normal;
+  font-size: var(--large-text-size);
+  overflow: scroll;
+  white-space: nowrap;
+}
+
+.email-body {
+  font-size: var(--small-text-size);
+  height: 20%;
+  white-space: wrap;
+}
+
+.create-btn-height {
+  height: 45px;
+  align-self: flex-start;
 }

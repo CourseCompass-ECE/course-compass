@@ -25,6 +25,7 @@ const MinorCertificate = require("./minorcertificate-model");
 const Timetable = require("./timetable-model");
 const TimetableCourse = require("./timetablecourse-model");
 const User = require("./user-model");
+const Email = require("./email-model")
 const sendGrid = require("@sendgrid/mail");
 sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
@@ -178,6 +179,7 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
   const emailData = req.body;
   const userEmail = req.session?.user?.email;
   const userFullName = req.session?.user?.fullName;
+  const userId = Number(req.session?.user?.id);
 
   try {
     const emails = emailData.emails.map((email) => {
@@ -191,6 +193,14 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
       (emailAddress, index) => emailAddresses.indexOf(emailAddress) !== index
     );
 
+    const toEmails = emails
+      .filter((email) => email.toOrCC === TO)
+      .map((email) => email.emailAddress);
+
+    const ccEmails = emails
+      .filter((email) => email.toOrCC === CC)
+      .map((email) => email.emailAddress);
+
     if (
       !emailData.topic ||
       !newSubjectLine ||
@@ -199,18 +209,11 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
       duplicateAddresses.length > 0 ||
       !newBody ||
       !userEmail ||
-      !userFullName
+      !userFullName ||
+      !userId || toEmails.length === 0
     ) {
       throw new Error(INVALID_EMAIL_DETAILS_ERROR);
     }
-
-    const toEmails = emails
-      .filter((email) => email.toOrCC === TO)
-      .map((email) => email.emailAddress);
-
-    const ccEmails = emails
-      .filter((email) => email.toOrCC === CC)
-      .map((email) => email.emailAddress);
 
     const email = {
       to: toEmails,
@@ -229,7 +232,26 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
 
     await sendGrid.send(email);
 
+    const newEmail = {
+      to: toEmails,
+      cc: ccEmails,
+      body: newBody,
+      subjectLine: newSubjectLine,
+      topic: emailData.topic
+    }
+    await Email.create(newEmail, userId);
+
     res.status(201).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.get(Path.EMAIL, async (req, res, next) => {
+  try {
+    const userId = Number(req.session?.user?.id)
+    const emails = await User.findUserEmailsById(userId);
+    res.status(200).json({ emails });
   } catch (err) {
     next(err);
   }

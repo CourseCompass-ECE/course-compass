@@ -3,7 +3,8 @@ import { Path } from "../utils/enums";
 import {
   EMAIL_TOPICS,
   ALL_EMAIL_TOPICS,
-  GENERIC_ERROR, TO
+  GENERIC_ERROR,
+  TO,
 } from "../utils/constants";
 import { EMAIL_REGEX } from "../utils/regex";
 import { useNavigate } from "react-router-dom";
@@ -36,6 +37,7 @@ const CreateEmail = () => {
   const NO_EMAILS_ERROR_MESSAGE = "Please provide at least one email address";
   const INVALID_EMAIL_ERROR_MESSAGE = "At least one email provided is invalid";
   const DUPLICATE_EMAILS_ERROR_MESSAGE = "Duplicate emails have been provided";
+  const NO_TO_EMAILS_ERROR_MESSAGE = `At least one email must be marked as "${TO}"`;
   const BODY_ERROR_MESSAGE = "Please provide a body";
 
   const addNewEmailAddress = () => {
@@ -83,6 +85,9 @@ const CreateEmail = () => {
     } else if (duplicateAddresses.length > 0) {
       setEmailsError(DUPLICATE_EMAILS_ERROR_MESSAGE);
       return;
+    } else if (!newEmails.some((email) => email.toOrCC === TO)) {
+      setEmailsError(NO_TO_EMAILS_ERROR_MESSAGE);
+      return;
     } else if (!newBody) {
       setBodyError(BODY_ERROR_MESSAGE);
       return;
@@ -116,7 +121,6 @@ const CreateEmail = () => {
     } catch (error) {
       setSubmissionError(GENERIC_ERROR);
     }
-
   };
 
   return (
