@@ -611,3 +611,19 @@ footer {
 .email-remove {
   font-size: var(--header-size)
 }
+
+.dropdown-input-error {
+  position: relative;
+  margin-top: -26px;
+}
+
+.email-input {
+  background-color: transparent;
+}
+
+.create-email-submission-error {
+  font-size: var(--small-text-size);
+  color: var(--error-red);
+  font-weight: 600;
+  margin-top: 5px;
+}

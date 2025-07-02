@@ -31,7 +31,7 @@ const CreateEmailList = (props) => {
           <div className="text-input-container">
             <input
               type="text"
-              className="text-input"
+              className="text-input email-input"
               placeholder={EMAIL_ADDRESS_PLACEHOLDER}
               value={email.emailAddress}
               maxLength={125}

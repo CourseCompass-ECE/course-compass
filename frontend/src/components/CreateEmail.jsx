@@ -1,15 +1,26 @@
 import { useState } from "react";
 import { Path } from "../utils/enums";
-import { EMAIL_TOPICS, ALL_EMAIL_TOPICS } from "../utils/constants";
-import {useNavigate} from "react-router-dom";
+import {
+  EMAIL_TOPICS,
+  ALL_EMAIL_TOPICS,
+  GENERIC_ERROR,
+} from "../utils/constants";
+import { EMAIL_REGEX } from "../utils/regex";
+import { useNavigate } from "react-router-dom";
 import CreateEmailList from "./createEmailList/CreateEmailList";
 
 const CreateEmail = () => {
   const navigate = useNavigate();
   const [emailTopic, setEmailTopic] = useState("");
+  const [emailTopicError, setEmailTopicError] = useState("");
   const [subjectLine, setSubjectLine] = useState("");
+  const [subjectLineError, setSubjectLineError] = useState("");
   const [emails, setEmails] = useState([]);
+  // According to Outlook & Gmail, can send an email with at least 1 "To" recipient or 1 "CC" recipient
+  const [emailsError, setEmailsError] = useState("");
   const [body, setBody] = useState("");
+  const [bodyError, setBodyError] = useState("");
+  const [submissionError, setSubmissionError] = useState("");
   const TITLE = "Create Email";
   const EMAIL_TOPIC = "Email Topic";
   const EMAIL_TOPIC_PLACEHOLDER = "Select an email topic";
@@ -20,6 +31,13 @@ const CreateEmail = () => {
   const TO = "To";
   const BODY = "Body";
   const BODY_PLACEHOLDER = "Enter email body";
+  const SEND_EMAIL = "Send Email";
+  const EMAIL_TOPIC_ERROR_MESSAGE = "Please select an email topic";
+  const SUBJECT_LINE_ERROR_MESSAGE = "Please provide a subject line";
+  const NO_EMAILS_ERROR_MESSAGE = "Please provide at least one email address";
+  const INVALID_EMAIL_ERROR_MESSAGE = "At least one email provided is invalid";
+  const DUPLICATE_EMAILS_ERROR_MESSAGE = "Duplicate emails have been provided";
+  const BODY_ERROR_MESSAGE = "Please provide a body";
 
   const addNewEmailAddress = () => {
     setEmails([
@@ -29,6 +47,47 @@ const CreateEmail = () => {
         toOrCC: TO,
       },
     ]);
+  };
+
+  const submitEmail = async (event) => {
+    event.preventDefault();
+    setEmailTopicError("");
+    setSubjectLineError("");
+    setEmailsError("");
+    setBodyError("");
+
+    const newEmails = emails.map((email) => {
+      return { ...email, emailAddress: email.emailAddress.trim() };
+    });
+    const newSubjectLine = subjectLine.trim();
+    const newBody = body.trim();
+
+    const emailAddresses = newEmails.map((email) => email.emailAddress);
+    const duplicateAddresses = emailAddresses.filter(
+      (emailAddress, index) => emailAddresses.indexOf(emailAddress) !== index
+    );
+
+    if (!emailTopic) {
+      setEmailTopicError(EMAIL_TOPIC_ERROR_MESSAGE);
+      return;
+    } else if (!newSubjectLine) {
+      setSubjectLineError(SUBJECT_LINE_ERROR_MESSAGE);
+      return;
+    } else if (newEmails.length === 0) {
+      setEmailsError(NO_EMAILS_ERROR_MESSAGE);
+      return;
+    } else if (
+      newEmails.some((email) => !EMAIL_REGEX.test(email.emailAddress))
+    ) {
+      setEmailsError(INVALID_EMAIL_ERROR_MESSAGE);
+      return;
+    } else if (duplicateAddresses.length > 0) {
+      setEmailsError(DUPLICATE_EMAILS_ERROR_MESSAGE);
+      return;
+    } else if (!newBody) {
+      setBodyError(BODY_ERROR_MESSAGE);
+      return;
+    }
   };
 
   return (
@@ -42,14 +101,17 @@ const CreateEmail = () => {
         </span>
       </button>
       <h1 className="page-title">{TITLE}</h1>
-      <form className="create-email-form">
+      <form
+        className="create-email-form"
+        onSubmit={(event) => submitEmail(event)}
+      >
         <label htmlFor="email-topic" className="page-big-header">
           {EMAIL_TOPIC}
         </label>
         <select
           id="email-topic"
           value={emailTopic}
-          className="text-input email-topic-dropdown create-email-section-spacing"
+          className="text-input email-topic-dropdown"
           onChange={(event) => setEmailTopic(event.target.value)}
         >
           <option value="" disabled>
@@ -63,6 +125,9 @@ const CreateEmail = () => {
             )
           )}
         </select>
+        <div className="create-email-section-spacing text-input-error dropdown-input-error">
+          {emailTopicError}
+        </div>
 
         <label htmlFor="subject-line" className="page-big-header">
           {SUBJECT_LINE}
@@ -71,44 +136,55 @@ const CreateEmail = () => {
           <input
             id="subject-line"
             type="text"
-            className="text-input create-email-section-spacing"
+            className="text-input"
             placeholder={SUBJECT_LINE_PLACEHOLDER}
             value={subjectLine}
             maxLength={125}
             onChange={(event) => setSubjectLine(event.target.value)}
           />
+          <div className="create-email-section-spacing text-input-error dropdown-input-error">
+            {subjectLineError}
+          </div>
         </div>
 
         <label className="page-big-header">{TO_CC}</label>
         <div
-          className={`create-btn add-email-address-btn ${emails.length < 20 ? "" : "disable-add-email"}`}
-          onClick={() => emails.length < 20 ? addNewEmailAddress() : null}
+          className={`create-btn add-email-address-btn ${
+            emails.length < 20 ? "" : "disable-add-email"
+          }`}
+          onClick={() => (emails.length < 20 ? addNewEmailAddress() : null)}
         >
           <span className="material-symbols-outlined">add_2</span>
           {ADD_EMAIL_ADDRESS}
         </div>
-        <CreateEmailList emails={emails} setEmails={setEmails}/>
+        <CreateEmailList emails={emails} setEmails={setEmails} />
+        <div className="create-email-section-spacing text-input-error dropdown-input-error">
+          {emailsError}
+        </div>
 
-        <label
-          htmlFor="body"
-          className="page-big-header create-email-section-spacing-top"
-        >
+        <label htmlFor="body" className="page-big-header">
           {BODY}
         </label>
         <div className="text-input-container">
           <textarea
             id="body"
-            className="text-input create-email-section-spacing create-email-body"
+            className="text-input create-email-body"
             placeholder={BODY_PLACEHOLDER}
             value={body}
             onChange={(event) => setBody(event.target.value)}
           />
+          <div className="create-email-section-spacing text-input-error dropdown-input-error">
+            {bodyError}
+          </div>
         </div>
 
         <div className="text-input-container create-email-btn">
           <button type="submit" className="form-btn">
-            Continue
+            {SEND_EMAIL}
           </button>
+          <span className="create-email-submission-error">
+            {submissionError}
+          </span>
         </div>
       </form>
     </div>

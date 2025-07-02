@@ -58,7 +58,7 @@ const CreateAccountStepOne = (props) => {
     if (props.fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length < 2) {
       setFullNameError(FULL_NAME_ERROR);
       return;
-    } else if (!EMAIL_REGEX.test(props.email)) {
+    } else if (!EMAIL_REGEX.test(props.email.trim())) {
       setEmailError(EMAIL_ERROR);
       return;
     } else if (Object.values(passwordRequirementsMet).includes(false)) {
