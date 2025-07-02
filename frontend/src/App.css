@@ -259,7 +259,8 @@ footer {
   cursor: pointer;
 }
 
-.form-btn:hover {
+.form-btn:hover,
+.create-btn:hover {
   border-width: 2px;
   background-color: var(--background-darker);
 }
@@ -485,4 +486,55 @@ footer {
 
 .dropdown-item-x:hover {
   color: var(--dark-gray);
+}
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: scroll;
+}
+
+.page-title {
+  margin: 0;
+  padding: 3vh 0 3vh 0;
+  font-family: var(--header-font);
+  font-weight: normal;
+  font-size: var(--subtitle-size);
+}
+
+.page-big-header {
+  font-family: var(--subtitle-font);
+  font-size: var(--header-size);
+  font-weight: normal;
+}
+
+.create-btn {
+  align-self: flex-start;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 200px;
+  height: 45px;
+  margin-left: 5vw;
+  border-radius: 20px;
+  font-size: var(--subheader-size);
+  font-family: var(--header-font);
+  background-color: var(--background-mixed);
+  border: 1px solid var(--gray);
+  cursor: pointer;
+}
+
+.email-sent-filter-container {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  margin: 30px 0 0 5vw;
+  gap: 100px;
+}
+
+.email-topic-dropdown {
+  margin-bottom: 0px;
+  cursor: pointer;
 }
