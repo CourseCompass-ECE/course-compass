@@ -20,7 +20,8 @@ const CreateAccountStepTwo = (props) => {
       reader.addEventListener(
         "load",
         () => {
-          props.setPfpUrl(reader.result);
+          props.setPfpPreview(reader.result);
+          props.setPfp(imageFiles[0]);
         },
         false
       );
@@ -29,7 +30,7 @@ const CreateAccountStepTwo = (props) => {
 
   const submitStepTwo = (event) => {
     event.preventDefault();
-    if (props.pfpUrl) {
+    if (props.pfp) {
       props.setCurrentStep(props.currentStep + 1);
     } else {
       setPfpError(PFP_ERROR);
@@ -51,7 +52,7 @@ const CreateAccountStepTwo = (props) => {
         <img
           className="create-account-pfp-img"
           alt={PFP_ALT}
-          src={props.pfpUrl ? props.pfpUrl : PFP_PLACEHOLDER_URL}
+          src={props.pfpPreview ? props.pfpPreview : PFP_PLACEHOLDER_URL}
         />
         <span className="create-account-text">Click to Add</span>
         <input

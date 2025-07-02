@@ -9,9 +9,9 @@ const {
 const {
   DUPLICATE_EMAIL_ERROR,
   INVALID_LOGIN_ERROR,
-  LOGGED_IN
+  LOGGED_IN,
 } = require("../../frontend/src/utils/constants");
-const {Path} = require("../../frontend/src/utils/enums")
+const { Path } = require("../../frontend/src/utils/enums");
 
 const express = require("express");
 const helmet = require("helmet");
@@ -28,23 +28,34 @@ const User = require("./user-model");
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const SESSION_COOKIE_NAME = "sessionId";
 const NO_USER_FOUND = "No user found";
+const SKILLS_INTERESTS_MIN_LENGTH = 5;
+const MINORS_CERTIFICATES_MIN_LENGTH = 1;
+const ECE_AREAS_MIN_LENGTH = 2;
+const LEARNING_GOAL_MIN_LENGTH = 3;
 
 const fullNameValid = (fullName) => {
-  return fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length >= 2;
+  return (
+    fullName && fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length >= 2
+  );
 };
 
 const emailValid = (email) => {
-  return EMAIL_REGEX.test(email);
+  return email && EMAIL_REGEX.test(email);
 };
 
 const passwordValid = (password) => {
   return (
+    password &&
     password.length >= 8 &&
     UPPERCASE_LETTER.test(password) &&
     LOWERCASE_LETTER.test(password) &&
     NUMBER.test(password) &&
     !ALPHANUMERIC_REGEX.test(password)
   );
+};
+
+const arrayValid = (array, minLength) => {
+  return Array.isArray(array) && array.length >= minLength;
 };
 
 const server = express();
@@ -76,18 +87,21 @@ server.use(
 
 server.get(Path.CHECK_CREDENTIALS, async (req, res, next) => {
   if (req.session.user) {
-    res.status(200).json({message: LOGGED_IN})
+    res.status(200).json({ message: LOGGED_IN });
   } else {
-    next(new Error(NO_USER_FOUND))
+    next(new Error(NO_USER_FOUND));
   }
 });
 
 server.use("/", (req, res, next) => {
-  if ((req.path.includes("user") && !req.session.user) || (!req.path.includes("user") && req.session.user)) {
-    next({ status: 401, message: "Unauthorized" })
+  if (
+    (req.path.includes("user") && !req.session.user) ||
+    (!req.path.includes("user") && req.session.user)
+  ) {
+    next({ status: 401, message: "Unauthorized" });
   }
 
-  next('route');
+  next("route");
 });
 
 server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
@@ -95,18 +109,20 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
 
   try {
     if (
-      !newUser?.fullName ||
-      !newUser?.email ||
-      !newUser?.password ||
-      !newUser?.pfpUrl ||
-      !newUser?.interests ||
-      !newUser?.skills ||
-      !newUser?.eceAreas ||
-      !newUser?.desiredDesignation ||
-      !newUser?.learningGoal ||
       !fullNameValid(newUser?.fullName) ||
       !emailValid(newUser?.email) ||
-      !passwordValid(newUser?.password)
+      !passwordValid(newUser?.password) ||
+      !newUser?.pfpUrl ||
+      !arrayValid(newUser?.interests, SKILLS_INTERESTS_MIN_LENGTH) ||
+      !arrayValid(newUser?.skills, SKILLS_INTERESTS_MIN_LENGTH) ||
+      !arrayValid(newUser?.eceAreas, ECE_AREAS_MIN_LENGTH) ||
+      !newUser?.desiredDesignation ||
+      !arrayValid(newUser?.desiredMinors, MINORS_CERTIFICATES_MIN_LENGTH) ||
+      !arrayValid(
+        newUser?.desiredCertificates,
+        MINORS_CERTIFICATES_MIN_LENGTH
+      ) ||
+      !arrayValid(newUser?.learningGoal, LEARNING_GOAL_MIN_LENGTH)
     ) {
       throw new Error(INVALID_USER_DETAILS_ERROR);
     }
@@ -116,7 +132,7 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
 
     const created = await User.create(newUser);
     req.session.user = created;
-    res.status(201).json({ id: created.id });
+    res.status(201).end();
   } catch (err) {
     if (err?.code === "P2002") err.message = DUPLICATE_EMAIL_ERROR;
     next(err);

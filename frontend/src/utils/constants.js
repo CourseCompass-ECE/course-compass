@@ -18,6 +18,8 @@ export const DESIGNATIONS = {
   COMPUTER: "Computer Engineering",
   ELECTRICAL: "Electrical Engineering",
 };
+export const MINOR = "MINOR";
+export const CERTIFICATE = "CERTIFICATE";
 
 export const MINORS = [
   "Advanced Manufacturing",
