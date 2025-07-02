@@ -10,6 +10,8 @@ const {
   DUPLICATE_EMAIL_ERROR,
   INVALID_LOGIN_ERROR,
   LOGGED_IN,
+  TO,
+  CC,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -23,26 +25,28 @@ const MinorCertificate = require("./minorcertificate-model");
 const Timetable = require("./timetable-model");
 const TimetableCourse = require("./timetablecourse-model");
 const User = require("./user-model");
+const sendGrid = require("@sendgrid/mail");
+sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
+const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
 const SESSION_COOKIE_NAME = "sessionId";
 const NO_USER_FOUND = "No user found";
 const SKILLS_INTERESTS_MIN_LENGTH = 5;
 const MINORS_CERTIFICATES_MIN_LENGTH = 1;
 const ECE_AREAS_MIN_LENGTH = 2;
 const LEARNING_GOAL_MIN_LENGTH = 3;
+const COURSECOMPASS_EMAIL_SERVICE = "CourseCompass Email Service";
 
 const fullNameValid = (fullName) => {
   return (
     fullName && fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length >= 2
   );
 };
-
 const emailValid = (email) => {
   return email && EMAIL_REGEX.test(email);
 };
-
 const passwordValid = (password) => {
   return (
     password &&
@@ -53,7 +57,6 @@ const passwordValid = (password) => {
     !ALPHANUMERIC_REGEX.test(password)
   );
 };
-
 const arrayValid = (array, minLength) => {
   return Array.isArray(array) && array.length >= minLength;
 };
@@ -61,14 +64,12 @@ const arrayValid = (array, minLength) => {
 const server = express();
 server.use(helmet());
 server.use(express.json());
-
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
 const corsOptions = {
   origin: "http://localhost:5173",
   credentials: true,
 };
 server.use(cors(corsOptions));
-
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
 server.use(
   session({
@@ -171,6 +172,67 @@ server.delete(Path.LOGOUT, (req, res, next) => {
     res.clearCookie(SESSION_COOKIE_NAME);
     res.status(204).end();
   });
+});
+
+server.post(Path.CREATE_EMAIL, async (req, res, next) => {
+  const emailData = req.body;
+  const userEmail = req.session?.user?.email;
+  const userFullName = req.session?.user?.fullName;
+
+  try {
+    const emails = emailData.emails.map((email) => {
+      return { ...email, emailAddress: email.emailAddress.trim() };
+    });
+    const newSubjectLine = emailData.subjectLine.trim();
+    const newBody = emailData.body.trim();
+
+    const emailAddresses = emails.map((email) => email.emailAddress);
+    const duplicateAddresses = emailAddresses.filter(
+      (emailAddress, index) => emailAddresses.indexOf(emailAddress) !== index
+    );
+
+    if (
+      !emailData.topic ||
+      !newSubjectLine ||
+      emails.length === 0 ||
+      emails.some((email) => !EMAIL_REGEX.test(email.emailAddress)) ||
+      duplicateAddresses.length > 0 ||
+      !newBody ||
+      !userEmail ||
+      !userFullName
+    ) {
+      throw new Error(INVALID_EMAIL_DETAILS_ERROR);
+    }
+
+    const toEmails = emails
+      .filter((email) => email.toOrCC === TO)
+      .map((email) => email.emailAddress);
+
+    const ccEmails = emails
+      .filter((email) => email.toOrCC === CC)
+      .map((email) => email.emailAddress);
+
+    const email = {
+      to: toEmails,
+      cc: ccEmails,
+      from: {
+        name: COURSECOMPASS_EMAIL_SERVICE,
+        email: process.env.SENDGRID_VERIFIED_SENDER,
+      },
+      replyTo: {
+        name: userFullName,
+        email: userEmail,
+      },
+      subject: newSubjectLine,
+      text: newBody,
+    };
+
+    await sendGrid.send(email);
+
+    res.status(201).end();
+  } catch (err) {
+    next(err);
+  }
 });
 
 server.use("/", (req, res, next) => {

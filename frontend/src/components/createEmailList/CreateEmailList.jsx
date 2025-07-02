@@ -1,7 +1,7 @@
+import { TO, CC } from "../../utils/constants";
+
 const CreateEmailList = (props) => {
   const EMAIL_ADDRESS_PLACEHOLDER = "Enter email address";
-  const TO = "To";
-  const CC = "CC";
 
   const updateEmailAddress = (newEmailAddress, index) => {
     const newEmails = props.emails.map((email, idx) => {

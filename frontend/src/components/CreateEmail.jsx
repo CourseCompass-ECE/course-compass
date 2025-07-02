@@ -3,7 +3,7 @@ import { Path } from "../utils/enums";
 import {
   EMAIL_TOPICS,
   ALL_EMAIL_TOPICS,
-  GENERIC_ERROR,
+  GENERIC_ERROR, TO
 } from "../utils/constants";
 import { EMAIL_REGEX } from "../utils/regex";
 import { useNavigate } from "react-router-dom";
@@ -28,7 +28,6 @@ const CreateEmail = () => {
   const SUBJECT_LINE_PLACEHOLDER = "Enter email subject line";
   const TO_CC = "To/CC";
   const ADD_EMAIL_ADDRESS = "Add Email Address";
-  const TO = "To";
   const BODY = "Body";
   const BODY_PLACEHOLDER = "Enter email body";
   const SEND_EMAIL = "Send Email";
@@ -88,6 +87,36 @@ const CreateEmail = () => {
       setBodyError(BODY_ERROR_MESSAGE);
       return;
     }
+
+    try {
+      const emailData = {
+        topic: emailTopic,
+        subjectLine: newSubjectLine,
+        emails: newEmails,
+        body: newBody,
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${Path.CREATE_EMAIL}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(emailData),
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        navigate(Path.EMAIL);
+      } else {
+        setSubmissionError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setSubmissionError(GENERIC_ERROR);
+    }
+
   };
 
   return (
