@@ -1,7 +1,11 @@
 import { useState } from "react";
+import { Path } from "../utils/enums";
 import { EMAIL_TOPICS, ALL_EMAIL_TOPICS } from "../utils/constants";
+import {useNavigate} from "react-router-dom";
+import CreateEmailList from "./createEmailList/CreateEmailList";
 
 const CreateEmail = () => {
+  const navigate = useNavigate();
   const [emailTopic, setEmailTopic] = useState("");
   const [subjectLine, setSubjectLine] = useState("");
   const [emails, setEmails] = useState([]);
@@ -14,7 +18,6 @@ const CreateEmail = () => {
   const TO_CC = "To/CC";
   const ADD_EMAIL_ADDRESS = "Add Email Address";
   const TO = "To";
-  const CC = "CC";
   const BODY = "Body";
   const BODY_PLACEHOLDER = "Enter email body";
 
@@ -30,6 +33,14 @@ const CreateEmail = () => {
 
   return (
     <div className="page-container">
+      <button
+        className="create-account-back-container create-email-back-container"
+        onClick={() => navigate(Path.EMAIL)}
+      >
+        <span className="material-symbols-outlined create-account-back-icon">
+          west
+        </span>
+      </button>
       <h1 className="page-title">{TITLE}</h1>
       <form className="create-email-form">
         <label htmlFor="email-topic" className="page-big-header">
@@ -70,19 +81,13 @@ const CreateEmail = () => {
 
         <label className="page-big-header">{TO_CC}</label>
         <div
-          className="create-btn add-email-address-btn"
-          onClick={addNewEmailAddress}
+          className={`create-btn add-email-address-btn ${emails.length < 20 ? "" : "disable-add-email"}`}
+          onClick={() => emails.length < 20 ? addNewEmailAddress() : null}
         >
           <span className="material-symbols-outlined">add_2</span>
           {ADD_EMAIL_ADDRESS}
         </div>
-        {emails.map((email, index) => (
-          <div key={index}>
-            <span>
-              {email.emailAddress}, {email.toOrCC}
-            </span>
-          </div>
-        ))}
+        <CreateEmailList emails={emails} setEmails={setEmails}/>
 
         <label
           htmlFor="body"

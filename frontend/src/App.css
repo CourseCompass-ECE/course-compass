@@ -185,13 +185,13 @@ footer {
   border: none;
 }
 
-.create-account-back-icon {
+.create-account-back-icon, .email-remove {
   font-size: var(--subtitle-size);
   color: var(--main-color);
   cursor: pointer;
 }
 
-.create-account-back-icon:hover {
+.create-account-back-icon:hover, .email-remove:hover {
   color: var(--dark-gray);
 }
 
@@ -574,4 +574,40 @@ footer {
   width: 100vw;
   margin: 0 0 5vh -5vw;
   align-items: center;
+}
+
+.create-email-back-container {
+  align-self: flex-start;
+}
+
+.disable-add-email {
+  background-color: var(--background-light);
+  cursor:default;
+}
+
+.disable-add-email:hover {
+  background-color: var(--background-light);
+  border: 1px solid var(--gray);
+}
+
+.email-container {
+  display: flex;
+  gap: 50px;
+  align-items: center;
+  height: 35px;
+  padding: 10px 0 10px 0;
+}
+
+.email-list-btn {
+  height: 35px;
+  width: 80px;
+  font-size: var(--large-text-size)
+}
+
+.email-list-btn-selected {
+  background-color: var(--background-darker-2);
+}
+
+.email-remove {
+  font-size: var(--header-size)
 }
