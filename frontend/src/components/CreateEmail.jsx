@@ -58,10 +58,10 @@ const CreateEmail = () => {
     setBodyError("");
 
     const newEmails = emails.map((email) => {
-      return { ...email, emailAddress: email.emailAddress.trim() };
+      return { ...email, emailAddress: email.emailAddress ? email.emailAddress.trim() : email.emailAddress };
     });
-    const newSubjectLine = subjectLine.trim();
-    const newBody = body.trim();
+    const newSubjectLine = subjectLine ? subjectLine.trim() : subjectLine;
+    const newBody = body ? body.trim() : body;
 
     const emailAddresses = newEmails.map((email) => email.emailAddress);
     const duplicateAddresses = emailAddresses.filter(
@@ -78,7 +78,7 @@ const CreateEmail = () => {
       setEmailsError(NO_EMAILS_ERROR_MESSAGE);
       return;
     } else if (
-      newEmails.some((email) => !EMAIL_REGEX.test(email.emailAddress))
+      newEmails.some((email) => !email.emailAddress || !EMAIL_REGEX.test(email.emailAddress))
     ) {
       setEmailsError(INVALID_EMAIL_ERROR_MESSAGE);
       return;

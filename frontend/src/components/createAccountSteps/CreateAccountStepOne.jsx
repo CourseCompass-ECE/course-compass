@@ -55,10 +55,10 @@ const CreateAccountStepOne = (props) => {
     setEmailError("");
     setPasswordError("");
 
-    if (props.fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length < 2) {
+    if (!props.fullName || props.fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length < 2) {
       setFullNameError(FULL_NAME_ERROR);
       return;
-    } else if (!EMAIL_REGEX.test(props.email.trim())) {
+    } else if (!props.email || !EMAIL_REGEX.test(props.email.trim())) {
       setEmailError(EMAIL_ERROR);
       return;
     } else if (Object.values(passwordRequirementsMet).includes(false)) {

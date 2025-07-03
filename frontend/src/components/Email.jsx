@@ -64,7 +64,7 @@ const Email = () => {
         </select>
       </div>
 
-      <SentEmailsList emails={emails} />
+      <SentEmailsList emails={selectedTopic === ALL_EMAIL_TOPICS ? emails : emails.filter((email) => email.topic === selectedTopic)} />
 
       <div className="text-input-error fetch-emails-error">{fetchError}</div>
     </div>

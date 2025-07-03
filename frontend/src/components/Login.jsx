@@ -25,9 +25,9 @@ const Login = () => {
     setPasswordError("");
     setSubmissionError("");
 
-    const userEmail = email.trim();
+    const userEmail = email ? email.trim() : email;
 
-    if (!EMAIL_REGEX.test(userEmail)) {
+    if (!userEmail || !EMAIL_REGEX.test(userEmail)) {
       setEmailError(EMAIL_ERROR);
       return;
     } else if (!password) {

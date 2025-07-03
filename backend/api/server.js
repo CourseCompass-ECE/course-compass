@@ -25,7 +25,7 @@ const MinorCertificate = require("./minorcertificate-model");
 const Timetable = require("./timetable-model");
 const TimetableCourse = require("./timetablecourse-model");
 const User = require("./user-model");
-const Email = require("./email-model")
+const Email = require("./email-model");
 const sendGrid = require("@sendgrid/mail");
 sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
@@ -67,7 +67,7 @@ server.use(helmet());
 server.use(express.json());
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: process.env.FRONTEND_URL,
   credentials: true,
 };
 server.use(cors(corsOptions));
@@ -111,6 +111,7 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
 
   try {
     if (
+      !newUser?.email ||
       !fullNameValid(newUser?.fullName) ||
       !emailValid(newUser?.email.trim()) ||
       !passwordValid(newUser?.password) ||
@@ -183,10 +184,17 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
 
   try {
     const emails = emailData.emails.map((email) => {
-      return { ...email, emailAddress: email.emailAddress.trim() };
+      return {
+        ...email,
+        emailAddress: email.emailAddress
+          ? email.emailAddress.trim()
+          : email.emailAddress,
+      };
     });
-    const newSubjectLine = emailData.subjectLine.trim();
-    const newBody = emailData.body.trim();
+    const newSubjectLine = emailData.subjectLine
+      ? emailData.subjectLine.trim()
+      : emailData.subjectLine;
+    const newBody = emailData.body ? emailData.body.trim() : emailData.body;
 
     const emailAddresses = emails.map((email) => email.emailAddress);
     const duplicateAddresses = emailAddresses.filter(
@@ -205,12 +213,18 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
       !emailData.topic ||
       !newSubjectLine ||
       emails.length === 0 ||
-      emails.some((email) => !EMAIL_REGEX.test(email.emailAddress)) ||
+      emails.some(
+        (email) =>
+          (email.toOrCC !== TO && email.toOrCC !== CC) ||
+          !email.emailAddress ||
+          !EMAIL_REGEX.test(email.emailAddress)
+      ) ||
       duplicateAddresses.length > 0 ||
       !newBody ||
       !userEmail ||
       !userFullName ||
-      !userId || toEmails.length === 0
+      !userId ||
+      toEmails.length === 0
     ) {
       throw new Error(INVALID_EMAIL_DETAILS_ERROR);
     }
@@ -237,8 +251,8 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
       cc: ccEmails,
       body: newBody,
       subjectLine: newSubjectLine,
-      topic: emailData.topic
-    }
+      topic: emailData.topic,
+    };
     await Email.create(newEmail, userId);
 
     res.status(201).end();
@@ -249,7 +263,7 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
 
 server.get(Path.EMAIL, async (req, res, next) => {
   try {
-    const userId = Number(req.session?.user?.id)
+    const userId = Number(req.session?.user?.id);
     const emails = await User.findUserEmailsById(userId);
     res.status(200).json({ emails });
   } catch (err) {
