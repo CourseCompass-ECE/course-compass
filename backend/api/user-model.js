@@ -46,4 +46,14 @@ module.exports = {
     });
     return user;
   },
+
+  async findUserEmailsById(userId) {
+    const userData = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        emails: true
+      }
+    });
+    return userData?.emails;
+  },
 };

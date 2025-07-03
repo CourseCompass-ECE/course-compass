@@ -4,6 +4,7 @@ import {
   EMAIL_TOPICS,
   ALL_EMAIL_TOPICS,
   GENERIC_ERROR,
+  TO,
 } from "../utils/constants";
 import { EMAIL_REGEX } from "../utils/regex";
 import { useNavigate } from "react-router-dom";
@@ -28,7 +29,6 @@ const CreateEmail = () => {
   const SUBJECT_LINE_PLACEHOLDER = "Enter email subject line";
   const TO_CC = "To/CC";
   const ADD_EMAIL_ADDRESS = "Add Email Address";
-  const TO = "To";
   const BODY = "Body";
   const BODY_PLACEHOLDER = "Enter email body";
   const SEND_EMAIL = "Send Email";
@@ -37,6 +37,7 @@ const CreateEmail = () => {
   const NO_EMAILS_ERROR_MESSAGE = "Please provide at least one email address";
   const INVALID_EMAIL_ERROR_MESSAGE = "At least one email provided is invalid";
   const DUPLICATE_EMAILS_ERROR_MESSAGE = "Duplicate emails have been provided";
+  const NO_TO_EMAILS_ERROR_MESSAGE = `At least one email must be marked as "${TO}"`;
   const BODY_ERROR_MESSAGE = "Please provide a body";
 
   const addNewEmailAddress = () => {
@@ -57,10 +58,10 @@ const CreateEmail = () => {
     setBodyError("");
 
     const newEmails = emails.map((email) => {
-      return { ...email, emailAddress: email.emailAddress.trim() };
+      return { ...email, emailAddress: email.emailAddress ? email.emailAddress.trim() : email.emailAddress };
     });
-    const newSubjectLine = subjectLine.trim();
-    const newBody = body.trim();
+    const newSubjectLine = subjectLine ? subjectLine.trim() : subjectLine;
+    const newBody = body ? body.trim() : body;
 
     const emailAddresses = newEmails.map((email) => email.emailAddress);
     const duplicateAddresses = emailAddresses.filter(
@@ -77,16 +78,48 @@ const CreateEmail = () => {
       setEmailsError(NO_EMAILS_ERROR_MESSAGE);
       return;
     } else if (
-      newEmails.some((email) => !EMAIL_REGEX.test(email.emailAddress))
+      newEmails.some((email) => !email.emailAddress || !EMAIL_REGEX.test(email.emailAddress))
     ) {
       setEmailsError(INVALID_EMAIL_ERROR_MESSAGE);
       return;
     } else if (duplicateAddresses.length > 0) {
       setEmailsError(DUPLICATE_EMAILS_ERROR_MESSAGE);
       return;
+    } else if (!newEmails.some((email) => email.toOrCC === TO)) {
+      setEmailsError(NO_TO_EMAILS_ERROR_MESSAGE);
+      return;
     } else if (!newBody) {
       setBodyError(BODY_ERROR_MESSAGE);
       return;
+    }
+
+    try {
+      const emailData = {
+        topic: emailTopic,
+        subjectLine: newSubjectLine,
+        emails: newEmails,
+        body: newBody,
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${Path.CREATE_EMAIL}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(emailData),
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        navigate(Path.EMAIL);
+      } else {
+        setSubmissionError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setSubmissionError(GENERIC_ERROR);
     }
   };
 

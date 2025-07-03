@@ -393,3 +393,6 @@ export const SKILLS = [
   "Work Ethic",
   "Writing",
 ];
+
+export const TO = "To";
+export const CC = "CC";
