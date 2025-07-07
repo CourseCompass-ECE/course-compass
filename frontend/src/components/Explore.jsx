@@ -36,7 +36,7 @@ const Explore = () => {
   }, []);
 
   return (
-    <div>
+    <div className="explore-container">
       {courseData.length !== 0 ? (
         <>
           <section className="explore-filters-container"></section>
