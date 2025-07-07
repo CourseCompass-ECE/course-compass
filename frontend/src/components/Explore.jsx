@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { useState } from "react";
 import { Path } from "../utils/enums";
+import ExploreCourseList from "./exploreCourseList/ExploreCourseList";
 
 const Explore = () => {
   const [courseData, setCourseData] = useState([]);
   const [fetchCourseDataError, setFetchCourseDataError] = useState("");
   const FETCH_COURSES_ERROR_MESSAGE = "Something went wrong fetching courses";
   const RECOMMENDED = "Recommended";
+  const ALL_COURSES = "All Courses";
 
   const fetchAllCourseData = async () => {
     try {
@@ -28,7 +30,6 @@ const Explore = () => {
       setFetchCourseDataError(FETCH_COURSES_ERROR_MESSAGE);
     }
   };
-  console.log(courseData);
 
   useEffect(() => {
     fetchAllCourseData();
@@ -41,6 +42,10 @@ const Explore = () => {
           <section className="explore-filters-container"></section>
           <section>
             <h2 className="explore-recommend-header">{RECOMMENDED}</h2>
+          </section>
+          <section>
+            <h2 className="explore-filter-header">{ALL_COURSES}</h2>
+            <ExploreCourseList courses={courseData}/>
           </section>
         </>
       ) : (

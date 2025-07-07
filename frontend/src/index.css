@@ -33,6 +33,7 @@
   --error-red: rgb(178, 47, 47);
   --logout-error-red: rgb(255, 136, 136);
   --correct-green: rgb(42, 159, 42);
+  --favorite-yellow: gold;
 }
 
 body {
