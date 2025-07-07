@@ -42,7 +42,7 @@ const RootLayout = (props) => {
       const loggedInStatus = await checkUserLoggedIn();
       const onPageWhereUserLoggedIn = location.pathname.includes("/user");
       
-      if (!loggedInStatus && onPageWhereUserLoggedIn) {
+      if (!loggedInStatus && (onPageWhereUserLoggedIn || location.pathname === "/")) {
         navigate(Path.LOGIN);
       } else if (loggedInStatus && !onPageWhereUserLoggedIn) {
         navigate(Path.EXPLORE);

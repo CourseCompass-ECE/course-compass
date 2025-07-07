@@ -704,7 +704,7 @@ footer {
 
 .explore-recommend-header,
 .explore-filter-header {
-  margin: 5vh 0 0 7vh;
+  margin: 8vh 0 0 7vh;
   font-weight: normal;
   font-family: var(--subtitle-font);
   font-size: var(--subtitle-size);
@@ -729,7 +729,7 @@ footer {
 
 .explore-course-list {
   margin: 0;
-  padding: 4vh 0 5vh 0;
+  padding: 4vh 2vw 5vh 0;
   display: flex;
   gap: 40px;
   overflow-x: scroll;
@@ -808,6 +808,12 @@ footer {
   font-size: var(--title-size);
   background-color: var(--background-light);
   cursor: pointer;
+  position: relative;
+}
+
+.explore-right-arrow {
+  margin: auto 0 auto auto;
+  text-align: end;
 }
 
 .explore-arrow:hover {
@@ -903,4 +909,21 @@ footer {
   font-weight: 600;
   cursor: pointer;
   padding: 30px;
+}
+
+.explore-classes-container {
+  display: flex;
+  gap: 5px;
+}
+
+.explore-classes {
+  display: flex;
+  width: 85px;
+  height: 30px;
+  border: 1px solid var(--light-gray);
+  border-radius: 20px;
+  justify-content: center;
+  align-items: center;
+  font-family: var(--header-font);
+  font-size: var(--small-med-text-size);
 }

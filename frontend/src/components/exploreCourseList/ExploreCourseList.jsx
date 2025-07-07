@@ -10,10 +10,20 @@ const ExploreCourseList = (props) => {
   const AREAS = "Areas: ";
   const MINORS = "Minors: ";
   const CERTIFICATES = "Certificates: ";
+  const PREREQUISITES = "Prerequisites: ";
+  const COREQUISITES = "Corequisites: ";
+  const EXCLUSIONS = "Exclusions: ";
+  const RECOMMENDED_PREP = "Recommended Preparation:";
   const NONE = "None";
   const COURSE_DESCRIPTION = "Course Description:";
   const VIEW_FULL_DESCRIPTION = "View Full Description";
   const ANIMATION_CLASS = "explore-course-container-animation";
+  const LECTURE_COLOR = "#F3E8DC";
+  const TUTORIAL_COLOR = "#E6F4EA";
+  const PRACTICAL_COLOR = "#D8C7E9";
+  const LECTURE = "LEC";
+  const TUTORIAL = "TUT";
+  const PRACTICAL = "PRA";
 
   const changeScroll = (increment) => {
     const newElementIndex = elementScrolledTo + increment;
@@ -24,6 +34,48 @@ const ExploreCourseList = (props) => {
       behavior: "smooth",
     });
     setElementScrolledTo(newElementIndex);
+  };
+
+  const renderClassHours = (classType, hours) => {
+    let backgroundColor;
+    switch (classType) {
+      case LECTURE:
+        backgroundColor = LECTURE_COLOR;
+        break;
+      case TUTORIAL:
+        backgroundColor = TUTORIAL_COLOR;
+        break;
+      case PRACTICAL:
+        backgroundColor = PRACTICAL_COLOR;
+        break;
+    }
+
+    return (
+      <div
+        className="explore-classes"
+        style={{ backgroundColor: backgroundColor }}
+      >
+        {classType}: {hours}hrs
+      </div>
+    );
+  };
+
+  const renderCourseRequirements = (reqList, reqType) => {
+    return (
+      <h4 className="explore-course-heading" style={{ paddingBottom: 0 }}>
+        {reqType}
+        <span className="explore-course-heading-item">
+          {reqList.length === 0 ? ` ${NONE}` : ""}
+        </span>
+        <ul className="explore-course-area-ul">
+          {reqList.map((prereq, index) => (
+            <li key={index} className="explore-course-area-li">
+              {prereq.code}: {prereq.title}
+            </li>
+          ))}
+        </ul>
+      </h4>
+    );
   };
 
   const renderMinorOrCertificate = (course, minorOrCertificate) => {
@@ -121,6 +173,11 @@ const ExploreCourseList = (props) => {
                 {renderMinorOrCertificate(course, MINOR)}
                 {renderMinorOrCertificate(course, CERTIFICATE)}
 
+                {renderCourseRequirements(course.prerequisites, PREREQUISITES)}
+                {renderCourseRequirements(course.corequisites, COREQUISITES)}
+                {renderCourseRequirements(course.exclusions, EXCLUSIONS)}
+                {renderCourseRequirements(course.recommendedPrep, RECOMMENDED_PREP)}
+
                 <div className="explore-course-description-front-container">
                   <p className="explore-course-description-front">
                     {course.description}
@@ -134,6 +191,11 @@ const ExploreCourseList = (props) => {
                 >
                   {VIEW_FULL_DESCRIPTION}
                 </h4>
+                <div className="explore-classes-container">
+                  {renderClassHours(LECTURE, course.lectureHours)}
+                  {renderClassHours(TUTORIAL, course.tutorialHours)}
+                  {renderClassHours(PRACTICAL, course.practicalHours)}
+                </div>
               </div>
 
               <div className="explore-course-back">
@@ -147,7 +209,7 @@ const ExploreCourseList = (props) => {
         ))}
       </div>
       <span
-        className="material-symbols-outlined explore-arrow"
+        className="material-symbols-outlined explore-arrow explore-right-arrow"
         onClick={() => changeScroll(1)}
       >
         arrow_right
