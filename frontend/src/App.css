@@ -719,6 +719,22 @@ footer {
   justify-content: space-evenly;
   align-items: center;
   height: 100px;
+  padding-top: 3vh;
+}
+
+.search-bar {
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+}
+
+.explore-filters-width {
+  width: 18vw;
+}
+
+.explore-search-input {
+  width: 12vw;
+  margin: 0;
 }
 
 .explore-course-list-container {
