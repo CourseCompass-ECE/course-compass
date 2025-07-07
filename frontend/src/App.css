@@ -692,3 +692,215 @@ footer {
   height: 45px;
   align-self: flex-start;
 }
+
+.explore-error {
+  margin: 0 0 0 5vw;
+  padding-top: 5vh;
+  font-size: var(--subheader-size);
+  font-weight: normal;
+  font-family: var(--header-font);
+  color: var(--main-color);
+}
+
+.explore-recommend-header,
+.explore-filter-header {
+  margin: 5vh 0 0 7vh;
+  font-weight: normal;
+  font-family: var(--subtitle-font);
+  font-size: var(--subtitle-size);
+}
+
+.explore-filter-header {
+  font-size: var(--header-size);
+}
+
+.explore-filters-container {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  height: 100px;
+}
+
+.explore-course-list-container {
+  display: flex;
+  align-items: center;
+  padding: 0 0 0 0;
+}
+
+.explore-course-list {
+  margin: 0;
+  padding: 4vh 0 5vh 0;
+  display: flex;
+  gap: 40px;
+  overflow-x: scroll;
+}
+
+.explore-course-outer-container {
+  background-color: transparent;
+  width: 15vw;
+  min-width: 15vw;
+  height: 50vh;
+  perspective: 1000px;
+  padding: 15px;
+}
+
+.explore-course-container {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--light-gray);
+  border-radius: 5px;
+  background-color: var(--background-mixed);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  box-shadow: 9px 9px 10px var(--gray);
+  padding: 15px;
+  transition: transform 0.8s;
+  transform-style: preserve-3d;
+  position: relative;
+}
+
+.explore-course-container-animation {
+  transform: rotateY(180deg);
+  animation-name: bounce;
+  animation-duration: 0.5s;
+  transform-origin: center center;
+  animation-timing-function: cubic-bezier();
+  animation-fill-mode: forwards;
+}
+
+@keyframes bounce {
+  50% {
+    scale: 1.25;
+  }
+  100% {
+    scale: 1.05;
+  }
+}
+
+.explore-course-front,
+.explore-course-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  position: absolute;
+  padding-right: 15px;
+  overflow: scroll;
+  height: 50vh;
+  width: 15vw;
+  padding: 0 15px 15px 0;
+}
+
+.explore-course-front {
+  z-index: 2;
+}
+
+.explore-course-back {
+  background-color: var(--background-darker);
+  top: 0;
+  left: 0;
+  padding: 15px;
+  transform: rotateY(180deg);
+}
+
+.explore-arrow {
+  color: var(--dark-gray);
+  font-size: var(--title-size);
+  background-color: var(--background-light);
+  cursor: pointer;
+}
+
+.explore-arrow:hover {
+  color: var(--main-color);
+}
+
+.explore-course-icon-container {
+  display: flex;
+  gap: 20px;
+  padding-bottom: 15px;
+}
+
+.explore-course-icon {
+  font-size: var(--header-size);
+  cursor: pointer;
+}
+
+.explore-course-icon.cart-icon:hover {
+  color: var(--background-dark);
+}
+
+.explore-course-icon.favorite-icon.material-symbols-outlined:hover {
+  color: var(--favorite-yellow);
+  font-variation-settings: "FILL" 100;
+}
+
+.explore-course-icon.favorited.material-symbols-outlined {
+  color: var(--favorite-yellow);
+  font-variation-settings: "FILL" 100;
+}
+
+.explore-course-title {
+  font-family: var(--header-font);
+  font-weight: normal;
+  font-size: var(--subheader-size);
+  margin: 0;
+  padding: 5px 0 25px 0;
+}
+
+.explore-course-heading,
+.explore-course-view-description {
+  font-family: var(--header-font);
+  font-weight: normal;
+  font-size: var(--med-text-size);
+  margin: 0;
+  padding-bottom: 15px;
+}
+
+.explore-course-heading-item {
+  font-family: var(--text-font);
+  font-weight: normal;
+}
+
+.explore-course-area-ul {
+  padding-left: 25px;
+  margin: 0 0 15px 0;
+  font-family: var(--text-font);
+  font-size: var(--small-med-text-size);
+}
+
+.explore-course-area-li {
+  padding-top: 5px;
+}
+
+.explore-container {
+  overflow: scroll;
+  height: 100%;
+}
+
+.explore-course-description-front-container {
+  height: 60px;
+}
+
+.explore-course-description-front {
+  font-family: var(--text-font);
+  font-size: var(--small-text-size);
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  overflow: hidden;
+}
+
+.explore-course-description {
+  font-family: var(--text-font);
+  font-size: var(--small-med-text-size);
+  padding-right: 5px;
+}
+
+.explore-course-view-description {
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 30px;
+}

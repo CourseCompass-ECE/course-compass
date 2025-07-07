@@ -14,6 +14,7 @@
   --subheader-size: 20px;
   --large-text-size: 18px;
   --med-text-size: 16px;
+  --small-med-text-size: 14px;
   --small-text-size: 12px;
 
   --icon-med: 24px;
@@ -33,6 +34,7 @@
   --error-red: rgb(178, 47, 47);
   --logout-error-red: rgb(255, 136, 136);
   --correct-green: rgb(42, 159, 42);
+  --favorite-yellow: gold;
 }
 
 body {

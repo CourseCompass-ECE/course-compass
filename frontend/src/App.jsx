@@ -1,5 +1,6 @@
 import "./App.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { useState } from "react";
 import Login from "./components/Login";
 import LandingPage from "./components/LandingPage";
 import CreateAccount from "./components/CreateAccount";
@@ -17,11 +18,13 @@ import RootLayout from "./RootLayout";
 import ErrorPage from "./components/ErrorPage";
 
 function App() {
+  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
+
   const router = createBrowserRouter([
     {
       path: "/",
-      element: <RootLayout />,
-      errorElement: <ErrorPage />,
+      element: <RootLayout isUserLoggedIn={isUserLoggedIn} setIsUserLoggedIn={setIsUserLoggedIn} />,
+      errorElement: <ErrorPage isUserLoggedIn={isUserLoggedIn} setIsUserLoggedIn={setIsUserLoggedIn} />,
       children: [
         {
           path: Path.LOGIN,

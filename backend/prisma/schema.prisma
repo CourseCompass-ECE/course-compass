@@ -36,7 +36,7 @@ model User {
   skills String[]
   eceAreas Area[]
   desiredDesignation Designation
-  desiredMinorsCertificates MinorCertificate[]
+  desiredMinorsCertificates MinorCertificate[] @relation("UsersLikingMinorsCertificates")
   learningGoal String[]
   timetables Timetable[]
   shoppingCart Course[] @relation("ShoppingCart")
@@ -58,14 +58,16 @@ model Email {
 
 model Course {
   id Int @id @default(autoincrement())
-  minorsCertificates MinorCertificate[]
+  minorsCertificates MinorCertificate[] @relation("CoursesMeetingMinorsCertificates")
   timetableCourses TimetableCourse[]
   description String
   area Area[]
-  code String
+  code String @unique
   title String
+  prerequisiteAmount Int
   prerequisites Course[] @relation("Prerequisites")
   prerequisitesOfOthers Course[] @relation("Prerequisites")
+  corequisiteAmount Int
   corequisites Course[] @relation("Corequisites")
   corequisitesOfOthers Course[] @relation("Corequisites")
   exclusions Course[] @relation("Exclusions")
@@ -103,8 +105,8 @@ model TimetableCourse {
 
 model MinorCertificate {
   id Int @id @default(autoincrement())
-  courses Course[]
-  users User[]
+  courses Course[] @relation("CoursesMeetingMinorsCertificates")
+  users User[] @relation("UsersLikingMinorsCertificates")
   title String
   minorOrCertificate MinorOrCertificate
 
