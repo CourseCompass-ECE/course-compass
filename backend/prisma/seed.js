@@ -35,7 +35,6 @@ const seedMinorCertificateCourses = async (
 ) => {
   for (const courseList of courseObject) {
     const newCourseList = await removeInvalidRequirements(courseList.courses);
-    if (courseList.title === "Nanoengineering") console.log(newCourseList)
     await prisma.minorCertificate.update({
       where: {
         title_minorOrCertificate: {

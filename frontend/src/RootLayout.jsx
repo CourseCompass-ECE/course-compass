@@ -3,11 +3,10 @@ import { useEffect, useState } from "react";
 import { Path } from "./utils/enums";
 import { TAGLINE } from "./utils/constants";
 import { useNavigate } from "react-router-dom";
-import { checkUserLoggedIn } from "./utils/functions";
+import { checkUserLoggedIn } from "./utils/authFunctions";
 
-const RootLayout = () => {
+const RootLayout = (props) => {
   const navigate = useNavigate();
-  const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
   const [logoutError, setLogoutError] = useState("");
   const location = useLocation();
   const headerIcons = ["mail", "shopping_cart", "account_circle"];
@@ -48,7 +47,7 @@ const RootLayout = () => {
       } else if (loggedInStatus && !onPageWhereUserLoggedIn) {
         navigate(Path.EXPLORE);
       }
-      setIsUserLoggedIn(loggedInStatus);
+      props.setIsUserLoggedIn(loggedInStatus);
     };
 
     userAuthentication();
@@ -61,7 +60,7 @@ const RootLayout = () => {
         <div className="header-content-container">
           <Link
             className="header-title"
-            to={isUserLoggedIn ? Path.EXPLORE : Path.LANDING_PAGE}
+            to={props.isUserLoggedIn ? Path.EXPLORE : Path.LANDING_PAGE}
           >
             C<span className="header-title-compass">🧭</span>urseC
             <span className="header-title-compass">🧭</span>mpass
@@ -71,18 +70,18 @@ const RootLayout = () => {
               <li className="header-li">
                 <Link
                   className="header-link"
-                  to={isUserLoggedIn ? Path.EXPLORE : Path.LOGIN}
+                  to={props.isUserLoggedIn ? Path.EXPLORE : Path.LOGIN}
                 >
-                  {isUserLoggedIn ? EXPLORE : LOGIN}
+                  {props.isUserLoggedIn ? EXPLORE : LOGIN}
                 </Link>
               </li>
 
               <li className="header-li">
                 <Link
                   className="header-link"
-                  to={isUserLoggedIn ? Path.TIMETABLES : Path.CREATE_ACCOUNT}
+                  to={props.isUserLoggedIn ? Path.TIMETABLES : Path.CREATE_ACCOUNT}
                 >
-                  {isUserLoggedIn ? TIMETABLES : CREATE_ACCOUNT}
+                  {props.isUserLoggedIn ? TIMETABLES : CREATE_ACCOUNT}
                 </Link>
               </li>
 
@@ -90,7 +89,7 @@ const RootLayout = () => {
                 <li
                   key={index}
                   className="header-li"
-                  style={isUserLoggedIn ? {} : { display: "none" }}
+                  style={props.isUserLoggedIn ? {} : { display: "none" }}
                 >
                   <Link className="header-link" to={headerIconsPath[index]}>
                     <span className="material-symbols-outlined header-icon">
@@ -101,7 +100,7 @@ const RootLayout = () => {
               ))}
               <li
                 className="header-li logout"
-                style={isUserLoggedIn ? {} : { display: "none" }}
+                style={props.isUserLoggedIn ? {} : { display: "none" }}
               >
                 <span
                   className="material-symbols-outlined header-icon"

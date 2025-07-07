@@ -271,6 +271,15 @@ server.get(Path.EMAIL, async (req, res, next) => {
   }
 });
 
+server.get(Path.EXPLORE, async (req, res, next) => {
+  try {
+    const courses = await Course.findCourses();
+    res.status(200).json({ courses });
+  } catch (err) {
+    next(err);
+  }
+});
+
 server.use("/", (req, res, next) => {
   next({ status: 404, message: "Endpoint not found" });
 });

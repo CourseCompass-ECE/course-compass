@@ -692,3 +692,26 @@ footer {
   height: 45px;
   align-self: flex-start;
 }
+
+.explore-error {
+  margin: 0 0 0 5vw;
+  padding-top: 5vh;
+  font-size: var(--subheader-size);
+  font-weight: normal;
+  font-family: var(--header-font);
+  color: var(--main-color);
+}
+
+.explore-recommend-header {
+  margin: 5vh 0 0 7vh;
+  font-weight: normal;
+  font-family: var(--subtitle-font);
+  font-size: var(--subtitle-size);
+}
+
+.explore-filters-container {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  height: 100px;
+}
