@@ -271,7 +271,7 @@ const Explore = () => {
             ))}
         </>
       ) : (
-        <h2 className="explore-error">{fetchCourseDataError}</h2>
+        <h1 className="explore-error">{fetchCourseDataError}</h1>
       )}
     </div>
   );

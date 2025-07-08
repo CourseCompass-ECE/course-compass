@@ -215,9 +215,9 @@ const ExploreCourseList = (props) => {
                   {/* TODO: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
                   <span
                     className={`material-symbols-outlined explore-course-icon favorite-icon ${
-                      false ? "favorited" : ""
+                      course.inUserFavorites ? "favorited" : ""
                     }`}
-                    onClick={toggleCourseInFavorites}
+                    onClick={() => toggleCourseInFavorites(course.id)}
                   >
                     star
                   </span>

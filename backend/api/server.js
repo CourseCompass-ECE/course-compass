@@ -298,6 +298,29 @@ server.patch(`${Path.EXPLORE}${CART_PATH}`, async (req, res, next) => {
   }
 });
 
+server.patch(`${Path.EXPLORE}${FAVORITES_PATH}`, async (req, res, next) => {
+  const courseId = req.query?.id;
+  try {
+    if (!courseId || !ONLY_NUMBERS.test(courseId)) throw new Error(INVALID_COURSE_ID);
+
+    const userId = Number(req.session?.user?.id);
+    await User.toggleCourseInFavorites(userId, Number(courseId));
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.get(Path.SHOPPING_CART, async (req, res, next) => {
+  try {
+    const userId = Number(req.session?.user?.id);
+    const courses = await Course.findCoursesInCart(userId);
+    res.status(200).json({ courses });
+  } catch (err) {
+    next(err);
+  }
+});
+
 server.use("/", (req, res, next) => {
   next({ status: 404, message: "Endpoint not found" });
 });
