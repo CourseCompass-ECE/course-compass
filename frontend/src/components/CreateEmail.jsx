@@ -97,7 +97,7 @@ const CreateEmail = () => {
       const emailData = {
         topic: emailTopic,
         subjectLine: newSubjectLine,
-        emails: newEmails,
+        recipientEmails: newEmails,
         body: newBody,
       };
 

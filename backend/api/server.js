@@ -187,7 +187,7 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
   const userId = Number(req.session?.user?.id);
 
   try {
-    const emails = emailData.emails.map((email) => {
+    const recipientEmails = emailData.recipientEmails.map((email) => {
       return {
         ...email,
         emailAddress: email.emailAddress
@@ -200,24 +200,24 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
       : emailData.subjectLine;
     const newBody = emailData.body ? emailData.body.trim() : emailData.body;
 
-    const emailAddresses = emails.map((email) => email.emailAddress);
+    const emailAddresses = recipientEmails.map((email) => email.emailAddress);
     const duplicateAddresses = emailAddresses.filter(
       (emailAddress, index) => emailAddresses.indexOf(emailAddress) !== index
     );
 
-    const toEmails = emails
+    const toEmails = recipientEmails
       .filter((email) => email.toOrCC === TO)
       .map((email) => email.emailAddress);
 
-    const ccEmails = emails
+    const ccEmails = recipientEmails
       .filter((email) => email.toOrCC === CC)
       .map((email) => email.emailAddress);
 
     if (
       !emailData.topic ||
       !newSubjectLine ||
-      emails.length === 0 ||
-      emails.some(
+      recipientEmails.length === 0 ||
+      recipientEmails.some(
         (email) =>
           (email.toOrCC !== TO && email.toOrCC !== CC) ||
           !email.emailAddress ||

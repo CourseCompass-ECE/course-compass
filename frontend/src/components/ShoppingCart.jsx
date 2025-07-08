@@ -10,6 +10,8 @@ const ShoppingCart = () => {
   const SHOPPING_CART = "Shopping Cart";
 
   const fetchCoursesInCart = async () => {
+    setFetchCoursesError("");
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${Path.SHOPPING_CART}`,
@@ -46,7 +48,7 @@ const ShoppingCart = () => {
 
   return (
     <div className="explore-container">
-      {coursesInCart.length !== 0 ? (
+      {!fetchCoursesError ? (
         <>
           <h1 className="page-title" style={{textAlign: 'center'}}>{SHOPPING_CART}</h1>
           <ExploreCourseList
