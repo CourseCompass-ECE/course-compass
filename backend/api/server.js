@@ -321,6 +321,16 @@ server.get(Path.SHOPPING_CART, async (req, res, next) => {
   }
 });
 
+server.get(Path.TIMETABLES, async (req, res, next) => {
+  try {
+    const userId = Number(req.session?.user?.id);
+    const timetables = await User.findUserTimetablesById(userId);
+    res.status(200).json({ timetables });
+  } catch (err) {
+    next(err);
+  }
+});
+
 server.use("/", (req, res, next) => {
   next({ status: 404, message: "Endpoint not found" });
 });

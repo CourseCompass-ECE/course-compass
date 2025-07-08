@@ -150,4 +150,14 @@ module.exports = {
       });
     }
   },
+
+  async findUserTimetablesById(userId) {
+    const userData = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        timetables: true,
+      },
+    });
+    return userData?.timetables;
+  },
 };

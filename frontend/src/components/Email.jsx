@@ -16,6 +16,7 @@ const Email = () => {
   const FETCH_EMAILS_ERROR_MESSAGE = "Something went wrong fetching emails";
 
   const fetchAllEmails = async () => {
+    setFetchError("");
     try {
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${Path.EMAIL}`,
