@@ -2,13 +2,72 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-module.exports = {
-  async findCourses() {
-    const courses = await prisma.course.findMany({
-        include: {
-            minorsCertificates: true
-        }
+const getAllCourses = async () => {
+  return await prisma.course.findMany({
+      include: {
+        minorsCertificates: true,
+        prerequisites: {
+          select: {
+            code: true,
+            title: true,
+          },
+        },
+        corequisites: {
+          select: {
+            code: true,
+            title: true,
+          },
+        },
+        exclusions: {
+          select: {
+            code: true,
+            title: true,
+          },
+        },
+        recommendedPrep: {
+          select: {
+            code: true,
+            title: true,
+          },
+        },
+        inUserShoppingCart: true,
+        inUserFavorites: true,
+      },
     });
-    return courses;
+}
+
+module.exports = {
+  async findCourses(userId) {
+    const courses = await getAllCourses();
+
+    return courses.map((course) => {
+      return {
+        ...course,
+        inUserShoppingCart: course.inUserShoppingCart.some(
+          (user) => user.id === userId
+        ),
+        inUserFavorites: course.inUserFavorites.some(
+          (user) => user.id === userId
+        ),
+      };
+    });
+  },
+
+  async findCoursesInCart(userId) {
+    const courses = await getAllCourses();
+
+    return courses
+      .filter((course) =>
+        course.inUserShoppingCart.some((user) => user.id === userId)
+      )
+      .map((course) => {
+        return {
+          ...course,
+          inUserShoppingCart: true,
+          inUserFavorites: course.inUserFavorites.some(
+            (user) => user.id === userId
+          ),
+        };
+      });
   },
 };

@@ -5,6 +5,7 @@ const {
   UPPERCASE_LETTER,
   LOWERCASE_LETTER,
   NUMBER,
+  ONLY_NUMBERS
 } = require("../../frontend/src/utils/regex");
 const {
   DUPLICATE_EMAIL_ERROR,
@@ -12,6 +13,8 @@ const {
   LOGGED_IN,
   TO,
   CC,
+  CART_PATH,
+  FAVORITES_PATH
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -32,6 +35,7 @@ sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
+const INVALID_COURSE_ID = "Invalid course id provided";
 const SESSION_COOKIE_NAME = "sessionId";
 const NO_USER_FOUND = "No user found";
 const SKILLS_INTERESTS_MIN_LENGTH = 5;
@@ -273,7 +277,44 @@ server.get(Path.EMAIL, async (req, res, next) => {
 
 server.get(Path.EXPLORE, async (req, res, next) => {
   try {
-    const courses = await Course.findCourses();
+    const userId = Number(req.session?.user?.id);
+    const courses = await Course.findCourses(userId);
+    res.status(200).json({ courses });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.patch(`${Path.EXPLORE}${CART_PATH}`, async (req, res, next) => {
+  const courseId = req.query?.id;
+  try {
+    if (!courseId || !ONLY_NUMBERS.test(courseId)) throw new Error(INVALID_COURSE_ID);
+
+    const userId = Number(req.session?.user?.id);
+    await User.toggleCourseInShoppingCart(userId, Number(courseId));
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.patch(`${Path.EXPLORE}${FAVORITES_PATH}`, async (req, res, next) => {
+  const courseId = req.query?.id;
+  try {
+    if (!courseId || !ONLY_NUMBERS.test(courseId)) throw new Error(INVALID_COURSE_ID);
+
+    const userId = Number(req.session?.user?.id);
+    await User.toggleCourseInFavorites(userId, Number(courseId));
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.get(Path.SHOPPING_CART, async (req, res, next) => {
+  try {
+    const userId = Number(req.session?.user?.id);
+    const courses = await Course.findCoursesInCart(userId);
     res.status(200).json({ courses });
   } catch (err) {
     next(err);

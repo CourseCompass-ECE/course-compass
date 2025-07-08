@@ -1,8 +1,20 @@
 import { useRef, useState } from "react";
-import { ECE_AREAS, MINOR, CERTIFICATE } from "../../utils/constants";
+import {
+  ECE_AREAS,
+  MINOR,
+  CERTIFICATE,
+  CART_PATH,
+  FAVORITES_PATH,
+  ID_QUERY_PARAM,
+} from "../../utils/constants";
+import { Path } from "../../utils/enums";
 
 const ExploreCourseList = (props) => {
   const [elementScrolledTo, setElementScrolledTo] = useState(0);
+  const [changeCartError, setChangeCartError] = useState("");
+  const [changeCartErrorId, setChangeCartErrorId] = useState(null);
+  const [changeFavoritesError, setChangeFavoritesError] = useState("");
+  const [changeFavoritesErrorId, setChangeFavoritesErrorId] = useState(null);
   const courseOuterContainerRefList = useRef([]);
   const refList = useRef([]);
   const courseContainerRef = useRef();
@@ -10,10 +22,22 @@ const ExploreCourseList = (props) => {
   const AREAS = "Areas: ";
   const MINORS = "Minors: ";
   const CERTIFICATES = "Certificates: ";
+  const PREREQUISITES = "Prerequisites: ";
+  const COREQUISITES = "Corequisites: ";
+  const EXCLUSIONS = "Exclusions: ";
+  const RECOMMENDED_PREP = "Recommended Preparation:";
   const NONE = "None";
   const COURSE_DESCRIPTION = "Course Description:";
   const VIEW_FULL_DESCRIPTION = "View Full Description";
   const ANIMATION_CLASS = "explore-course-container-animation";
+  const LECTURE_COLOR = "#F3E8DC";
+  const TUTORIAL_COLOR = "#E6F4EA";
+  const PRACTICAL_COLOR = "#D8C7E9";
+  const LECTURE = "LEC";
+  const TUTORIAL = "TUT";
+  const PRACTICAL = "PRA";
+  const CHANGE_CART_ERROR_MESSAGE = "Error updating shopping cart";
+  const CHANGE_FAVORITES_ERROR_MESSAGE = "Error updating favorites";
 
   const changeScroll = (increment) => {
     const newElementIndex = elementScrolledTo + increment;
@@ -24,6 +48,48 @@ const ExploreCourseList = (props) => {
       behavior: "smooth",
     });
     setElementScrolledTo(newElementIndex);
+  };
+
+  const renderClassHours = (classType, hours) => {
+    let backgroundColor;
+    switch (classType) {
+      case LECTURE:
+        backgroundColor = LECTURE_COLOR;
+        break;
+      case TUTORIAL:
+        backgroundColor = TUTORIAL_COLOR;
+        break;
+      case PRACTICAL:
+        backgroundColor = PRACTICAL_COLOR;
+        break;
+    }
+
+    return (
+      <div
+        className="explore-classes"
+        style={{ backgroundColor: backgroundColor }}
+      >
+        {classType}: {hours}hrs
+      </div>
+    );
+  };
+
+  const renderCourseRequirements = (reqList, reqType) => {
+    return (
+      <h4 className="explore-course-heading" style={{ paddingBottom: 0 }}>
+        {reqType}
+        <span className="explore-course-heading-item">
+          {reqList.length === 0 ? ` ${NONE}` : ""}
+        </span>
+        <ul className="explore-course-area-ul">
+          {reqList.map((prereq, index) => (
+            <li key={index} className="explore-course-area-li">
+              {prereq.code}: {prereq.title}
+            </li>
+          ))}
+        </ul>
+      </h4>
+    );
   };
 
   const renderMinorOrCertificate = (course, minorOrCertificate) => {
@@ -54,6 +120,64 @@ const ExploreCourseList = (props) => {
     );
   };
 
+  const toggleCourseInCart = async (courseId) => {
+    setChangeCartError("");
+    setChangeFavoritesError("");
+    setChangeCartErrorId(null);
+    setChangeFavoritesErrorId(null);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.EXPLORE
+        }${CART_PATH}${ID_QUERY_PARAM}${courseId}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        props.fetchAllCourseData();
+      } else {
+        setChangeCartError(CHANGE_CART_ERROR_MESSAGE);
+        setChangeCartErrorId(courseId);
+      }
+    } catch (error) {
+      setChangeCartError(CHANGE_CART_ERROR_MESSAGE);
+      setChangeCartErrorId(courseId);
+    }
+  };
+
+  const toggleCourseInFavorites = async (courseId) => {
+    setChangeCartError("");
+    setChangeFavoritesError("");
+    setChangeCartErrorId(null);
+    setChangeFavoritesErrorId(null);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.EXPLORE
+        }${FAVORITES_PATH}${ID_QUERY_PARAM}${courseId}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        props.fetchAllCourseData();
+      } else {
+        setChangeFavoritesError(CHANGE_FAVORITES_ERROR_MESSAGE);
+        setChangeFavoritesErrorId(courseId);
+      }
+    } catch (error) {
+      setChangeFavoritesError(CHANGE_FAVORITES_ERROR_MESSAGE);
+      setChangeFavoritesErrorId(courseId);
+    }
+  };
+
   return (
     <div className="explore-course-list-container">
       <span
@@ -82,18 +206,25 @@ const ExploreCourseList = (props) => {
             >
               <div className="explore-course-front">
                 <div className="explore-course-icon-container">
-                  {/* TODO: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
-                  <span className="material-symbols-outlined explore-course-icon cart-icon">
-                    {true ? "add_shopping_cart" : "remove_shopping_cart"}
+                  <span
+                    className="material-symbols-outlined explore-course-icon cart-icon"
+                    onClick={() => toggleCourseInCart(course.id)}
+                  >
+                    {!course.inUserShoppingCart ? "add_shopping_cart" : "remove_shopping_cart"}
                   </span>
                   {/* TODO: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
                   <span
                     className={`material-symbols-outlined explore-course-icon favorite-icon ${
-                      false ? "favorited" : ""
+                      course.inUserFavorites ? "favorited" : ""
                     }`}
+                    onClick={() => toggleCourseInFavorites(course.id)}
                   >
                     star
                   </span>
+                </div>
+                <div className="text-input-error explore-cart-error">
+                  {changeCartErrorId === course.id ? changeCartError : ""}
+                  {changeFavoritesErrorId === course.id ? changeFavoritesError : ""} 
                 </div>
 
                 <h3 className="explore-course-title">{course.title}</h3>
@@ -121,6 +252,14 @@ const ExploreCourseList = (props) => {
                 {renderMinorOrCertificate(course, MINOR)}
                 {renderMinorOrCertificate(course, CERTIFICATE)}
 
+                {renderCourseRequirements(course.prerequisites, PREREQUISITES)}
+                {renderCourseRequirements(course.corequisites, COREQUISITES)}
+                {renderCourseRequirements(course.exclusions, EXCLUSIONS)}
+                {renderCourseRequirements(
+                  course.recommendedPrep,
+                  RECOMMENDED_PREP
+                )}
+
                 <div className="explore-course-description-front-container">
                   <p className="explore-course-description-front">
                     {course.description}
@@ -134,6 +273,11 @@ const ExploreCourseList = (props) => {
                 >
                   {VIEW_FULL_DESCRIPTION}
                 </h4>
+                <div className="explore-classes-container">
+                  {renderClassHours(LECTURE, course.lectureHours)}
+                  {renderClassHours(TUTORIAL, course.tutorialHours)}
+                  {renderClassHours(PRACTICAL, course.practicalHours)}
+                </div>
               </div>
 
               <div className="explore-course-back">
@@ -147,7 +291,7 @@ const ExploreCourseList = (props) => {
         ))}
       </div>
       <span
-        className="material-symbols-outlined explore-arrow"
+        className="material-symbols-outlined explore-arrow explore-right-arrow"
         onClick={() => changeScroll(1)}
       >
         arrow_right

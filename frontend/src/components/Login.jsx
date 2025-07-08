@@ -18,6 +18,8 @@ const Login = () => {
   const navigate = useNavigate();
 
   const PASSWORD_EMPTY_ERROR = "Password is required";
+  const EMAIL_PLACEHOLDER = "Email";
+  const PASSWORD_PLACEHOLDER = "Password";
 
   const login = async (event) => {
     event.preventDefault();
@@ -75,7 +77,7 @@ const Login = () => {
         <input
           type="text"
           className="text-input"
-          placeholder="Email"
+          placeholder={EMAIL_PLACEHOLDER}
           value={email}
           maxLength={254}
           onChange={(event) => setEmail(event.target.value)}
@@ -88,7 +90,7 @@ const Login = () => {
           <input
             type={isPasswordVisible ? "text" : "password"}
             className="text-input"
-            placeholder="Password"
+            placeholder={PASSWORD_PLACEHOLDER}
             value={password}
             maxLength={30}
             onChange={(event) => setPassword(event.target.value)}

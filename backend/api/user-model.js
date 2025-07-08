@@ -51,9 +51,103 @@ module.exports = {
     const userData = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        emails: true
-      }
+        emails: true,
+      },
     });
     return userData?.emails;
+  },
+
+  async toggleCourseInShoppingCart(userId, courseId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        shoppingCart: true,
+        favorites: true
+      },
+    });
+
+    if (user.shoppingCart.some((course) => course.id === courseId)) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          shoppingCart: {
+            disconnect: {
+              id: courseId,
+            },
+          },
+        },
+      });
+
+      if (user.favorites.some((course) => course.id === courseId)) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            favorites: {
+              disconnect: {
+                id: courseId,
+              },
+            },
+          },
+        });
+      }
+    } else {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          shoppingCart: {
+            connect: {
+              id: courseId,
+            },
+          },
+        },
+      });
+    }
+  },
+
+  async toggleCourseInFavorites(userId, courseId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        shoppingCart: true,
+        favorites: true,
+      },
+    });
+
+    if (!user.shoppingCart.some((course) => course.id === courseId)) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          shoppingCart: {
+            connect: {
+              id: courseId,
+            },
+          },
+        },
+      });
+    }
+
+    if (user.favorites.some((course) => course.id === courseId)) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          favorites: {
+            disconnect: {
+              id: courseId,
+            },
+          },
+        },
+      });
+    } else {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          favorites: {
+            connect: {
+              id: courseId,
+            },
+          },
+        },
+      });
+    }
   },
 };
