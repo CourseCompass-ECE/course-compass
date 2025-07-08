@@ -5,7 +5,7 @@ const {
   UPPERCASE_LETTER,
   LOWERCASE_LETTER,
   NUMBER,
-  ONLY_NUMBERS
+  ONLY_NUMBERS,
 } = require("../../frontend/src/utils/regex");
 const {
   DUPLICATE_EMAIL_ERROR,
@@ -14,7 +14,7 @@ const {
   TO,
   CC,
   CART_PATH,
-  FAVORITES_PATH
+  FAVORITES_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -35,6 +35,7 @@ sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
+const INVALID_TIMETABLE_DETAILS_ERROR = "Invalid timetable details provided";
 const INVALID_COURSE_ID = "Invalid course id provided";
 const SESSION_COOKIE_NAME = "sessionId";
 const NO_USER_FOUND = "No user found";
@@ -288,7 +289,8 @@ server.get(Path.EXPLORE, async (req, res, next) => {
 server.patch(`${Path.EXPLORE}${CART_PATH}`, async (req, res, next) => {
   const courseId = req.query?.id;
   try {
-    if (!courseId || !ONLY_NUMBERS.test(courseId)) throw new Error(INVALID_COURSE_ID);
+    if (!courseId || !ONLY_NUMBERS.test(courseId))
+      throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
     await User.toggleCourseInShoppingCart(userId, Number(courseId));
@@ -301,7 +303,8 @@ server.patch(`${Path.EXPLORE}${CART_PATH}`, async (req, res, next) => {
 server.patch(`${Path.EXPLORE}${FAVORITES_PATH}`, async (req, res, next) => {
   const courseId = req.query?.id;
   try {
-    if (!courseId || !ONLY_NUMBERS.test(courseId)) throw new Error(INVALID_COURSE_ID);
+    if (!courseId || !ONLY_NUMBERS.test(courseId))
+      throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
     await User.toggleCourseInFavorites(userId, Number(courseId));
@@ -326,6 +329,31 @@ server.get(Path.TIMETABLES, async (req, res, next) => {
     const userId = Number(req.session?.user?.id);
     const timetables = await User.findUserTimetablesById(userId);
     res.status(200).json({ timetables });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
+  const timetableData = req.body;
+  const userId = Number(req.session?.user?.id);
+
+  try {
+    if (
+      !timetableData?.title ||
+      typeof timetableData?.description !== "string" ||
+      typeof timetableData?.isRecommendationWanted !== "boolean"
+    ) {
+      throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+    }
+
+    const timetable = {
+      title: timetableData?.title,
+      description: timetableData?.description
+    };
+    const newTimetable = await Timetable.create(timetable, userId);
+
+    res.status(201).json({ id: newTimetable?.id });
   } catch (err) {
     next(err);
   }

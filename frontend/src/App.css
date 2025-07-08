@@ -948,3 +948,47 @@ footer {
   position: relative;
   margin: 0px 0 10px 5px;
 }
+
+.info-hover {
+  margin-left: 20px;
+  cursor: pointer;
+  font-size: 24px;
+}
+
+.info-hover:hover {
+  color: var(--dark-gray);
+}
+
+.info-hover-text {
+  position: absolute;
+  display: none;
+  top: -20px;
+  right: -150px;
+  width: 300px;
+  font-family: var(--header-font);
+  font-size: var(--med-text-size);
+  padding: 10px;
+  background-color: var(--background-mixed);
+  box-shadow: 5px 5px 15px var(--dark-gray);
+  border-radius: 15px;
+  border: 1px solid var(--light-gray);
+}
+
+.info-hover:hover .info-hover-text {
+  display: block;
+}
+
+.create-timetable-btn-container {
+  display: flex;
+  gap: 25px;
+}
+
+.create-timetable-btn {
+  height: 45px;
+  width: 150px;
+}
+
+.timetable-recommendation-header {
+  position: relative;
+  width: 45vw;
+}

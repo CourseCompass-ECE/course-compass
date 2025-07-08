@@ -91,7 +91,7 @@ model Timetable {
   updatedAt DateTime @updatedAt @default(now())
   title String
   description String?
-  isConflictFree Boolean @default(false)
+  isConflictFree Boolean @default(true)
 }
 
 model TimetableCourse {
