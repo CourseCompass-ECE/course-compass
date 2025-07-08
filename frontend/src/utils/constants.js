@@ -396,3 +396,7 @@ export const SKILLS = [
 
 export const TO = "To";
 export const CC = "CC";
+
+export const CART_PATH = "/cart";
+export const FAVORITES_PATH = "/favorites";
+export const ID_QUERY_PARAM = "?id=";

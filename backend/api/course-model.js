@@ -3,36 +3,45 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 module.exports = {
-  async findCourses() {
+  async findCourses(userId) {
     const courses = await prisma.course.findMany({
       include: {
         minorsCertificates: true,
         prerequisites: {
           select: {
             code: true,
-            title: true
+            title: true,
           },
         },
         corequisites: {
           select: {
             code: true,
-            title: true
+            title: true,
           },
         },
         exclusions: {
           select: {
             code: true,
-            title: true
+            title: true,
           },
         },
         recommendedPrep: {
           select: {
             code: true,
-            title: true
+            title: true,
           },
         },
+        inUserShoppingCart: true,
       },
     });
-    return courses;
+    
+    return courses.map((course) => {
+      return {
+        ...course,
+        inUserShoppingCart: course.inUserShoppingCart.some(
+          (user) => user.id === userId
+        ),
+      };
+    });
   },
 };

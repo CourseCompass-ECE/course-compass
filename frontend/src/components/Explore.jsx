@@ -51,7 +51,11 @@ const Explore = () => {
       selectedEceArea !== title
     ) {
       return false;
-    } else if (selectedCode && title.includes(COURSE_CODE) && COURSE_CODE + selectedCode !== title) {
+    } else if (
+      selectedCode &&
+      title.includes(COURSE_CODE) &&
+      COURSE_CODE + selectedCode !== title
+    ) {
       return false;
     }
 
@@ -224,7 +228,7 @@ const Explore = () => {
             <select
               value={selectedCode}
               className="text-input email-topic-dropdown explore-filters-width"
-              style={{width: "8vw"}}
+              style={{ width: "8vw" }}
               onChange={(event) => setSelectedCode(event.target.value)}
             >
               <option value="">{CODE_DROPDOWN_PLACEHOLDER}</option>
@@ -244,6 +248,7 @@ const Explore = () => {
             <section>
               <h2 className="explore-filter-header">{`"${searchInput.trim()}"`}</h2>
               <ExploreCourseList
+                fetchAllCourseData={fetchAllCourseData}
                 courses={courseData.filter((course) =>
                   filterCourseBySearch(course)
                 )}
@@ -257,6 +262,7 @@ const Explore = () => {
               <section key={index}>
                 <h2 className="explore-filter-header">{filter.title}</h2>
                 <ExploreCourseList
+                  fetchAllCourseData={fetchAllCourseData}
                   courses={courseData.filter((course) =>
                     filter.selector(course)
                   )}

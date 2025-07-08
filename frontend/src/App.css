@@ -943,3 +943,8 @@ footer {
   font-family: var(--header-font);
   font-size: var(--small-med-text-size);
 }
+
+.explore-cart-error {
+  position: relative;
+  margin: 0px 0 10px 5px;
+}
