@@ -37,6 +37,7 @@ const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
 const INVALID_TIMETABLE_DETAILS_ERROR = "Invalid timetable details provided";
 const INVALID_COURSE_ID = "Invalid course id provided";
+const INVALID_TIMETABLE_ID = "Invalid timetable id provided";
 const SESSION_COOKIE_NAME = "sessionId";
 const NO_USER_FOUND = "No user found";
 const SKILLS_INTERESTS_MIN_LENGTH = 5;
@@ -349,11 +350,31 @@ server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
 
     const timetable = {
       title: timetableData?.title,
-      description: timetableData?.description
+      description: timetableData?.description,
     };
-    const newTimetable = await Timetable.create(timetable, userId);
+    const newTimetableId = await Timetable.create(timetable, userId);
 
-    res.status(201).json({ id: newTimetable?.id });
+    res.status(201).json({ id: newTimetableId });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.get(Path.TIMETABLE, async (req, res, next) => {
+  const timetableId = req.query?.id;
+
+  try {
+    if (!timetableId || !ONLY_NUMBERS.test(timetableId))
+      throw new Error(INVALID_TIMETABLE_ID);
+
+    const userId = Number(req.session?.user?.id);
+    const timetable = await User.findUserTimetableByIds(Number(timetableId), userId);
+
+    if (timetable) {
+      res.status(200).json({ timetable });
+    } else {
+      throw new Error(INVALID_TIMETABLE_ID);
+    }
   } catch (err) {
     next(err);
   }

@@ -38,6 +38,7 @@ export const DESIGNATIONS = {
   COMPUTER: "Computer Engineering",
   ELECTRICAL: "Electrical Engineering",
 };
+export const NO_DESIGNATION = "No Designation";
 export const MINOR = "MINOR";
 export const CERTIFICATE = "CERTIFICATE";
 
@@ -403,3 +404,6 @@ export const ID_QUERY_PARAM = "?id=";
 
 export const YES = "Yes";
 export const NO = "No";
+
+export const CONFLICT_FREE = "Conflict Free";
+export const CONFLICTING = "Conflicting";

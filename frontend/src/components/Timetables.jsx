@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Path } from "../utils/enums";
 import { useNavigate } from "react-router-dom";
+import CurrentTimetablesList from "./currentTimetablesList/CurrentTimetablesList";
+import { CONFLICT_FREE, CONFLICTING } from "../utils/constants";
 
 const Timetables = () => {
   const navigate = useNavigate();
@@ -12,16 +14,28 @@ const Timetables = () => {
   const CURRENT_TIMETABLES = "Current Timetables";
   const ALPHABETICAL = "Alphabetical";
   const DATE = "Date (Newest to Oldest)";
-  const CONFLICT_FREE = "Conflict Free";
-  const CONFLICTING = "Conflicting";
   const SORT_OPTIONS = [ALPHABETICAL, DATE, CONFLICT_FREE, CONFLICTING];
   const SORTING_METHOD_PLACEHOLDER = "Sort By";
   const FETCH_ERROR_MESSAGE = "Something went wrong fetching timetables";
-  const NO_CURRENT_TIMETABLES = "You have not created a timetable yet"
+
+  const sortTimetables = (timetables) => {
+    switch (selectedSort) {
+      case ALPHABETICAL:
+        return timetables.toSorted((timetableA, timetableB) => timetableA.title.localeCompare(timetableB.title));
+      case DATE:
+        return timetables.toSorted((timetableA, timetableB) => new Date(timetableB.updatedAt) - new Date(timetableA.updatedAt));
+      case CONFLICT_FREE:
+        return timetables.filter((timetable) => timetable.isConflictFree);
+      case CONFLICTING:
+        return timetables.filter((timetable) => !timetable.isConflictFree);
+      default:
+        return timetables;
+    }
+  };
 
   const fetchAllTimetables = async () => {
     setFetchTimetablesError("");
-    
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${Path.TIMETABLES}`,
@@ -52,7 +66,7 @@ const Timetables = () => {
       <div className="create-btn-height">
         <div
           className="create-btn"
-          style={{width: "250px"}}
+          style={{ width: "250px" }}
           onClick={() => navigate(Path.CREATE_TIMETABLE)}
         >
           <span className="material-symbols-outlined">add_2</span>
@@ -76,6 +90,8 @@ const Timetables = () => {
           ))}
         </select>
       </div>
+
+      <CurrentTimetablesList timetables={sortTimetables(currentTimetables)} />
 
       <div className="text-input-error fetch-emails-error">
         {fetchTimetablesError}

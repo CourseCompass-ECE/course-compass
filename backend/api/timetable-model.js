@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 module.exports = {
   async create(timetable, userId) {
-    const newTimetable = await prisma.user.update({
+    const newUserData = await prisma.user.update({
       where: {
         id: userId,
       },
@@ -13,8 +13,15 @@ module.exports = {
           create: timetable,
         },
       },
+      include: {
+        timetables: {
+          select: {
+            id: true
+          }
+        }
+      }
     });
-
-    return newTimetable;
+    
+    return newUserData.timetables[newUserData.timetables.length - 1].id;
   },
 };
