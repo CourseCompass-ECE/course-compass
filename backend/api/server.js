@@ -38,6 +38,7 @@ sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
 const INVALID_TIMETABLE_DETAILS_ERROR = "Invalid timetable details provided";
+const INVALID_TIMETABLE_COURSE_DETAILS_ERROR = "Invalid timetable course details provided";
 const INVALID_COURSE_ID = "Invalid course id provided";
 const INVALID_TIMETABLE_ID = "Invalid timetable id provided";
 const SESSION_COOKIE_NAME = "sessionId";
@@ -410,6 +411,32 @@ server.patch(`${Path.TIMETABLE}${DESCRIPTION_PATH}`, async (req, res, next) => {
     const userId = Number(req.session?.user?.id);
     await User.updateTimetableDescription(userId, Number(timetableId), description);
     res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.post(Path.TIMETABLE, async (req, res, next) => {
+  const timetableCourseData = req.body;
+  const userId = Number(req.session?.user?.id);
+
+  try {
+    if (
+      !timetableCourseData?.courseId ||
+      !timetableCourseData?.term ||
+      !timetableCourseData?.position ||
+      !timetableCourseData?.timetableId ||
+      !ONLY_NUMBERS.test(timetableCourseData?.courseId) ||
+      !ONLY_NUMBERS.test(timetableCourseData?.term) ||
+      !ONLY_NUMBERS.test(timetableCourseData?.position) ||
+      !ONLY_NUMBERS.test(timetableCourseData?.timetableId)
+    ) {
+      throw new Error(INVALID_TIMETABLE_COURSE_DETAILS_ERROR);
+    }
+
+    await User.addTimetableCourse(timetableCourseData?.term, timetableCourseData?.position, timetableCourseData?.courseId, timetableCourseData?.timetableId, userId);
+
+    res.status(201).end();
   } catch (err) {
     next(err);
   }

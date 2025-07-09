@@ -6,6 +6,7 @@ import {
   CART_PATH,
   FAVORITES_PATH,
   ID_QUERY_PARAM,
+  CODE
 } from "../../utils/constants";
 import { Path } from "../../utils/enums";
 
@@ -16,7 +17,6 @@ const ExploreCourse = (props) => {
   const [changeFavoritesError, setChangeFavoritesError] = useState("");
   const [changeFavoritesErrorId, setChangeFavoritesErrorId] = useState(null);
 
-  const CODE = "Code: ";
   const AREAS = "Areas: ";
   const MINORS = "Minors: ";
   const CERTIFICATES = "Certificates: ";

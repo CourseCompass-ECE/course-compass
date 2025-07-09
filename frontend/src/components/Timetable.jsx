@@ -15,6 +15,7 @@ import {
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
+import TimetableCourseSummary from "./timetableCourseSummary/TimetableCourseSummary";
 
 const Timetable = () => {
   const navigate = useNavigate();
@@ -30,7 +31,18 @@ const Timetable = () => {
   const [cartSearch, setCartSearch] = useState("");
   const [coursesInCart, setCoursesInCart] = useState([]);
   const [fetchCartCoursesError, setFetchCartCoursesError] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [updateTimetableError, setUpdateTimetableError] = useState("");
   const refList = useRef([]);
+  const terms = [
+    {
+      title: "3rd Year, Fall",
+      courses: Array(5).fill(null),
+    },
+    { title: "3rd Year, Winter", courses: Array(5).fill(null) },
+    { title: "4th Year, Fall", courses: Array(5).fill(null) },
+    { title: "4th Year, Winter", courses: Array(5).fill(null) },
+  ];
 
   const TIMETABLE = "Timetable";
   const TIMETABLE_DESCRIPTION = "Timetable Description ";
@@ -41,6 +53,8 @@ const Timetable = () => {
     "Click on a course from your shopping cart or currently in your timetable, then click on any open tile to move it";
   const BUTTON_TEXT = "Generate Timetable";
   const CART_SEARCH_PLACEHOLDER = "Search by title or code";
+  const FAVORITE_ICON = "star";
+  const CART_ICON = "remove_shopping_cart";
 
   const cancelEditingDescription = () => {
     setDescription(timetable?.description);
@@ -128,6 +142,40 @@ const Timetable = () => {
     }
   };
 
+  const updateTimetableCourses = async (courseId, termId, positionId) => {
+    setUpdateTimetableError("");
+    setSelectedCourse(null);
+
+    try {
+      const timetableCourseData = {
+        courseId,
+        term: termId,
+        position: positionId,
+        timetableId: timetable?.id
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${Path.TIMETABLE}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(timetableCourseData),
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        fetchTimetableData(timetable?.id);
+      } else {
+        setUpdateTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setUpdateTimetableError(GENERIC_ERROR);
+    }
+  };
+
   const fetchTimetableData = async (id) => {
     try {
       const response = await fetch(
@@ -191,10 +239,8 @@ const Timetable = () => {
     const timetableId = searchParams.get("id");
     if (!ONLY_NUMBERS.test(timetableId)) navigate(Path.TIMETABLES);
     callFetchTimetableData(timetableId);
-    fetchCoursesInCart(() => {}, setCoursesInCart);
+    fetchCoursesInCart(setFetchCartCoursesError, setCoursesInCart);
   }, []);
-
-  console.log(coursesInCart)
 
   return (
     <div className="page-container">
@@ -294,30 +340,51 @@ const Timetable = () => {
               value={cartSearch}
               maxLength={40}
               onChange={(event) => setCartSearch(event.target.value)}
-              style={{backgroundColor: "transparent"}}
+              style={{ backgroundColor: "transparent" }}
             />
           </div>
 
           <div className="cart-courses-container">
             {!fetchCartCoursesError ? (
               <>
-                {coursesInCart.map((course, index) => (
-                  <ExploreCourse
-                    key={index}
-                    index={index}
-                    fetchAllCourseData={() =>
-                      fetchCoursesInCart(
-                        setFetchCartCoursesError,
-                        setCoursesInCart
-                      )
-                    }
-                    course={course}
-                    courseOuterContainerRefList={refList}
-                  />
-                ))}
+                {coursesInCart
+                  .filter(
+                    (course) =>
+                      !cartSearch.trim() ||
+                      course.title
+                        .toLowerCase()
+                        .includes(cartSearch.trim().toLowerCase()) ||
+                      course.code
+                        .toLowerCase()
+                        .includes(cartSearch.trim().toLowerCase())
+                  )
+                  .map((course, index) => (
+                    <div
+                      key={index}
+                      onClick={(event) =>
+                        event.target.innerText !== FAVORITE_ICON &&
+                        event.target.innerText !== CART_ICON
+                          ? setSelectedCourse(course.id)
+                          : null
+                      }
+                      style={{ cursor: "pointer"}}
+                    >
+                      <ExploreCourse
+                        index={index}
+                        fetchAllCourseData={() =>
+                          fetchCoursesInCart(
+                            setFetchCartCoursesError,
+                            setCoursesInCart
+                          )
+                        }
+                        course={course}
+                        courseOuterContainerRefList={refList}
+                      />
+                    </div>
+                  ))}
               </>
             ) : (
-              <h4 className="timetable-cart-error">{fetchCartCoursesError}</h4>
+              <h3 className="timetable-cart-error">{fetchCartCoursesError}</h3>
             )}
           </div>
         </div>
@@ -347,7 +414,34 @@ const Timetable = () => {
                 {BUTTON_TEXT}
               </button>
             </div>
+            <span className="timetable-change-error">{updateTimetableError}</span>
           </h2>
+
+          {terms.map((term, termId) => (
+            <section key={termId} className="term-container">
+              <h3 className="term-title">{term.title}</h3>
+              <div className="timetable-course-container">
+                {term.courses.map((course, positionId) =>
+                  course ? (
+                    <TimetableCourseSummary
+                      key={positionId}
+                      title={course.title}
+                      code={course.code}
+                      courseId={course.id}
+                      setSelectedCourse={setSelectedCourse}
+                    />
+                  ) : (
+                    <article
+                      key={positionId}
+                      className="course-placeholder"
+                      style={!selectedCourse ? {cursor: "not-allowed"} : {}}
+                      onClick={() => selectedCourse ? updateTimetableCourses(selectedCourse, termId + 1, positionId + 1) : null}
+                    ></article>
+                  )
+                )}
+              </div>
+            </section>
+          ))}
         </div>
       </div>
     </div>

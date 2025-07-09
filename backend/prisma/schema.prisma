@@ -96,7 +96,8 @@ model Timetable {
 
 model TimetableCourse {
   id Int @id @default(autoincrement())
-  semester Int
+  term Int
+  position Int
   course Course @relation(fields: [courseId], references: [id])
   courseId Int
   timetable Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
