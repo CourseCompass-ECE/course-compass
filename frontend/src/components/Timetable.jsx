@@ -18,6 +18,15 @@ import ExploreCourse from "./exploreCourseList/ExploreCourse";
 import TimetableCourseSummary from "./timetableCourseSummary/TimetableCourseSummary";
 
 const Timetable = () => {
+  const initialTerms = [
+    {
+      title: "3rd Year, Fall",
+      courses: Array(5).fill(null),
+    },
+    { title: "3rd Year, Winter", courses: Array(5).fill(null) },
+    { title: "4th Year, Fall", courses: Array(5).fill(null) },
+    { title: "4th Year, Winter", courses: Array(5).fill(null) },
+  ];
   const navigate = useNavigate();
   const infoRef = useRef();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,16 +42,8 @@ const Timetable = () => {
   const [fetchCartCoursesError, setFetchCartCoursesError] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [updateTimetableError, setUpdateTimetableError] = useState("");
+  const [terms, setTerms] = useState(initialTerms);
   const refList = useRef([]);
-  const terms = [
-    {
-      title: "3rd Year, Fall",
-      courses: Array(5).fill(null),
-    },
-    { title: "3rd Year, Winter", courses: Array(5).fill(null) },
-    { title: "4th Year, Fall", courses: Array(5).fill(null) },
-    { title: "4th Year, Winter", courses: Array(5).fill(null) },
-  ];
 
   const TIMETABLE = "Timetable";
   const TIMETABLE_DESCRIPTION = "Timetable Description ";
@@ -151,7 +152,7 @@ const Timetable = () => {
         courseId,
         term: termId,
         position: positionId,
-        timetableId: timetable?.id
+        timetableId: timetable?.id,
       };
 
       const response = await fetch(
@@ -176,6 +177,37 @@ const Timetable = () => {
     }
   };
 
+  const deleteTimetableCourse = async (courseId) => {
+    setUpdateTimetableError("");
+    
+    try {
+      const timetableCourseData = {
+        courseId,
+        timetableId: timetable?.id,
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${Path.TIMETABLE}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(timetableCourseData),
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        fetchTimetableData(timetable?.id);
+      } else {
+        setUpdateTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setUpdateTimetableError(GENERIC_ERROR);
+    }
+  }
+
   const fetchTimetableData = async (id) => {
     try {
       const response = await fetch(
@@ -193,12 +225,22 @@ const Timetable = () => {
         setTitle(data?.timetable?.title);
         setDescription(data?.timetable?.description);
         setTimetable(data?.timetable);
+        organizeCourses(data.timetable?.courses);
       } else {
         navigate(Path.EXPLORE);
       }
     } catch (error) {
       navigate(Path.EXPLORE);
     }
+  };
+
+  const organizeCourses = (courses) => {
+    let newTerms = initialTerms;
+    courses.forEach((courseObject) => {
+      newTerms[courseObject.term - 1].courses[courseObject.position - 1] =
+        courseObject.course;
+    });
+    setTerms(newTerms);
   };
 
   const renderIcons = (isEditing, setIsEditing, updateItem, cancelEditing) => {
@@ -367,7 +409,7 @@ const Timetable = () => {
                           ? setSelectedCourse(course.id)
                           : null
                       }
-                      style={{ cursor: "pointer"}}
+                      style={{ cursor: "pointer" }}
                     >
                       <ExploreCourse
                         index={index}
@@ -414,7 +456,9 @@ const Timetable = () => {
                 {BUTTON_TEXT}
               </button>
             </div>
-            <span className="timetable-change-error">{updateTimetableError}</span>
+            <span className="timetable-change-error">
+              {updateTimetableError}
+            </span>
           </h2>
 
           {terms.map((term, termId) => (
@@ -429,13 +473,22 @@ const Timetable = () => {
                       code={course.code}
                       courseId={course.id}
                       setSelectedCourse={setSelectedCourse}
+                      deleteTimetableCourse={() => deleteTimetableCourse(course.id)}
                     />
                   ) : (
                     <article
                       key={positionId}
                       className="course-placeholder"
-                      style={!selectedCourse ? {cursor: "not-allowed"} : {}}
-                      onClick={() => selectedCourse ? updateTimetableCourses(selectedCourse, termId + 1, positionId + 1) : null}
+                      style={!selectedCourse ? { cursor: "not-allowed" } : {}}
+                      onClick={() =>
+                        selectedCourse
+                          ? updateTimetableCourses(
+                              selectedCourse,
+                              termId + 1,
+                              positionId + 1
+                            )
+                          : null
+                      }
                     ></article>
                   )
                 )}

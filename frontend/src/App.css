@@ -1217,6 +1217,7 @@ footer {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  position: relative;
 }
 
 .timetable-course-title {
@@ -1232,4 +1233,16 @@ footer {
   font-size: var(--small-text-size);
   color: var(--error-red);
   font-weight: 600;
+}
+
+.timetable-course-delete {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  font-size: var(--header-size);
+  cursor: pointer;
+}
+
+.timetable-course-delete:hover {
+  color: var(--error-red);
 }

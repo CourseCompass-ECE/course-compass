@@ -16,12 +16,31 @@ module.exports = {
       include: {
         timetables: {
           select: {
-            id: true
-          }
-        }
-      }
+            id: true,
+          },
+        },
+      },
+    });
+
+    return newUserData.timetables[newUserData.timetables.length - 1].id;
+  },
+
+  async deleteTimetableCourse(courseId, timetableId, userId) {
+    const timetableInUserPosession = await prisma.timetable.findUnique({
+      where: {
+        id: timetableId,
+        userId,
+      },
     });
     
-    return newUserData.timetables[newUserData.timetables.length - 1].id;
+    if (timetableInUserPosession) {
+      await prisma.timetableCourse.delete({
+        where: {
+          courseId_timetableId: { courseId, timetableId },
+        },
+      });
+    } else {
+      throw new Error();
+    }
   },
 };

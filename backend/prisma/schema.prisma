@@ -102,6 +102,8 @@ model TimetableCourse {
   courseId Int
   timetable Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
   timetableId Int
+
+  @@unique([courseId, timetableId])
 }
 
 model MinorCertificate {
