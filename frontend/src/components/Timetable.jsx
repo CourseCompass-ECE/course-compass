@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Path } from "../utils/enums";
 import { ONLY_NUMBERS } from "../utils/regex";
@@ -10,10 +10,15 @@ import {
   GENERIC_ERROR,
   TITLE_PATH,
   DESCRIPTION_PATH,
+  DESIGNATIONS,
+  SHOPPING_CART,
 } from "../utils/constants";
+import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
+import ExploreCourse from "./exploreCourseList/ExploreCourse";
 
 const Timetable = () => {
   const navigate = useNavigate();
+  const infoRef = useRef();
   const [searchParams, setSearchParams] = useSearchParams();
   const [timetable, setTimetable] = useState(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -22,8 +27,20 @@ const Timetable = () => {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [description, setDescription] = useState("");
   const [descriptionError, setDescriptionError] = useState("");
+  const [cartSearch, setCartSearch] = useState("");
+  const [coursesInCart, setCoursesInCart] = useState([]);
+  const [fetchCartCoursesError, setFetchCartCoursesError] = useState("");
+  const refList = useRef([]);
+
+  const TIMETABLE = "Timetable";
   const TIMETABLE_DESCRIPTION = "Timetable Description ";
   const DESIGNATION = "Designation";
+  const NO_DESIGNATION =
+    "No designation is possible with the current timetable";
+  const TIMETABLE_SELECTION_INFO =
+    "Click on a course from your shopping cart or currently in your timetable, then click on any open tile to move it";
+  const BUTTON_TEXT = "Generate Timetable";
+  const CART_SEARCH_PLACEHOLDER = "Search by title or code";
 
   const cancelEditingDescription = () => {
     setDescription(timetable?.description);
@@ -174,12 +191,15 @@ const Timetable = () => {
     const timetableId = searchParams.get("id");
     if (!ONLY_NUMBERS.test(timetableId)) navigate(Path.TIMETABLES);
     callFetchTimetableData(timetableId);
+    fetchCoursesInCart(() => {}, setCoursesInCart);
   }, []);
+
+  console.log(coursesInCart)
 
   return (
     <div className="page-container">
       <button
-        className="create-account-back-container create-email-back-container"
+        className="create-account-back-container create-email-back-container timetable-back"
         onClick={() => navigate(Path.TIMETABLES)}
       >
         <span className="material-symbols-outlined create-account-back-icon">
@@ -238,11 +258,97 @@ const Timetable = () => {
         </div>
       </div>
 
-      <div htmlFor="designation" className="page-big-header timetable-description">
+      <h2
+        htmlFor="designation"
+        className="page-big-header timetable-description"
+      >
         {DESIGNATION}
+      </h2>
+      <div className="text-input-container timetable-designation">
+        {timetable?.designation
+          ? DESIGNATIONS[timetable?.designation]
+          : NO_DESIGNATION}
       </div>
-      <div className="text-input-container">
-        {}
+
+      <div className="cart-timetable-courses-container">
+        <div className="cart-container">
+          <h2
+            htmlFor="designation"
+            className="page-big-header"
+            style={{ textAlign: "center" }}
+          >
+            {SHOPPING_CART}
+          </h2>
+
+          <div className="text-input-container search-bar timetable-search">
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "var(--subheader-size)" }}
+            >
+              search
+            </span>
+            <input
+              type="text"
+              className="text-input explore-filters-width explore-search-input"
+              placeholder={CART_SEARCH_PLACEHOLDER}
+              value={cartSearch}
+              maxLength={40}
+              onChange={(event) => setCartSearch(event.target.value)}
+              style={{backgroundColor: "transparent"}}
+            />
+          </div>
+
+          <div className="cart-courses-container">
+            {!fetchCartCoursesError ? (
+              <>
+                {coursesInCart.map((course, index) => (
+                  <ExploreCourse
+                    key={index}
+                    index={index}
+                    fetchAllCourseData={() =>
+                      fetchCoursesInCart(
+                        setFetchCartCoursesError,
+                        setCoursesInCart
+                      )
+                    }
+                    course={course}
+                    courseOuterContainerRefList={refList}
+                  />
+                ))}
+              </>
+            ) : (
+              <h4 className="timetable-cart-error">{fetchCartCoursesError}</h4>
+            )}
+          </div>
+        </div>
+
+        <div className="timetable-courses-container">
+          <h2
+            htmlFor="designation"
+            className="page-big-header timetable-courses-header"
+          >
+            {TIMETABLE}
+            <span
+              className="material-symbols-outlined info-hover"
+              onMouseEnter={() => (infoRef.current.style.display = "block")}
+              onMouseLeave={() => (infoRef.current.style.display = "none")}
+            >
+              info
+            </span>
+            <div className="info-hover-text timetable-info-text" ref={infoRef}>
+              {TIMETABLE_SELECTION_INFO}
+            </div>
+            <div className="create-btn-height generate-timetable">
+              <button
+                className="create-btn generate-background"
+                style={{ width: "250px" }}
+              >
+                <span className="material-symbols-outlined">wand_stars</span>
+                {BUTTON_TEXT}
+              </button>
+            </div>
+          </h2>
+        </div>
       </div>
     </div>
   );

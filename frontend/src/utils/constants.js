@@ -412,3 +412,5 @@ export const CONFLICTING = "Conflicting";
 export const TIMETABLE_TITLE_PLACEHOLDER = "Enter timetable title";
 export const TIMETABLE_DESCRIPTION_PLACEHOLDER = "Enter timetable description";
 export const TITLE_ERROR_MESSAGE = "Please provide a title";
+
+export const SHOPPING_CART = "Shopping Cart";

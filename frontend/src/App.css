@@ -993,6 +993,11 @@ footer {
   width: 45vw;
 }
 
+.timetable-courses-header {
+  position: relative;
+  text-align: center;
+}
+
 .timetable-container {
   position: relative;
   transition: scale 0.3s;
@@ -1097,4 +1102,82 @@ footer {
   display: inline-flex;
   margin-left: 20px;
   gap: 30px;
+}
+
+.timetable-designation {
+  align-self: flex-start;
+  margin: 30px 0 5vw 5vw;
+  font-family: var(--header-font);
+  font-size: var(--large-text-size);
+}
+
+.cart-timetable-courses-container {
+  width: 100%;
+  display: flex;
+  margin-bottom: 70px;
+}
+
+.cart-container {
+  width: 20%;
+  padding: 10px;
+  border-right: 1px solid var(--dark-gray);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.timetable-courses-container {
+  width: 80%;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--dark-gray);
+}
+
+.timetable-info-text {
+  left: 60%;
+  width: 15%;
+}
+
+.generate-timetable {
+  position: absolute;
+  top: -4px;
+  right: 10px;
+}
+
+.generate-background {
+  background: linear-gradient(135deg, #c3dafe, #e0c3fc);
+}
+
+.generate-background:hover {
+  opacity: 0.9;
+}
+
+.timetable-search {
+  align-self: center;
+  padding-bottom: 20px;
+}
+
+.timetable-back {
+  position: sticky;
+  height: 0;
+}
+
+.cart-courses-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 70px;
+}
+
+.timetable-cart-error {
+  font-family: var(--header-font);
+  font-size: var(--med-text-size);
+  font-weight: normal;
+  color: var(--error-red);
+  align-self: center;
+  text-align: center;
+  width: 80%;
 }
