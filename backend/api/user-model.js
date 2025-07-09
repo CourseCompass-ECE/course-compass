@@ -2,6 +2,19 @@ const { PrismaClient } = require("@prisma/client");
 const { MINOR, CERTIFICATE } = require("../../frontend/src/utils/constants");
 const prisma = new PrismaClient();
 
+const getAllTimetables = async (userId) => {
+  return await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      timetables: {
+        include: {
+          courses: true,
+        },
+      },
+    },
+  });
+};
+
 module.exports = {
   async create(newUser) {
     let minorsCertificates = newUser.desiredMinors.map((minor) => {
@@ -62,7 +75,7 @@ module.exports = {
       where: { id: userId },
       include: {
         shoppingCart: true,
-        favorites: true
+        favorites: true,
       },
     });
 
@@ -149,5 +162,17 @@ module.exports = {
         },
       });
     }
+  },
+
+  async findUserTimetablesById(userId) {
+    const userData = await getAllTimetables(userId);
+    return userData?.timetables;
+  },
+
+  async findUserTimetableByIds(timetableId, userId) {
+    const userData = await getAllTimetables(userId);
+    return userData?.timetables?.find(
+      (timetable) => timetable.id === timetableId
+    );
   },
 };

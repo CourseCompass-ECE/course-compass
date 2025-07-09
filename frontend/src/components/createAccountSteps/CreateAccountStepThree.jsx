@@ -1,5 +1,10 @@
 import DropdownItems from "../DropdownItems";
-import { ECE_AREAS, SKILLS, INTERESTS, ERROR_MESSAGE_MARGIN_TOP } from "../../utils/constants";
+import {
+  ECE_AREAS,
+  SKILLS,
+  INTERESTS,
+  ERROR_MESSAGE_MARGIN_TOP,
+} from "../../utils/constants";
 import { useState } from "react";
 
 const CreateAccountStepThree = (props) => {
@@ -49,128 +54,93 @@ const CreateAccountStepThree = (props) => {
     props.setCurrentStep(props.currentStep + 1);
   };
 
+  const renderDropdownMenu = (
+    setItems,
+    currentItems,
+    placeholderText,
+    menuItems,
+    removeItem,
+    errorMessage
+  ) => {
+    return (
+      <div className="text-input-container dropdown-container">
+        <select
+          value=""
+          className="text-input dropdown-input"
+          onChange={(event) => setItems([...currentItems, event.target.value])}
+        >
+          <option value="" disabled>
+            {placeholderText}
+          </option>
+          {!Array.isArray(menuItems)
+            ? Object.entries(menuItems)
+                .filter(([key]) => !currentItems.includes(key))
+                .map(([key, value], index) => (
+                  <option key={index} value={key}>
+                    {value}
+                  </option>
+                ))
+            : menuItems.filter(
+                (item) => !currentItems.includes(item)
+              ).map((item, index) => (
+                <option key={index} value={item}>
+                  {item}
+                </option>
+              ))}
+        </select>
+
+        <DropdownItems
+          selectedItems={currentItems}
+          allItems={menuItems}
+          removeItem={removeItem}
+        />
+
+        <span
+          className="text-input-error"
+          style={
+            currentItems.length > 0
+              ? { marginTop: ERROR_MESSAGE_MARGIN_TOP }
+              : {}
+          }
+        >
+          {errorMessage}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <form
       className="create-account-form"
       onSubmit={(event) => submitStepThree(event)}
     >
       <h1 className="create-account-form-title">{STEP_TITLE}</h1>
-      <div className="text-input-container dropdown-container">
-        <select
-          value=""
-          className="text-input dropdown-input"
-          onChange={(event) =>
-            props.setEceAreas([...props.eceAreas, event.target.value])
-          }
-        >
-          <option value="" disabled>
-            {ECE_AREAS_TEXT}
-          </option>
-          {Object.entries(ECE_AREAS)
-            .filter(([key]) => !props.eceAreas.includes(key))
-            .map(([key, value], index) => (
-              <option key={index} value={key}>
-                {value}
-              </option>
-            ))}
-        </select>
+      {renderDropdownMenu(
+        props.setEceAreas,
+        props.eceAreas,
+        ECE_AREAS_TEXT,
+        ECE_AREAS,
+        handleRemoveEceArea,
+        eceAreasError
+      )}
 
-        <DropdownItems
-          selectedItems={props.eceAreas}
-          allItems={ECE_AREAS}
-          removeItem={handleRemoveEceArea}
-          isEceAreaDropdown={true}
-        />
+      {renderDropdownMenu(
+        props.setInterests,
+        props.interests,
+        INTERESTS_TEXT,
+        INTERESTS,
+        handleRemoveInterest,
+        interestsError
+      )}
 
-        <span
-          className="text-input-error"
-          style={
-            props.eceAreas.length > 0
-              ? { marginTop: ERROR_MESSAGE_MARGIN_TOP }
-              : {}
-          }
-        >
-          {eceAreasError}
-        </span>
-      </div>
-
-      <div className="text-input-container dropdown-container">
-        <select
-          value=""
-          className="text-input dropdown-input"
-          onChange={(event) =>
-            props.setInterests([...props.interests, event.target.value])
-          }
-        >
-          <option value="" disabled>
-            {INTERESTS_TEXT}
-          </option>
-          {INTERESTS.filter(
-            (interest) => !props.interests.includes(interest)
-          ).map((interest, index) => (
-            <option key={index} value={interest}>
-              {interest}
-            </option>
-          ))}
-        </select>
-
-        <DropdownItems
-          selectedItems={props.interests}
-          allItems={INTERESTS}
-          removeItem={handleRemoveInterest}
-          isEceAreaDropdown={false}
-        />
-
-        <span
-          className="text-input-error"
-          style={
-            props.interests.length > 0
-              ? { marginTop: ERROR_MESSAGE_MARGIN_TOP }
-              : {}
-          }
-        >
-          {interestsError}
-        </span>
-      </div>
-
-      <div className="text-input-container dropdown-container">
-        <select
-          value=""
-          className="text-input dropdown-input"
-          onChange={(event) =>
-            props.setSkills([...props.skills, event.target.value])
-          }
-        >
-          <option value="" disabled>
-            {SKILLS_TEXT}
-          </option>
-          {SKILLS.filter((skill) => !props.skills.includes(skill)).map(
-            (skill, index) => (
-              <option key={index} value={skill}>
-                {skill}
-              </option>
-            )
-          )}
-        </select>
-
-        <DropdownItems
-          selectedItems={props.skills}
-          allItems={SKILLS}
-          removeItem={handleRemoveSkill}
-          isEceAreaDropdown={false}
-        />
-
-        <span
-          className="text-input-error"
-          style={
-            props.skills.length > 0
-              ? { marginTop: ERROR_MESSAGE_MARGIN_TOP }
-              : {}
-          }
-        >
-          {skillsError}
-        </span>
-      </div>
+      {renderDropdownMenu(
+        props.setSkills,
+        props.skills,
+        SKILLS_TEXT,
+        SKILLS,
+        handleRemoveSkill,
+        skillsError
+      )}
 
       <div className="text-input-container create-account-btn">
         <button type="submit" className="form-btn">

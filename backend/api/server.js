@@ -5,7 +5,7 @@ const {
   UPPERCASE_LETTER,
   LOWERCASE_LETTER,
   NUMBER,
-  ONLY_NUMBERS
+  ONLY_NUMBERS,
 } = require("../../frontend/src/utils/regex");
 const {
   DUPLICATE_EMAIL_ERROR,
@@ -14,7 +14,7 @@ const {
   TO,
   CC,
   CART_PATH,
-  FAVORITES_PATH
+  FAVORITES_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -35,7 +35,9 @@ sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
+const INVALID_TIMETABLE_DETAILS_ERROR = "Invalid timetable details provided";
 const INVALID_COURSE_ID = "Invalid course id provided";
+const INVALID_TIMETABLE_ID = "Invalid timetable id provided";
 const SESSION_COOKIE_NAME = "sessionId";
 const NO_USER_FOUND = "No user found";
 const SKILLS_INTERESTS_MIN_LENGTH = 5;
@@ -187,7 +189,7 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
   const userId = Number(req.session?.user?.id);
 
   try {
-    const emails = emailData.emails.map((email) => {
+    const recipientEmails = emailData.recipientEmails.map((email) => {
       return {
         ...email,
         emailAddress: email.emailAddress
@@ -200,24 +202,24 @@ server.post(Path.CREATE_EMAIL, async (req, res, next) => {
       : emailData.subjectLine;
     const newBody = emailData.body ? emailData.body.trim() : emailData.body;
 
-    const emailAddresses = emails.map((email) => email.emailAddress);
+    const emailAddresses = recipientEmails.map((email) => email.emailAddress);
     const duplicateAddresses = emailAddresses.filter(
       (emailAddress, index) => emailAddresses.indexOf(emailAddress) !== index
     );
 
-    const toEmails = emails
+    const toEmails = recipientEmails
       .filter((email) => email.toOrCC === TO)
       .map((email) => email.emailAddress);
 
-    const ccEmails = emails
+    const ccEmails = recipientEmails
       .filter((email) => email.toOrCC === CC)
       .map((email) => email.emailAddress);
 
     if (
       !emailData.topic ||
       !newSubjectLine ||
-      emails.length === 0 ||
-      emails.some(
+      recipientEmails.length === 0 ||
+      recipientEmails.some(
         (email) =>
           (email.toOrCC !== TO && email.toOrCC !== CC) ||
           !email.emailAddress ||
@@ -288,7 +290,8 @@ server.get(Path.EXPLORE, async (req, res, next) => {
 server.patch(`${Path.EXPLORE}${CART_PATH}`, async (req, res, next) => {
   const courseId = req.query?.id;
   try {
-    if (!courseId || !ONLY_NUMBERS.test(courseId)) throw new Error(INVALID_COURSE_ID);
+    if (!courseId || !ONLY_NUMBERS.test(courseId))
+      throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
     await User.toggleCourseInShoppingCart(userId, Number(courseId));
@@ -301,7 +304,8 @@ server.patch(`${Path.EXPLORE}${CART_PATH}`, async (req, res, next) => {
 server.patch(`${Path.EXPLORE}${FAVORITES_PATH}`, async (req, res, next) => {
   const courseId = req.query?.id;
   try {
-    if (!courseId || !ONLY_NUMBERS.test(courseId)) throw new Error(INVALID_COURSE_ID);
+    if (!courseId || !ONLY_NUMBERS.test(courseId))
+      throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
     await User.toggleCourseInFavorites(userId, Number(courseId));
@@ -316,6 +320,61 @@ server.get(Path.SHOPPING_CART, async (req, res, next) => {
     const userId = Number(req.session?.user?.id);
     const courses = await Course.findCoursesInCart(userId);
     res.status(200).json({ courses });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.get(Path.TIMETABLES, async (req, res, next) => {
+  try {
+    const userId = Number(req.session?.user?.id);
+    const timetables = await User.findUserTimetablesById(userId);
+    res.status(200).json({ timetables });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
+  const timetableData = req.body;
+  const userId = Number(req.session?.user?.id);
+
+  try {
+    if (
+      !timetableData?.title ||
+      typeof timetableData?.description !== "string" ||
+      typeof timetableData?.isRecommendationWanted !== "boolean"
+    ) {
+      throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+    }
+
+    const timetable = {
+      title: timetableData?.title,
+      description: timetableData?.description,
+    };
+    const newTimetableId = await Timetable.create(timetable, userId);
+
+    res.status(201).json({ id: newTimetableId });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.get(Path.TIMETABLE, async (req, res, next) => {
+  const timetableId = req.query?.id;
+
+  try {
+    if (!timetableId || !ONLY_NUMBERS.test(timetableId))
+      throw new Error(INVALID_TIMETABLE_ID);
+
+    const userId = Number(req.session?.user?.id);
+    const timetable = await User.findUserTimetableByIds(Number(timetableId), userId);
+
+    if (timetable) {
+      res.status(200).json({ timetable });
+    } else {
+      throw new Error(INVALID_TIMETABLE_ID);
+    }
   } catch (err) {
     next(err);
   }
