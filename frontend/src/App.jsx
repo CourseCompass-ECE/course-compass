@@ -5,7 +5,7 @@ import Login from "./components/Login";
 import LandingPage from "./components/LandingPage";
 import CreateAccount from "./components/CreateAccount";
 import Explore from "./components/Explore";
-import ExploreCourse from "./components/ExploreCourse";
+import ExploreCourseDetails from "./components/ExploreCourseDetails";
 import Profile from "./components/Profile";
 import ShoppingCart from "./components/ShoppingCart";
 import Email from "./components/Email";
@@ -44,7 +44,7 @@ function App() {
         },
         {
           path: Path.EXPLORE_COURSE,
-          element: <ExploreCourse />,
+          element: <ExploreCourseDetails />,
         },
         {
           path: Path.PROFILE,

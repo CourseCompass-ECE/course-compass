@@ -400,6 +400,8 @@ export const CC = "CC";
 
 export const CART_PATH = "/cart";
 export const FAVORITES_PATH = "/favorites";
+export const TITLE_PATH = "/title";
+export const DESCRIPTION_PATH = "/description";
 export const ID_QUERY_PARAM = "?id=";
 
 export const YES = "Yes";
@@ -407,3 +409,9 @@ export const NO = "No";
 
 export const CONFLICT_FREE = "Conflict Free";
 export const CONFLICTING = "Conflicting";
+export const TIMETABLE_TITLE_PLACEHOLDER = "Enter timetable title";
+export const TIMETABLE_DESCRIPTION_PLACEHOLDER = "Enter timetable description";
+export const TITLE_ERROR_MESSAGE = "Please provide a title";
+
+export const SHOPPING_CART = "Shopping Cart";
+export const CODE = "Code: ";

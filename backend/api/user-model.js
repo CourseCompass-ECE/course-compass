@@ -8,7 +8,11 @@ const getAllTimetables = async (userId) => {
     include: {
       timetables: {
         include: {
-          courses: true,
+          courses: {
+            include: {
+              course: true
+            }
+          },
         },
       },
     },
@@ -174,5 +178,73 @@ module.exports = {
     return userData?.timetables?.find(
       (timetable) => timetable.id === timetableId
     );
+  },
+
+  async updateTimetableTitle(userId, timetableId, title) {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        timetables: {
+          update: {
+            where: {
+              id: timetableId,
+            },
+            data: {
+              title: title,
+            },
+          },
+        },
+      },
+    });
+  },
+
+  async updateTimetableDescription(userId, timetableId, description) {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        timetables: {
+          update: {
+            where: {
+              id: timetableId,
+            },
+            data: {
+              description: description,
+            },
+          },
+        },
+      },
+    });
+  },
+
+  async addTimetableCourse(term, position, courseId, timetableId, userId) {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        timetables: {
+          update: {
+            where: {
+              id: timetableId,
+            },
+            data: {
+              courses: {
+                create: {
+                  term,
+                  position,
+                  course: {
+                    connect: { id: courseId },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
   },
 };

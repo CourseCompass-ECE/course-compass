@@ -1,7 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { Path } from "../utils/enums";
 import { useRef, useState } from "react";
-import { YES, NO, GENERIC_ERROR, ID_QUERY_PARAM } from "../utils/constants";
+import {
+  YES,
+  NO,
+  GENERIC_ERROR,
+  ID_QUERY_PARAM,
+  TIMETABLE_TITLE_PLACEHOLDER,
+  TIMETABLE_DESCRIPTION_PLACEHOLDER,
+  TITLE_ERROR_MESSAGE
+} from "../utils/constants";
 
 const CreateTimetable = () => {
   const navigate = useNavigate();
@@ -13,10 +21,7 @@ const CreateTimetable = () => {
   const [submissionError, setSubmissionError] = useState("");
   const TITLE = "Create Timetable";
   const TIMETABLE_TITLE = "Timetable Title";
-  const TIMETABLE_TITLE_PLACEHOLDER = "Enter timetable title";
-  const TITLE_ERROR_MESSAGE = "Please provide a title";
   const TIMETABLE_DESCRIPTION = "Timetable Description (optional)";
-  const TIMETABLE_DESCRIPTION_PLACEHOLDER = "Enter timetable description";
   const RECOMMENDATIONS_DESCRIPTION = "Receive Timetable Recommendation?";
   const RECOMMENDATIONS_INFO_TEXT =
     "After creating your timetable, if possible, an arrangement of courses from your shopping cart will be recommended to form a conflict free timetable";

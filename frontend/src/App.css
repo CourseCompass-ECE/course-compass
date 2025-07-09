@@ -993,6 +993,11 @@ footer {
   width: 45vw;
 }
 
+.timetable-courses-header {
+  position: relative;
+  text-align: center;
+}
+
 .timetable-container {
   position: relative;
   transition: scale 0.3s;
@@ -1001,7 +1006,7 @@ footer {
 }
 
 .timetable-container:hover {
-  scale: 1.1
+  scale: 1.1;
 }
 
 .timetable-tags-date-container {
@@ -1037,4 +1042,194 @@ footer {
   font-size: var(--small-med-text-size);
   font-family: var(--header-font);
   margin-right: 10px;
+}
+
+.timetable-title {
+  width: 70vw;
+  text-align: center;
+  padding: 3vh 0 10px 0;
+}
+
+.timetable-edit-disabled:disabled {
+  color: var(--dark-gray);
+  cursor: not-allowed;
+}
+
+.timetable-edit-container {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  width: 120%;
+}
+
+.timetable-edit-icon {
+  font-size: var(--header-size);
+  cursor: pointer;
+}
+
+.timetable-edit-icon:hover {
+  color: var(--dark-gray);
+}
+
+.timetable-yes {
+  color: var(--correct-green);
+}
+
+.timetable-yes:hover {
+  color: var(--correct-green);
+  opacity: 0.6;
+}
+
+.timetable-no {
+  color: var(--error-red);
+}
+
+.timetable-no:hover {
+  color: var(--error-red);
+  opacity: 0.6;
+}
+
+.timetable-input-error {
+  margin-top: 5px;
+}
+
+.timetable-description {
+  align-self: flex-start;
+  margin: 30px 0 0 5vw;
+}
+
+.timetable-icon-container {
+  display: inline-flex;
+  margin-left: 20px;
+  gap: 30px;
+}
+
+.timetable-designation {
+  align-self: flex-start;
+  margin: 30px 0 5vw 5vw;
+  font-family: var(--header-font);
+  font-size: var(--large-text-size);
+}
+
+.cart-timetable-courses-container {
+  width: 100%;
+  display: flex;
+  margin-bottom: 70px;
+}
+
+.cart-container {
+  width: 20%;
+  padding: 10px;
+  border-right: 1px solid var(--dark-gray);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.timetable-courses-container {
+  width: 80%;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--dark-gray);
+}
+
+.timetable-info-text {
+  left: 60%;
+  width: 15%;
+}
+
+.generate-timetable {
+  position: absolute;
+  top: -4px;
+  right: 10px;
+}
+
+.generate-background {
+  background: linear-gradient(135deg, #c3dafe, #e0c3fc);
+}
+
+.generate-background:hover {
+  opacity: 0.9;
+}
+
+.timetable-search {
+  align-self: center;
+  padding-bottom: 20px;
+}
+
+.timetable-back {
+  position: sticky;
+  height: 0;
+}
+
+.cart-courses-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 70px;
+}
+
+.timetable-cart-error {
+  font-family: var(--header-font);
+  font-size: var(--med-text-size);
+  font-weight: normal;
+  color: var(--error-red);
+  align-self: center;
+  text-align: center;
+  width: 80%;
+}
+
+.term-container {
+  width: 100%;
+}
+
+.timetable-course-container {
+  display: flex;
+  justify-content: center;
+  gap: 21px;
+}
+
+.term-title {
+  border-bottom: 1px solid black;
+  font-family: var(--header-font);
+  font-size: var(--subheader-size);
+  font-weight: normal;
+  padding: 0 0 5px 7px;
+}
+
+.course-placeholder {
+  width: 14vw;
+  min-width: 14vw;
+  height: 45vh;
+  border: 1px solid var(--light-gray);
+  border-radius: 5px;
+  background-color: var(--background-mixed);
+  box-shadow: 9px 9px 10px var(--gray);
+  cursor: pointer;
+}
+
+.timetable-course-details-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.timetable-course-title {
+  padding: 15px;
+  text-align: center;
+}
+
+.timetable-change-error {
+  position: absolute;
+  left: 40%;
+  bottom: -20px;
+  font-family: var(--header-font);
+  font-size: var(--small-text-size);
+  color: var(--error-red);
+  font-weight: 600;
 }
