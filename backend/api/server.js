@@ -15,6 +15,7 @@ const {
   CC,
   CART_PATH,
   FAVORITES_PATH,
+  TITLE_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -368,13 +369,31 @@ server.get(Path.TIMETABLE, async (req, res, next) => {
       throw new Error(INVALID_TIMETABLE_ID);
 
     const userId = Number(req.session?.user?.id);
-    const timetable = await User.findUserTimetableByIds(Number(timetableId), userId);
+    const timetable = await User.findUserTimetableByIds(
+      Number(timetableId),
+      userId
+    );
 
     if (timetable) {
       res.status(200).json({ timetable });
     } else {
       throw new Error(INVALID_TIMETABLE_ID);
     }
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.patch(`${Path.TIMETABLE}${TITLE_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const title = req.body?.title;
+  try {
+    if (!title || !timetableId || !ONLY_NUMBERS.test(timetableId))
+      throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+
+    const userId = Number(req.session?.user?.id);
+    await User.updateTimetableTitle(userId, Number(timetableId), title);
+    res.status(204).end();
   } catch (err) {
     next(err);
   }

@@ -1001,7 +1001,7 @@ footer {
 }
 
 .timetable-container:hover {
-  scale: 1.1
+  scale: 1.1;
 }
 
 .timetable-tags-date-container {
@@ -1037,4 +1037,53 @@ footer {
   font-size: var(--small-med-text-size);
   font-family: var(--header-font);
   margin-right: 10px;
+}
+
+.timetable-title {
+  width: 70vw;
+  text-align: center;
+  padding: 3vh 0 10px 0;
+}
+
+.timetable-edit-disabled:disabled {
+  color: var(--dark-gray);
+  cursor: not-allowed;
+}
+
+.timetable-edit-container {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  width: 120%;
+}
+
+.timetable-edit-icon {
+  font-size: var(--header-size);
+  cursor: pointer;
+}
+
+.timetable-edit-icon:hover {
+  color: var(--dark-gray);
+}
+
+.timetable-yes {
+  color: var(--correct-green);
+}
+
+.timetable-yes:hover {
+  color: var(--correct-green);
+  opacity: 0.6;
+}
+
+.timetable-no {
+  color: var(--error-red);
+}
+
+.timetable-no:hover {
+  color: var(--error-red);
+  opacity: 0.6;
+}
+
+.timetable-input-error {
+  margin-top: 5px;
 }

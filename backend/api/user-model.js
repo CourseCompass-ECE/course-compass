@@ -175,4 +175,24 @@ module.exports = {
       (timetable) => timetable.id === timetableId
     );
   },
+
+  async updateTimetableTitle(userId, timetableId, title) {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        timetables: {
+          update: {
+            where: {
+              id: timetableId
+            },
+            data: {
+              title: title
+            }
+          },
+        },
+      },
+    });
+  },
 };
