@@ -1087,3 +1087,14 @@ footer {
 .timetable-input-error {
   margin-top: 5px;
 }
+
+.timetable-description {
+  align-self: flex-start;
+  margin: 30px 0 0 5vw;
+}
+
+.timetable-icon-container {
+  display: inline-flex;
+  margin-left: 20px;
+  gap: 30px;
+}

@@ -16,6 +16,7 @@ const {
   CART_PATH,
   FAVORITES_PATH,
   TITLE_PATH,
+  DESCRIPTION_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -393,6 +394,21 @@ server.patch(`${Path.TIMETABLE}${TITLE_PATH}`, async (req, res, next) => {
 
     const userId = Number(req.session?.user?.id);
     await User.updateTimetableTitle(userId, Number(timetableId), title);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.patch(`${Path.TIMETABLE}${DESCRIPTION_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const description = req.body?.description;
+  try {
+    if (!timetableId || !ONLY_NUMBERS.test(timetableId))
+      throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+
+    const userId = Number(req.session?.user?.id);
+    await User.updateTimetableDescription(userId, Number(timetableId), description);
     res.status(204).end();
   } catch (err) {
     next(err);
