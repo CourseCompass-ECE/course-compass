@@ -1,6 +1,9 @@
-import { COMPUTER_AREAS, COMPUTER, ELECTRICAL } from "./constants";
+import { COMPUTER_AREAS, COMPUTER, ELECTRICAL, initialErrors } from "./constants";
 
 const ECE472_CODE = "ECE472H1";
+const PREREQ_INDEX = 0;
+const COREQ_INDEX = 1;
+const EXCLUSIONS_INDEX = 2;
 
 const listAllCoursesFromAnArea = (area, courses) => {
   let areaCourses = { area, courses: [] };
@@ -48,11 +51,46 @@ const checkDesignation = (
     return null;
   }
 
-  if (kernelAreas.filter((area) => COMPUTER_AREAS.includes(area)).length === 2 && depthAreas.filter((area) => COMPUTER_AREAS.includes(area)).length >= 1) {
+  if (
+    kernelAreas.filter((area) => COMPUTER_AREAS.includes(area)).length === 2 &&
+    depthAreas.filter((area) => COMPUTER_AREAS.includes(area)).length >= 1
+  ) {
     return COMPUTER;
   } else {
     return ELECTRICAL;
   }
+};
+
+const checkForPrereqErrors = (errorsObject, courses) => {
+  courses
+    .filter((courseObject) => courseObject.course.prerequisiteAmount > 0)
+    .forEach((courseObject) => {
+      let prereqNotMetList = courseObject.course.prerequisites.filter(
+        (prereq) => {
+          let foundPrereq = courses.find(
+            (courseObject) => courseObject.courseId === prereq.id
+          );
+          if (!foundPrereq || foundPrereq?.term >= courseObject.term)
+            return true;
+        }
+      );
+      const prereqMetCount =
+        courseObject.course.prerequisites.length - prereqNotMetList.length;
+
+      if (prereqMetCount < courseObject.course.prerequisiteAmount) {
+        errorsObject[PREREQ_INDEX].errors.push(
+          `${courseObject.course.code} has ${prereqMetCount} / ${
+            courseObject.course.prerequisiteAmount
+          } prerequisites met. Options: ${prereqNotMetList
+            .map((preReq, index) => {
+              return `${preReq.code}${
+                index !== prereqNotMetList.length - 1 ? ", " : ""
+              }`;
+            })
+            .join("")}`
+        );
+      }
+    });
 };
 
 export const areRequirementsMet = (
@@ -66,12 +104,6 @@ export const areRequirementsMet = (
   setErrors,
   setDesignation
 ) => {
-  setIsECE472Met(
-    timetable?.courses.some(
-      (courseObject) => courseObject.course.code === ECE472_CODE
-    )
-  );
-
   let areaCoursesList = [];
   let kernelCourses = [];
   let depthCourses = [];
@@ -233,6 +265,20 @@ export const areRequirementsMet = (
   setKernelCourses(kernelCourses);
   setDepthCourses(depthCourses);
 
+  const designation = checkDesignation(
+    kernelCourses,
+    depthCourses,
+    timetable?.kernel,
+    timetable?.depth
+  );
+  setDesignation(designation);
+
+  setIsECE472Met(
+    timetable?.courses.some(
+      (courseObject) => courseObject.course.code === ECE472_CODE
+    )
+  );
+
   const otherCoursesAmount = timetable?.courses.filter(
     (courseObject) =>
       !kernelCourses.some(
@@ -250,6 +296,8 @@ export const areRequirementsMet = (
   setIsOtherCoursesMet(otherCoursesAmount >= 11);
   setOtherCoursesAmount(otherCoursesAmount);
 
-  const designation = checkDesignation(kernelCourses, depthCourses, timetable?.kernel, timetable?.depth);
-  setDesignation(designation);
+  let errors = structuredClone(initialErrors);
+  checkForPrereqErrors(errors, timetable.courses);
+
+  setErrors(errors);
 };

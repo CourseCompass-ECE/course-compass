@@ -38,12 +38,9 @@ export const ELECTRICAL_AREAS = [
   "PHOTONICS_SEMICONDUCTOR",
   "ENERGY_ELECTROMAGNETICS",
   "ANALOG_DIGITAL",
-  "CONTROL_COMM_SIGNAL"
-]
-export const COMPUTER_AREAS = [
-  "HARDWARE_NETWORKS",
-  "SOFTWARE"
-]
+  "CONTROL_COMM_SIGNAL",
+];
+export const COMPUTER_AREAS = ["HARDWARE_NETWORKS", "SOFTWARE"];
 export const DESIGNATIONS = {
   COMPUTER: "Computer Engineering",
   ELECTRICAL: "Electrical Engineering",
@@ -433,3 +430,21 @@ export const DEPTH_TEXT = "Depth Areas";
 
 export const AMOUNT_OF_KERNEL_AREAS = 4;
 export const AMOUNT_OF_DEPTH_AREAS = 2;
+
+const PREREQ_ERRORS = "Prerequisite Errors";
+const COREQ_ERRORS = "Corequisite Errors";
+const EXCLUSION_ERRORS = "Exclusion Errors";
+export const initialErrors = [
+  {
+    title: PREREQ_ERRORS,
+    errors: [],
+  },
+  {
+    title: COREQ_ERRORS,
+    errors: [],
+  },
+  {
+    title: EXCLUSION_ERRORS,
+    errors: [],
+  },
+];

@@ -15,7 +15,9 @@ import {
   AMOUNT_OF_KERNEL_AREAS,
   ECE_AREAS,
   COMPUTER,
-  ELECTRICAL
+  ELECTRICAL,
+  DESIGNATION_PATH,
+  initialErrors
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -34,20 +36,6 @@ const Timetable = () => {
     { title: "3rd Year, Winter", courses: Array(5).fill(null) },
     { title: "4th Year, Fall", courses: Array(5).fill(null) },
     { title: "4th Year, Winter", courses: Array(5).fill(null) },
-  ];
-  const initialErrors = [
-    {
-      title: PREREQ_ERRORS,
-      errors: [],
-    },
-    {
-      title: COREQ_ERRORS,
-      errors: [],
-    },
-    {
-      title: EXCLUSION_ERRORS,
-      errors: [],
-    },
   ];
 
   const navigate = useNavigate();
@@ -676,7 +664,7 @@ const Timetable = () => {
                 {error.errors.length === 0 ? (
                   <h4 style={{ textAlign: "center" }}>{NO_ERRORS}</h4>
                 ) : (
-                  <ul className="requirement-ul">
+                  <ul className="requirement-ul" style={{alignSelf: "center"}}>
                     {error.errors.map((error, index) => (
                       <li className="requirement-li" key={index}>
                         {error}

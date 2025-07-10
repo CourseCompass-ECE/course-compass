@@ -64,10 +64,10 @@ model Course {
   area Area[]
   code String @unique
   title String
-  prerequisiteAmount Int
+  prerequisiteAmount Int @default(0)
   prerequisites Course[] @relation("Prerequisites")
   prerequisitesOfOthers Course[] @relation("Prerequisites")
-  corequisiteAmount Int
+  corequisiteAmount Int @default(0)
   corequisites Course[] @relation("Corequisites")
   corequisitesOfOthers Course[] @relation("Corequisites")
   exclusions Course[] @relation("Exclusions")

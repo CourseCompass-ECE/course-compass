@@ -94,14 +94,6 @@ const seedCourseTable = async () => {
         lectureHours: course.lectureHours,
         tutorialHours: course.tutorialHours,
         practicalHours: course.practicalHours,
-        prerequisiteAmount:
-          course.prerequisiteAmount === 0
-            ? course.prerequisites.length
-            : course.prerequisiteAmount,
-        corequisiteAmount:
-          course.corequisiteAmount === 0
-            ? course.corequisites.length
-            : course.corequisiteAmount,
       },
     });
   }
@@ -113,6 +105,13 @@ const seedCourseTable = async () => {
     const recommendedPrep = await removeInvalidRequirements(
       course.recommendedPrep
     );
+
+    const prerequisiteAmount = course.prerequisiteAmount === 0 || course.prerequisiteAmount > prerequisites.length
+            ? prerequisites.length
+            : course.prerequisiteAmount;
+    const corequisiteAmount = course.corequisiteAmount === 0 || course.corequisiteAmount > corequisites.length
+            ? corequisites.length
+            : course.corequisiteAmount;
 
     await prisma.course.update({
       where: { code: course.code },
@@ -129,6 +128,8 @@ const seedCourseTable = async () => {
         recommendedPrep: {
           connect: recommendedPrep,
         },
+        prerequisiteAmount: prerequisiteAmount,
+        corequisiteAmount: corequisiteAmount
       },
     });
   }

@@ -20,6 +20,9 @@ const {
   AMOUNT_OF_KERNEL_AREAS,
   AMOUNT_OF_DEPTH_AREAS,
   ECE_AREAS,
+  DESIGNATION_PATH,
+  ELECTRICAL,
+  COMPUTER,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -434,6 +437,25 @@ server.patch(`${Path.TIMETABLE}${DESCRIPTION_PATH}`, async (req, res, next) => {
       Number(timetableId),
       description
     );
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.patch(`${Path.TIMETABLE}${DESIGNATION_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const designation = req.body?.newDesignation;
+  try {
+    if (
+      designation !== null &&
+      designation !== ELECTRICAL &&
+      designation !== COMPUTER
+    )
+      throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+
+    const userId = Number(req.session?.user?.id);
+    await User.updateTimetableDesignation(userId, Number(timetableId), designation);
     res.status(204).end();
   } catch (err) {
     next(err);
