@@ -1253,8 +1253,8 @@ footer {
 .timetable-requirements-container {
   width: 100%;
   position: absolute;
-  height: 50%;
-  bottom: -35%;
+  height: 60%;
+  bottom: -45%;
   background-color: var(--background-darker-2);
   border-radius: 50px 50px 0 0;
   transition: bottom 0.8s;
@@ -1301,7 +1301,6 @@ footer {
   flex-direction: column;
   gap: 10px;
   width: 30%;
-  border: 2px solid black;
 }
 
 .requirement-title {
@@ -1327,7 +1326,12 @@ footer {
 
 .divider {
   width: 80%;
-  margin: 20px 0 20px 0;
+  margin: 50px 0 65px 0;
   align-self: center;
   border-bottom: 2px solid black;
+}
+
+.kernel-depth-error {
+  position: relative;
+  margin-top: -35px;
 }

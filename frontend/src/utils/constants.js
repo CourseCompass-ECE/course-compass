@@ -415,3 +415,8 @@ export const TITLE_ERROR_MESSAGE = "Please provide a title";
 
 export const SHOPPING_CART = "Shopping Cart";
 export const CODE = "Code: ";
+export const KERNEL_TEXT = "Kernel Areas";
+export const DEPTH_TEXT = "Depth Areas";
+
+export const AMOUNT_OF_KERNEL_AREAS = 4;
+export const AMOUNT_OF_DEPTH_AREAS = 2;

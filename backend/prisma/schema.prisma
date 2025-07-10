@@ -91,6 +91,8 @@ model Timetable {
   updatedAt DateTime @updatedAt @default(now())
   title String
   description String?
+  kernel Area[]
+  depth Area[]
   isConflictFree Boolean @default(true)
 }
 

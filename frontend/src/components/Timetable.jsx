@@ -16,8 +16,12 @@ import {
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
 import TimetableCourseSummary from "./timetableCourseSummary/TimetableCourseSummary";
+import { areRequirementsMet } from "../utils/requirementsCheck";
 
 const Timetable = () => {
+  const PREREQ_ERRORS = "Prerequisite Errors";
+  const COREQ_ERRORS = "Corequisite Errors";
+  const EXCLUSION_ERRORS = "Exclusion Errors";
   const initialTerms = [
     {
       title: "3rd Year, Fall",
@@ -27,6 +31,21 @@ const Timetable = () => {
     { title: "4th Year, Fall", courses: Array(5).fill(null) },
     { title: "4th Year, Winter", courses: Array(5).fill(null) },
   ];
+  const initialErrors = [
+    {
+      title: PREREQ_ERRORS,
+      errors: [],
+    },
+    {
+      title: COREQ_ERRORS,
+      errors: [],
+    },
+    {
+      title: EXCLUSION_ERRORS,
+      errors: [],
+    },
+  ];
+
   const navigate = useNavigate();
   const infoRef = useRef();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,6 +63,11 @@ const Timetable = () => {
   const [updateTimetableError, setUpdateTimetableError] = useState("");
   const [isRequirementsMenuOpen, setIsRequirementsMenuOpen] = useState(false);
   const [terms, setTerms] = useState(initialTerms);
+  const [errors, setErrors] = useState(initialErrors);
+  const [kernelCourses, setKernelCourses] = useState([]);
+  const [depthCourses, setDepthCourses] = useState([]);
+  const [isECE472Met, setIsECE472Met] = useState(false);
+  const [isOtherCoursesMet, setIsOtherCoursesMet] = useState(false);
   const refList = useRef([]);
 
   const TIMETABLE = "Timetable";
@@ -69,6 +93,7 @@ const Timetable = () => {
   const AREA4 = "Area 4: ";
   const KERNEL_AREAS = [AREA1, AREA2, AREA3, AREA4];
   const DEPTH_AREAS = [AREA1, AREA2];
+  const NO_ERRORS = "Great job - no errors found!";
 
   const cancelEditingDescription = () => {
     setDescription(timetable?.description);
@@ -239,6 +264,15 @@ const Timetable = () => {
         setDescription(data?.timetable?.description);
         setTimetable(data?.timetable);
         organizeCourses(data.timetable?.courses);
+        areRequirementsMet(
+          data.timetable?.courses,
+          setKernelCourses,
+          setDepthCourses,
+          setIsECE472Met,
+          setIsOtherCoursesMet,
+          initialErrors,
+          setErrors
+        );
       } else {
         navigate(Path.EXPLORE);
       }
@@ -561,12 +595,12 @@ const Timetable = () => {
               <ul className="requirement-ul">
                 {DEPTH_AREAS.map((area, index) => (
                   <span key={index}>
-                    <li
-                      className="requirement-li"
-                    >{area}</li>
+                    <li className="requirement-li">{area}</li>
                     <ul>
                       {[...Array(2)].map((course, courseIndex) => (
-                        <li key={courseIndex}>{`<course code>, <course title> OR ${NO_COURSE}`}</li>
+                        <li
+                          key={courseIndex}
+                        >{`<course code>, <course title> OR ${NO_COURSE}`}</li>
                       ))}
                     </ul>
                   </span>
@@ -585,7 +619,32 @@ const Timetable = () => {
               </h3>
             </article>
           </div>
+
           <div className="divider"></div>
+
+          <div className="degree-requirements-container">
+            {errors.map((error, index) => (
+              <article key={index} className="degree-requirement">
+                <h3
+                  className="requirement-title"
+                  style={{ alignSelf: "center" }}
+                >
+                  {error.title}
+                </h3>
+                {error.errors.length === 0 ? (
+                  <h4 style={{ textAlign: "center" }}>{NO_ERRORS}</h4>
+                ) : (
+                  <ul className="requirement-ul">
+                    {error.errors.map((error, index) => (
+                      <li className="requirement-li" key={index}>
+                        {error}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            ))}
+          </div>
         </div>
       </section>
     </div>

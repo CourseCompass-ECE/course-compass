@@ -17,6 +17,9 @@ const {
   FAVORITES_PATH,
   TITLE_PATH,
   DESCRIPTION_PATH,
+  AMOUNT_OF_KERNEL_AREAS,
+  AMOUNT_OF_DEPTH_AREAS,
+  ECE_AREAS,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -73,6 +76,12 @@ const arrayValid = (array, minLength) => {
 };
 const numberValid = (num) => {
   return num && ONLY_NUMBERS.test(num);
+};
+const isEceAreaArrayValid = (array, desiredLength) => {
+  return (
+    array?.length === desiredLength &&
+    !array.some((area) => !Object.keys(ECE_AREAS).includes(area))
+  );
 };
 
 const server = express();
@@ -350,7 +359,9 @@ server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
     if (
       !timetableData?.title ||
       typeof timetableData?.description !== "string" ||
-      typeof timetableData?.isRecommendationWanted !== "boolean"
+      typeof timetableData?.isRecommendationWanted !== "boolean" ||
+      !isEceAreaArrayValid(timetableData?.kernel, AMOUNT_OF_KERNEL_AREAS) ||
+      !isEceAreaArrayValid(timetableData?.depth, AMOUNT_OF_DEPTH_AREAS)
     ) {
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
     }
@@ -358,6 +369,8 @@ server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
     const timetable = {
       title: timetableData?.title,
       description: timetableData?.description,
+      kernel: timetableData?.kernel,
+      depth: timetableData?.depth
     };
     const newTimetableId = await Timetable.create(timetable, userId);
 

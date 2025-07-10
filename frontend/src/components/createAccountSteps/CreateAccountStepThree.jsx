@@ -1,11 +1,6 @@
-import DropdownItems from "../DropdownItems";
-import {
-  ECE_AREAS,
-  SKILLS,
-  INTERESTS,
-  ERROR_MESSAGE_MARGIN_TOP,
-} from "../../utils/constants";
+import { ECE_AREAS, SKILLS, INTERESTS } from "../../utils/constants";
 import { useState } from "react";
+import RenderDropdownMenu from "../../utils/renderDropdown";
 
 const CreateAccountStepThree = (props) => {
   const [eceAreasError, setEceAreasError] = useState("");
@@ -54,93 +49,38 @@ const CreateAccountStepThree = (props) => {
     props.setCurrentStep(props.currentStep + 1);
   };
 
-  const renderDropdownMenu = (
-    setItems,
-    currentItems,
-    placeholderText,
-    menuItems,
-    removeItem,
-    errorMessage
-  ) => {
-    return (
-      <div className="text-input-container dropdown-container">
-        <select
-          value=""
-          className="text-input dropdown-input"
-          onChange={(event) => setItems([...currentItems, event.target.value])}
-        >
-          <option value="" disabled>
-            {placeholderText}
-          </option>
-          {!Array.isArray(menuItems)
-            ? Object.entries(menuItems)
-                .filter(([key]) => !currentItems.includes(key))
-                .map(([key, value], index) => (
-                  <option key={index} value={key}>
-                    {value}
-                  </option>
-                ))
-            : menuItems.filter(
-                (item) => !currentItems.includes(item)
-              ).map((item, index) => (
-                <option key={index} value={item}>
-                  {item}
-                </option>
-              ))}
-        </select>
-
-        <DropdownItems
-          selectedItems={currentItems}
-          allItems={menuItems}
-          removeItem={removeItem}
-        />
-
-        <span
-          className="text-input-error"
-          style={
-            currentItems.length > 0
-              ? { marginTop: ERROR_MESSAGE_MARGIN_TOP }
-              : {}
-          }
-        >
-          {errorMessage}
-        </span>
-      </div>
-    );
-  };
-
   return (
     <form
       className="create-account-form"
       onSubmit={(event) => submitStepThree(event)}
     >
       <h1 className="create-account-form-title">{STEP_TITLE}</h1>
-      {renderDropdownMenu(
-        props.setEceAreas,
-        props.eceAreas,
-        ECE_AREAS_TEXT,
-        ECE_AREAS,
-        handleRemoveEceArea,
-        eceAreasError
-      )}
+      <RenderDropdownMenu
+        setItems={props.setEceAreas}
+        currentItems={props.eceAreas}
+        placeholderText={ECE_AREAS_TEXT}
+        menuItems={ECE_AREAS}
+        removeItem={handleRemoveEceArea}
+        errorMessage={eceAreasError}
+      />
 
-      {renderDropdownMenu(
-        props.setInterests,
-        props.interests,
-        INTERESTS_TEXT,
-        INTERESTS,
-        handleRemoveInterest,
-        interestsError
-      )}
+      <RenderDropdownMenu
+        setItems={props.setInterests}
+        currentItems={props.interests}
+        placeholderText={INTERESTS_TEXT}
+        menuItems={INTERESTS}
+        removeItem={handleRemoveInterest}
+        errorMessage={interestsError}
+      />
 
-      {renderDropdownMenu(
-        props.setSkills,
-        props.skills,
-        SKILLS_TEXT,
-        SKILLS,
-        handleRemoveSkill,
-        skillsError
-      )}
+      <RenderDropdownMenu
+        setItems={props.setSkills}
+        currentItems={props.skills}
+        placeholderText={SKILLS_TEXT}
+        menuItems={SKILLS}
+        removeItem={handleRemoveSkill}
+        errorMessage={skillsError}
+      />
 
       <div className="text-input-container create-account-btn">
         <button type="submit" className="form-btn">

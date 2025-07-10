@@ -8,8 +8,14 @@ import {
   ID_QUERY_PARAM,
   TIMETABLE_TITLE_PLACEHOLDER,
   TIMETABLE_DESCRIPTION_PLACEHOLDER,
-  TITLE_ERROR_MESSAGE
+  TITLE_ERROR_MESSAGE,
+  ECE_AREAS,
+  AMOUNT_OF_DEPTH_AREAS,
+  AMOUNT_OF_KERNEL_AREAS,
+  DEPTH_TEXT,
+  KERNEL_TEXT
 } from "../utils/constants";
+import RenderDropdownMenu from "../utils/renderDropdown";
 
 const CreateTimetable = () => {
   const navigate = useNavigate();
@@ -18,6 +24,10 @@ const CreateTimetable = () => {
   const [titleError, setTitleError] = useState("");
   const [description, setDescription] = useState("");
   const [isRecommendationWanted, setIsRecommendationWanted] = useState(true);
+  const [kernelAreas, setKernelAreas] = useState([]);
+  const [kernelError, setKernelError] = useState("");
+  const [depthAreas, setDepthAreas] = useState([]);
+  const [depthError, setDepthError] = useState("");
   const [submissionError, setSubmissionError] = useState("");
   const TITLE = "Create Timetable";
   const TIMETABLE_TITLE = "Timetable Title";
@@ -26,14 +36,36 @@ const CreateTimetable = () => {
   const RECOMMENDATIONS_INFO_TEXT =
     "After creating your timetable, if possible, an arrangement of courses from your shopping cart will be recommended to form a conflict free timetable";
   const CREATE_TIMETABLE = "Create Timetable";
+  const KERNEL_ERROR = "Please select 4 kernel areas";
+  const DEPTH_ERROR = "Please select 2 depth areas";
+  const KERNEL_TITLE = "Choose 4 Kernel Areas";
+  const DEPTH_TITLE = "Choose 2 Depth Areas";
+
+  const handleRemoveKernel = (eceAreaKey) => {
+    setKernelAreas(kernelAreas.filter((area) => area !== eceAreaKey));
+  };
+
+  const handleRemoveDepth = (eceAreaKey) => {
+    setDepthAreas(depthAreas.filter((area) => area !== eceAreaKey));
+  };
 
   const createTimetable = async (event) => {
     event.preventDefault();
     setTitleError("");
     setSubmissionError("");
+    setKernelError("");
+    setDepthError("");
+
+    let newDepthAreas = depthAreas.filter((area) => kernelAreas.includes(area));
 
     if (!title) {
       setTitleError(TITLE_ERROR_MESSAGE);
+      return;
+    } else if (kernelAreas.length !== AMOUNT_OF_KERNEL_AREAS) {
+      setKernelError(KERNEL_ERROR);
+      return;
+    } else if (newDepthAreas.length !== AMOUNT_OF_DEPTH_AREAS) {
+      setDepthError(DEPTH_ERROR);
       return;
     }
 
@@ -42,6 +74,8 @@ const CreateTimetable = () => {
         title,
         description,
         isRecommendationWanted,
+        kernel: kernelAreas,
+        depth: newDepthAreas,
       };
 
       const response = await fetch(
@@ -152,6 +186,30 @@ const CreateTimetable = () => {
             {NO}
           </button>
         </div>
+
+        <h2 className="page-big-header">{KERNEL_TITLE}</h2>
+        <RenderDropdownMenu
+          setItems={setKernelAreas}
+          currentItems={kernelAreas}
+          placeholderText={KERNEL_TEXT}
+          menuItems={ECE_AREAS}
+          removeItem={handleRemoveKernel}
+          errorMessage={kernelError}
+        />
+
+        <h2 className="page-big-header">{DEPTH_TITLE}</h2>
+        <RenderDropdownMenu
+          setItems={setDepthAreas}
+          currentItems={depthAreas.filter((area) => kernelAreas.includes(area))}
+          placeholderText={DEPTH_TEXT}
+          menuItems={Object.fromEntries(
+            Object.entries(ECE_AREAS).filter(([area]) =>
+              kernelAreas.includes(area)
+            )
+          )}
+          removeItem={handleRemoveDepth}
+          errorMessage={depthError}
+        />
 
         <div className="text-input-container create-email-btn">
           <button type="submit" className="form-btn">
