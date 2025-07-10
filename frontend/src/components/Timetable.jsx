@@ -42,6 +42,7 @@ const Timetable = () => {
   const [fetchCartCoursesError, setFetchCartCoursesError] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [updateTimetableError, setUpdateTimetableError] = useState("");
+  const [isRequirementsMenuOpen, setIsRequirementsMenuOpen] = useState(false);
   const [terms, setTerms] = useState(initialTerms);
   const refList = useRef([]);
 
@@ -56,6 +57,18 @@ const Timetable = () => {
   const CART_SEARCH_PLACEHOLDER = "Search by title or code";
   const FAVORITE_ICON = "star";
   const CART_ICON = "remove_shopping_cart";
+  const REQUIREMENTS = "Degree & Course Requirements";
+  const KERNEL = "Kernel Courses: ";
+  const DEPTH = "Depth Courses: ";
+  const ECE472 = "ECE472H: Engineering Economic Analysis & Entrepreneurship";
+  const OTHER_COURSES = "11 Other Courses: ";
+  const NO_COURSE = "No course added yet";
+  const AREA1 = "Area 1: ";
+  const AREA2 = "Area 2: ";
+  const AREA3 = "Area 3: ";
+  const AREA4 = "Area 4: ";
+  const KERNEL_AREAS = [AREA1, AREA2, AREA3, AREA4];
+  const DEPTH_AREAS = [AREA1, AREA2];
 
   const cancelEditingDescription = () => {
     setDescription(timetable?.description);
@@ -179,7 +192,7 @@ const Timetable = () => {
 
   const deleteTimetableCourse = async (courseId) => {
     setUpdateTimetableError("");
-    
+
     try {
       const timetableCourseData = {
         courseId,
@@ -206,7 +219,7 @@ const Timetable = () => {
     } catch (error) {
       setUpdateTimetableError(GENERIC_ERROR);
     }
-  }
+  };
 
   const fetchTimetableData = async (id) => {
     try {
@@ -270,6 +283,19 @@ const Timetable = () => {
           </span>
         )}
       </>
+    );
+  };
+
+  const renderMetRequirementIcons = (isRequirementMet) => {
+    return (
+      <span
+        className="material-symbols-outlined"
+        style={{
+          color: isRequirementMet ? "var(--correct-green)" : "var(--error-red)",
+        }}
+      >
+        {isRequirementMet ? "check_circle" : "cancel"}
+      </span>
     );
   };
 
@@ -473,7 +499,9 @@ const Timetable = () => {
                       code={course.code}
                       courseId={course.id}
                       setSelectedCourse={setSelectedCourse}
-                      deleteTimetableCourse={() => deleteTimetableCourse(course.id)}
+                      deleteTimetableCourse={() =>
+                        deleteTimetableCourse(course.id)
+                      }
                     />
                   ) : (
                     <article
@@ -497,6 +525,69 @@ const Timetable = () => {
           ))}
         </div>
       </div>
+
+      <section
+        className="timetable-requirements-container"
+        onMouseEnter={() => setIsRequirementsMenuOpen(true)}
+        onMouseLeave={() => setIsRequirementsMenuOpen(false)}
+      >
+        <span className="material-symbols-outlined requirements-menu">
+          {isRequirementsMenuOpen ? "keyboard_arrow_down" : "keyboard_arrow_up"}
+        </span>
+        <div className="all-requirements-container">
+          <h2 className="requirements-title">{REQUIREMENTS}</h2>
+          <div className="degree-requirements-container">
+            <article className="degree-requirement">
+              <h3 className="requirement-title">
+                {renderMetRequirementIcons(true)}
+                {KERNEL}
+                {`# / 4`}
+              </h3>
+              <ul className="requirement-ul">
+                {KERNEL_AREAS.map((area, index) => (
+                  <li
+                    className="requirement-li"
+                    key={index}
+                  >{`${area}<course code>, <course title> OR ${NO_COURSE}`}</li>
+                ))}
+              </ul>
+            </article>
+            <article className="degree-requirement">
+              <h3 className="requirement-title">
+                {renderMetRequirementIcons(true)}
+                {DEPTH}
+                {`# / 4`}
+              </h3>
+              <ul className="requirement-ul">
+                {DEPTH_AREAS.map((area, index) => (
+                  <span key={index}>
+                    <li
+                      className="requirement-li"
+                    >{area}</li>
+                    <ul>
+                      {[...Array(2)].map((course, courseIndex) => (
+                        <li key={courseIndex}>{`<course code>, <course title> OR ${NO_COURSE}`}</li>
+                      ))}
+                    </ul>
+                  </span>
+                ))}
+              </ul>
+            </article>
+            <article className="degree-requirement">
+              <h3 className="requirement-title">
+                {renderMetRequirementIcons(true)}
+                {ECE472}
+              </h3>
+              <h3 className="requirement-title">
+                {renderMetRequirementIcons(true)}
+                {OTHER_COURSES}
+                {`# / 11`}
+              </h3>
+            </article>
+          </div>
+          <div className="divider"></div>
+        </div>
+      </section>
     </div>
   );
 };

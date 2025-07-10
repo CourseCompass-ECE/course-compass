@@ -598,6 +598,22 @@ export const COURSE_DATA = [
   },
   {
     description:
+      "The economic evaluation and justification of engineering projects and investment proposals are discussed. Cost concepts; financial and cost accounting; depreciation; the time value of money and compound interest; inflation; capital budgeting; equity, bond and loan financing; income tax and after-tax cash flow in engineering project proposals; measures of economic merit in the public sector; sensitivity and risk analysis. Applications: evaluations of competing engineering project alternatives; replacement analysis; economic life of assets; lease versus buy decisions; break-even and sensitivity analysis. Entrepreneurship and the Canadian business environment will be discussed.",
+    code: "ECE472H1",
+    title: "Engineering Economic Analysis & Entrepreneurship",
+    area: [],
+    lectureHours: 38.4,
+    tutorialHours: 25.6,
+    practicalHours: 0,
+    prerequisites: [],
+    corequisites: [],
+    exclusions: [],
+    recommendedPrep: [],
+    prerequisiteAmount: 0,
+    corequisiteAmount: 0,
+  },
+  {
+    description:
       "Introduction to the principles and properties of random processes, with applications to communications, control systems, and computer science. Random vectors, random convergence, random processes, specifying random processes, Poisson and Gaussian processes, stationarity, mean square derivatives and integrals, ergodicity, power spectrum, linear systems with stochastic input, mean square estimation, Markov chains, recurrence, absorption, limiting and steady-state distributions, time reversibility, and balance equations.",
     code: "ECE537H1",
     title: "Random Processes",

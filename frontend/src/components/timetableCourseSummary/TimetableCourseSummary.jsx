@@ -5,6 +5,7 @@ const TimetableCourseSummary = (props) => {
   return (
     <article
       className="course-placeholder timetable-course-details-container"
+      style={{opacity: 1}}
       onClick={(event) =>
         event.target.innerText !== DELETE
           ? props.setSelectedCourse(props.courseId)
