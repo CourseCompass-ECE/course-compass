@@ -361,7 +361,10 @@ server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
       typeof timetableData?.description !== "string" ||
       typeof timetableData?.isRecommendationWanted !== "boolean" ||
       !isEceAreaArrayValid(timetableData?.kernel, AMOUNT_OF_KERNEL_AREAS) ||
-      !isEceAreaArrayValid(timetableData?.depth, AMOUNT_OF_DEPTH_AREAS)
+      !isEceAreaArrayValid(timetableData?.depth, AMOUNT_OF_DEPTH_AREAS) ||
+      timetableData?.depth?.some(
+        (depthArea) => !timetableData?.kernel.includes(depthArea)
+      )
     ) {
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
     }
@@ -370,7 +373,7 @@ server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
       title: timetableData?.title,
       description: timetableData?.description,
       kernel: timetableData?.kernel,
-      depth: timetableData?.depth
+      depth: timetableData?.depth,
     };
     const newTimetableId = await Timetable.create(timetable, userId);
 

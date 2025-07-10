@@ -1,3 +1,5 @@
+import { COMPUTER_AREAS, COMPUTER, ELECTRICAL } from "./constants";
+
 const ECE472_CODE = "ECE472H1";
 
 const listAllCoursesFromAnArea = (area, courses) => {
@@ -33,6 +35,26 @@ const createCourseObject = (currentCourseObject, newCourse) => {
   };
 };
 
+const checkDesignation = (
+  kernelCourses,
+  depthCourses,
+  kernelAreas,
+  depthAreas
+) => {
+  if (
+    kernelCourses.some((kernelCourseObject) => !kernelCourseObject.course) ||
+    depthCourses.some((depthCourseObject) => !depthCourseObject.course)
+  ) {
+    return null;
+  }
+
+  if (kernelAreas.filter((area) => COMPUTER_AREAS.includes(area)).length === 2 && depthAreas.filter((area) => COMPUTER_AREAS.includes(area)).length >= 1) {
+    return COMPUTER;
+  } else {
+    return ELECTRICAL;
+  }
+};
+
 export const areRequirementsMet = (
   timetable,
   setKernelCourses,
@@ -41,7 +63,8 @@ export const areRequirementsMet = (
   setIsOtherCoursesMet,
   setOtherCoursesAmount,
   initialErrors,
-  setErrors
+  setErrors,
+  setDesignation
 ) => {
   setIsECE472Met(
     timetable?.courses.some(
@@ -61,6 +84,7 @@ export const areRequirementsMet = (
   timetable?.kernel
     .filter((area) => !timetable?.depth.includes(area))
     .forEach((nonDepthArea) => {
+      // ensure not already in kernelCourses
       let allCourses = areaCoursesList
         .find((areaCourse) => areaCourse.area === nonDepthArea)
         .courses.filter(
@@ -77,7 +101,23 @@ export const areRequirementsMet = (
           (course) =>
             !course.area.some((area) => timetable?.depth.includes(area))
         );
-        if (coursesNotInDepthArea !== 0) allCourses = coursesNotInDepthArea;
+        if (coursesNotInDepthArea.length !== 0)
+          allCourses = coursesNotInDepthArea;
+      }
+
+      // Also, prioritize courses where it only has 1 area matching the kernel/depth areas (so more flexible courses are still left available to fill another area), and ensure not already in kernelCourses
+      if (allCourses.length !== 0) {
+        let coursesOnlyInCurrentArea = allCourses.filter(
+          (course) =>
+            course.area.filter((area) => timetable?.kernel?.includes(area))
+              .length === 1 &&
+            course.area.filter((area) =>
+              timetable?.kernel?.includes(area)
+            )[0] === nonDepthArea
+        );
+
+        if (coursesOnlyInCurrentArea.length !== 0)
+          allCourses = coursesOnlyInCurrentArea;
       }
 
       kernelCourses.push({
@@ -100,8 +140,27 @@ export const areRequirementsMet = (
           !kernelCourses.some(
             (kernelCourseObject) =>
               kernelCourseObject.course === generateCourseString(course)
+          ) &&
+          !depthCourses.some(
+            (depthCourseObject) =>
+              depthCourseObject.course === generateCourseString(course)
           )
       );
+
+      // Also, prioritize courses where it only has 1 area matching the depth areas (so more flexible courses are still left available to fill another area)
+      if (coursesNotUsedInOtherAreas.length !== 0) {
+        let coursesOnlyInCurrentArea = coursesNotUsedInOtherAreas.filter(
+          (course) =>
+            course.area.filter((area) => timetable?.depth?.includes(area))
+              .length === 1 &&
+            course.area.filter((area) =>
+              timetable?.depth?.includes(area)
+            )[0] === kernelAndDepthArea
+        );
+
+        if (coursesOnlyInCurrentArea.length >= 3)
+          coursesNotUsedInOtherAreas = coursesOnlyInCurrentArea;
+      }
 
       let kernelCourse = { area: kernelAndDepthArea, course: null };
       let depthCourse1 = { area: kernelAndDepthArea, course: null };
@@ -147,7 +206,7 @@ export const areRequirementsMet = (
             depthCourse2
           );
           break;
-        case 2:
+        default: //3 or more
           kernelCourse = createCourseObject(
             kernelCourse,
             coursesNotUsedInOtherAreas[0]
@@ -184,9 +243,13 @@ export const areRequirementsMet = (
       !depthCourses.some(
         (depthCourseObject) =>
           depthCourseObject.course === generateCourseString(courseObject.course)
-      )
+      ) &&
+      courseObject.course.code !== ECE472_CODE
   ).length;
 
   setIsOtherCoursesMet(otherCoursesAmount >= 11);
   setOtherCoursesAmount(otherCoursesAmount);
+
+  const designation = checkDesignation(kernelCourses, depthCourses, timetable?.kernel, timetable?.depth);
+  setDesignation(designation);
 };

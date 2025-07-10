@@ -13,7 +13,9 @@ import {
   DESIGNATIONS,
   SHOPPING_CART,
   AMOUNT_OF_KERNEL_AREAS,
-  ECE_AREAS
+  ECE_AREAS,
+  COMPUTER,
+  ELECTRICAL
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -71,6 +73,7 @@ const Timetable = () => {
   const [isECE472Met, setIsECE472Met] = useState(false);
   const [isOtherCoursesMet, setIsOtherCoursesMet] = useState(false);
   const [otherCoursesAmount, setOtherCoursesAmount] = useState(0);
+  const [designation, setDesignation] = useState(null);
   const refList = useRef([]);
 
   const TIMETABLE = "Timetable";
@@ -91,6 +94,39 @@ const Timetable = () => {
   const OTHER_COURSES = "11 Other Courses: ";
   const NO_COURSE = "No course added yet";
   const NO_ERRORS = "Great job - no errors found!";
+
+  const updateDesignation = async (newDesignation) => {
+
+    if (newDesignation !== null && newDesignation !== ELECTRICAL && newDesignation !== COMPUTER) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${DESIGNATION_PATH}${ID_QUERY_PARAM}${timetable?.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ newDesignation }),
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        fetchTimetableData(timetable?.id);
+      } else {
+        setDesignation(timetable?.designation);
+        setUpdateTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setDesignation(timetable?.designation);
+      setUpdateTimetableError(GENERIC_ERROR);
+    }
+  };
 
   const cancelEditingDescription = () => {
     setDescription(timetable?.description);
@@ -259,6 +295,7 @@ const Timetable = () => {
         const data = await response.json();
         setTitle(data?.timetable?.title);
         setDescription(data?.timetable?.description);
+        setDesignation(data?.timetable?.designation)
         setTimetable(data?.timetable);
         organizeCourses(data?.timetable?.courses);
         areRequirementsMet(
@@ -269,7 +306,8 @@ const Timetable = () => {
           setIsOtherCoursesMet,
           setOtherCoursesAmount,
           initialErrors,
-          setErrors
+          setErrors,
+          setDesignation
         );
       } else {
         navigate(Path.EXPLORE);
@@ -341,6 +379,12 @@ const Timetable = () => {
     callFetchTimetableData(timetableId);
     fetchCoursesInCart(setFetchCartCoursesError, setCoursesInCart);
   }, []);
+
+  useEffect(() => {
+    if (timetable && designation !== timetable?.designation) {
+      updateDesignation(designation);
+    }
+  }, [designation])
 
   return (
     <div className="page-container">
