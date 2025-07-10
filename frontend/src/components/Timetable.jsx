@@ -12,12 +12,42 @@ import {
   DESCRIPTION_PATH,
   DESIGNATIONS,
   SHOPPING_CART,
+  AMOUNT_OF_KERNEL_AREAS,
+  ECE_AREAS
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
 import TimetableCourseSummary from "./timetableCourseSummary/TimetableCourseSummary";
+import { areRequirementsMet } from "../utils/requirementsCheck";
 
 const Timetable = () => {
+  const PREREQ_ERRORS = "Prerequisite Errors";
+  const COREQ_ERRORS = "Corequisite Errors";
+  const EXCLUSION_ERRORS = "Exclusion Errors";
+  const initialTerms = [
+    {
+      title: "3rd Year, Fall",
+      courses: Array(5).fill(null),
+    },
+    { title: "3rd Year, Winter", courses: Array(5).fill(null) },
+    { title: "4th Year, Fall", courses: Array(5).fill(null) },
+    { title: "4th Year, Winter", courses: Array(5).fill(null) },
+  ];
+  const initialErrors = [
+    {
+      title: PREREQ_ERRORS,
+      errors: [],
+    },
+    {
+      title: COREQ_ERRORS,
+      errors: [],
+    },
+    {
+      title: EXCLUSION_ERRORS,
+      errors: [],
+    },
+  ];
+
   const navigate = useNavigate();
   const infoRef = useRef();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,16 +63,15 @@ const Timetable = () => {
   const [fetchCartCoursesError, setFetchCartCoursesError] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [updateTimetableError, setUpdateTimetableError] = useState("");
+  const [isRequirementsMenuOpen, setIsRequirementsMenuOpen] = useState(false);
+  const [terms, setTerms] = useState(initialTerms);
+  const [errors, setErrors] = useState(initialErrors);
+  const [kernelCourses, setKernelCourses] = useState([]);
+  const [depthCourses, setDepthCourses] = useState([]);
+  const [isECE472Met, setIsECE472Met] = useState(false);
+  const [isOtherCoursesMet, setIsOtherCoursesMet] = useState(false);
+  const [otherCoursesAmount, setOtherCoursesAmount] = useState(0);
   const refList = useRef([]);
-  const terms = [
-    {
-      title: "3rd Year, Fall",
-      courses: Array(5).fill(null),
-    },
-    { title: "3rd Year, Winter", courses: Array(5).fill(null) },
-    { title: "4th Year, Fall", courses: Array(5).fill(null) },
-    { title: "4th Year, Winter", courses: Array(5).fill(null) },
-  ];
 
   const TIMETABLE = "Timetable";
   const TIMETABLE_DESCRIPTION = "Timetable Description ";
@@ -55,6 +84,13 @@ const Timetable = () => {
   const CART_SEARCH_PLACEHOLDER = "Search by title or code";
   const FAVORITE_ICON = "star";
   const CART_ICON = "remove_shopping_cart";
+  const REQUIREMENTS = "Degree & Course Requirements";
+  const KERNEL = "Kernel Courses: ";
+  const DEPTH = "Depth Courses: ";
+  const ECE472 = "ECE472H: Engineering Economic Analysis & Entrepreneurship";
+  const OTHER_COURSES = "11 Other Courses: ";
+  const NO_COURSE = "No course added yet";
+  const NO_ERRORS = "Great job - no errors found!";
 
   const cancelEditingDescription = () => {
     setDescription(timetable?.description);
@@ -151,13 +187,44 @@ const Timetable = () => {
         courseId,
         term: termId,
         position: positionId,
-        timetableId: timetable?.id
+        timetableId: timetable?.id,
       };
 
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${Path.TIMETABLE}`,
         {
           method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(timetableCourseData),
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        fetchTimetableData(timetable?.id);
+      } else {
+        setUpdateTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setUpdateTimetableError(GENERIC_ERROR);
+    }
+  };
+
+  const deleteTimetableCourse = async (courseId) => {
+    setUpdateTimetableError("");
+
+    try {
+      const timetableCourseData = {
+        courseId,
+        timetableId: timetable?.id,
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${Path.TIMETABLE}`,
+        {
+          method: "DELETE",
           headers: {
             "Content-Type": "application/json",
           },
@@ -193,12 +260,32 @@ const Timetable = () => {
         setTitle(data?.timetable?.title);
         setDescription(data?.timetable?.description);
         setTimetable(data?.timetable);
+        organizeCourses(data?.timetable?.courses);
+        areRequirementsMet(
+          data?.timetable,
+          setKernelCourses,
+          setDepthCourses,
+          setIsECE472Met,
+          setIsOtherCoursesMet,
+          setOtherCoursesAmount,
+          initialErrors,
+          setErrors
+        );
       } else {
         navigate(Path.EXPLORE);
       }
     } catch (error) {
       navigate(Path.EXPLORE);
     }
+  };
+
+  const organizeCourses = (courses) => {
+    let newTerms = initialTerms;
+    courses.forEach((courseObject) => {
+      newTerms[courseObject.term - 1].courses[courseObject.position - 1] =
+        courseObject.course;
+    });
+    setTerms(newTerms);
   };
 
   const renderIcons = (isEditing, setIsEditing, updateItem, cancelEditing) => {
@@ -228,6 +315,19 @@ const Timetable = () => {
           </span>
         )}
       </>
+    );
+  };
+
+  const renderMetRequirementIcons = (isRequirementMet) => {
+    return (
+      <span
+        className="material-symbols-outlined"
+        style={{
+          color: isRequirementMet ? "var(--correct-green)" : "var(--error-red)",
+        }}
+      >
+        {isRequirementMet ? "check_circle" : "cancel"}
+      </span>
     );
   };
 
@@ -367,7 +467,7 @@ const Timetable = () => {
                           ? setSelectedCourse(course.id)
                           : null
                       }
-                      style={{ cursor: "pointer"}}
+                      style={{ cursor: "pointer" }}
                     >
                       <ExploreCourse
                         index={index}
@@ -414,7 +514,9 @@ const Timetable = () => {
                 {BUTTON_TEXT}
               </button>
             </div>
-            <span className="timetable-change-error">{updateTimetableError}</span>
+            <span className="timetable-change-error">
+              {updateTimetableError}
+            </span>
           </h2>
 
           {terms.map((term, termId) => (
@@ -429,13 +531,24 @@ const Timetable = () => {
                       code={course.code}
                       courseId={course.id}
                       setSelectedCourse={setSelectedCourse}
+                      deleteTimetableCourse={() =>
+                        deleteTimetableCourse(course.id)
+                      }
                     />
                   ) : (
                     <article
                       key={positionId}
                       className="course-placeholder"
-                      style={!selectedCourse ? {cursor: "not-allowed"} : {}}
-                      onClick={() => selectedCourse ? updateTimetableCourses(selectedCourse, termId + 1, positionId + 1) : null}
+                      style={!selectedCourse ? { cursor: "not-allowed" } : {}}
+                      onClick={() =>
+                        selectedCourse
+                          ? updateTimetableCourses(
+                              selectedCourse,
+                              termId + 1,
+                              positionId + 1
+                            )
+                          : null
+                      }
                     ></article>
                   )
                 )}
@@ -444,6 +557,94 @@ const Timetable = () => {
           ))}
         </div>
       </div>
+
+      <section
+        className="timetable-requirements-container"
+        onMouseEnter={() => setIsRequirementsMenuOpen(true)}
+        onMouseLeave={() => setIsRequirementsMenuOpen(false)}
+      >
+        <span className="material-symbols-outlined requirements-menu">
+          {isRequirementsMenuOpen ? "keyboard_arrow_down" : "keyboard_arrow_up"}
+        </span>
+        <div className="all-requirements-container">
+          <h2 className="requirements-title">{REQUIREMENTS}</h2>
+          <div className="degree-requirements-container">
+            <article className="degree-requirement">
+              <h3 className="requirement-title">
+                {renderMetRequirementIcons(kernelCourses.filter(courseObject => courseObject.course).length === AMOUNT_OF_KERNEL_AREAS )}
+                {KERNEL}
+                {`${kernelCourses.filter(courseObject => courseObject.course).length} / 4`}
+              </h3>
+              <ul className="requirement-ul">
+                {kernelCourses.map((courseObject, index) => (
+                  <li
+                    className="requirement-li"
+                    key={index}
+                  >{`${ECE_AREAS[courseObject.area]}: ${courseObject.course ? courseObject.course : NO_COURSE}`}</li>
+                ))}
+              </ul>
+            </article>
+            <article className="degree-requirement">
+              <h3 className="requirement-title">
+                {renderMetRequirementIcons(depthCourses.filter(courseObject => courseObject.course).length === AMOUNT_OF_KERNEL_AREAS)}
+                {DEPTH}
+                {`${depthCourses.filter(courseObject => courseObject.course).length} / 4`}
+              </h3>
+              <ul className="requirement-ul">
+                {[...Array(2)].map((listItem1, index) => (
+                  <span key={index}>
+                    <li className="requirement-li">{`${ECE_AREAS[depthCourses[index + 1]?.area]}:`}</li>
+                    <ul>
+                      {[...Array(2)].map((listItem2, courseIndex) => (
+                        <li
+                          key={courseIndex}
+                        >{`${depthCourses[2*index + courseIndex]?.course ? depthCourses[2*index + courseIndex]?.course : NO_COURSE}`}</li>
+                      ))}
+                    </ul>
+                  </span>
+                ))}
+              </ul>
+            </article>
+            <article className="degree-requirement">
+              <h3 className="requirement-title">
+                {renderMetRequirementIcons(isECE472Met)}
+                {ECE472}
+              </h3>
+              <h3 className="requirement-title">
+                {renderMetRequirementIcons(isOtherCoursesMet)}
+                {OTHER_COURSES}
+                {`${otherCoursesAmount} / 11`}
+              </h3>
+            </article>
+          </div>
+
+          <div className="divider"></div>
+
+          <div className="degree-requirements-container">
+            {errors.map((error, index) => (
+              <article key={index} className="degree-requirement">
+                <h3
+                  className="requirement-title"
+                  style={{ alignSelf: "center" }}
+                >
+                  {error.title}
+                </h3>
+                {error.errors.length === 0 ? (
+                  <h4 style={{ textAlign: "center" }}>{NO_ERRORS}</h4>
+                ) : (
+                  <ul className="requirement-ul">
+                    {error.errors.map((error, index) => (
+                      <li className="requirement-li" key={index}>
+                        {error}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

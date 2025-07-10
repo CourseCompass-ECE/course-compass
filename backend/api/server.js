@@ -17,6 +17,9 @@ const {
   FAVORITES_PATH,
   TITLE_PATH,
   DESCRIPTION_PATH,
+  AMOUNT_OF_KERNEL_AREAS,
+  AMOUNT_OF_DEPTH_AREAS,
+  ECE_AREAS,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -38,7 +41,8 @@ sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
 const INVALID_TIMETABLE_DETAILS_ERROR = "Invalid timetable details provided";
-const INVALID_TIMETABLE_COURSE_DETAILS_ERROR = "Invalid timetable course details provided";
+const INVALID_TIMETABLE_COURSE_DETAILS_ERROR =
+  "Invalid timetable course details provided";
 const INVALID_COURSE_ID = "Invalid course id provided";
 const INVALID_TIMETABLE_ID = "Invalid timetable id provided";
 const SESSION_COOKIE_NAME = "sessionId";
@@ -69,6 +73,15 @@ const passwordValid = (password) => {
 };
 const arrayValid = (array, minLength) => {
   return Array.isArray(array) && array.length >= minLength;
+};
+const numberValid = (num) => {
+  return num && ONLY_NUMBERS.test(num);
+};
+const isEceAreaArrayValid = (array, desiredLength) => {
+  return (
+    array?.length === desiredLength &&
+    !array.some((area) => !Object.keys(ECE_AREAS).includes(area))
+  );
 };
 
 const server = express();
@@ -346,7 +359,9 @@ server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
     if (
       !timetableData?.title ||
       typeof timetableData?.description !== "string" ||
-      typeof timetableData?.isRecommendationWanted !== "boolean"
+      typeof timetableData?.isRecommendationWanted !== "boolean" ||
+      !isEceAreaArrayValid(timetableData?.kernel, AMOUNT_OF_KERNEL_AREAS) ||
+      !isEceAreaArrayValid(timetableData?.depth, AMOUNT_OF_DEPTH_AREAS)
     ) {
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
     }
@@ -354,6 +369,8 @@ server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
     const timetable = {
       title: timetableData?.title,
       description: timetableData?.description,
+      kernel: timetableData?.kernel,
+      depth: timetableData?.depth
     };
     const newTimetableId = await Timetable.create(timetable, userId);
 
@@ -409,7 +426,11 @@ server.patch(`${Path.TIMETABLE}${DESCRIPTION_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
 
     const userId = Number(req.session?.user?.id);
-    await User.updateTimetableDescription(userId, Number(timetableId), description);
+    await User.updateTimetableDescription(
+      userId,
+      Number(timetableId),
+      description
+    );
     res.status(204).end();
   } catch (err) {
     next(err);
@@ -422,21 +443,51 @@ server.post(Path.TIMETABLE, async (req, res, next) => {
 
   try {
     if (
-      !timetableCourseData?.courseId ||
-      !timetableCourseData?.term ||
-      !timetableCourseData?.position ||
-      !timetableCourseData?.timetableId ||
-      !ONLY_NUMBERS.test(timetableCourseData?.courseId) ||
-      !ONLY_NUMBERS.test(timetableCourseData?.term) ||
-      !ONLY_NUMBERS.test(timetableCourseData?.position) ||
-      !ONLY_NUMBERS.test(timetableCourseData?.timetableId)
+      !numberValid(timetableCourseData?.courseId) ||
+      !numberValid(timetableCourseData?.term) ||
+      !numberValid(timetableCourseData?.position) ||
+      !numberValid(timetableCourseData?.timetableId) ||
+      timetableCourseData?.term < 1 ||
+      timetableCourseData?.term > 4 ||
+      timetableCourseData?.position < 1 ||
+      timetableCourseData?.position > 5
     ) {
       throw new Error(INVALID_TIMETABLE_COURSE_DETAILS_ERROR);
     }
 
-    await User.addTimetableCourse(timetableCourseData?.term, timetableCourseData?.position, timetableCourseData?.courseId, timetableCourseData?.timetableId, userId);
+    await User.addTimetableCourse(
+      timetableCourseData?.term,
+      timetableCourseData?.position,
+      timetableCourseData?.courseId,
+      timetableCourseData?.timetableId,
+      userId
+    );
 
     res.status(201).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.delete(Path.TIMETABLE, async (req, res, next) => {
+  const timetableCourseData = req.body;
+  const userId = Number(req.session?.user?.id);
+
+  try {
+    if (
+      !numberValid(timetableCourseData?.courseId) ||
+      !numberValid(timetableCourseData?.timetableId)
+    ) {
+      throw new Error(INVALID_TIMETABLE_COURSE_DETAILS_ERROR);
+    }
+
+    await Timetable.deleteTimetableCourse(
+      timetableCourseData?.courseId,
+      timetableCourseData?.timetableId,
+      userId
+    );
+
+    res.status(204).end();
   } catch (err) {
     next(err);
   }

@@ -91,6 +91,8 @@ model Timetable {
   updatedAt DateTime @updatedAt @default(now())
   title String
   description String?
+  kernel Area[]
+  depth Area[]
   isConflictFree Boolean @default(true)
 }
 
@@ -102,6 +104,8 @@ model TimetableCourse {
   courseId Int
   timetable Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
   timetableId Int
+
+  @@unique([courseId, timetableId])
 }
 
 model MinorCertificate {

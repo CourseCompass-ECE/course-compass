@@ -10,8 +10,8 @@ const getAllTimetables = async (userId) => {
         include: {
           courses: {
             include: {
-              course: true
-            }
+              course: true,
+            },
           },
         },
       },
@@ -233,11 +233,20 @@ module.exports = {
             },
             data: {
               courses: {
-                create: {
-                  term,
-                  position,
-                  course: {
-                    connect: { id: courseId },
+                upsert: {
+                  where: {
+                    courseId_timetableId: { courseId, timetableId },
+                  },
+                  create: {
+                    term,
+                    position,
+                    course: {
+                      connect: { id: courseId },
+                    },
+                  },
+                  update: {
+                    term,
+                    position,
                   },
                 },
               },
