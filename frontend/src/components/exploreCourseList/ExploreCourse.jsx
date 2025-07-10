@@ -6,7 +6,7 @@ import {
   CART_PATH,
   FAVORITES_PATH,
   ID_QUERY_PARAM,
-  CODE
+  CODE,
 } from "../../utils/constants";
 import { Path } from "../../utils/enums";
 
@@ -218,6 +218,9 @@ const ExploreCourse = (props) => {
 
           <h4 className="explore-course-heading" style={{ paddingBottom: 0 }}>
             {AREAS}
+            <span className="explore-course-heading-item">
+              {props.course.area.length === 0 ? NONE : ""}
+            </span>
             <ul className="explore-course-area-ul">
               {props.course.area.map((area, index) => (
                 <li key={index} className="explore-course-area-li">

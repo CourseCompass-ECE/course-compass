@@ -12,6 +12,8 @@ import {
   DESCRIPTION_PATH,
   DESIGNATIONS,
   SHOPPING_CART,
+  AMOUNT_OF_KERNEL_AREAS,
+  ECE_AREAS
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -68,6 +70,7 @@ const Timetable = () => {
   const [depthCourses, setDepthCourses] = useState([]);
   const [isECE472Met, setIsECE472Met] = useState(false);
   const [isOtherCoursesMet, setIsOtherCoursesMet] = useState(false);
+  const [otherCoursesAmount, setOtherCoursesAmount] = useState(0);
   const refList = useRef([]);
 
   const TIMETABLE = "Timetable";
@@ -87,12 +90,6 @@ const Timetable = () => {
   const ECE472 = "ECE472H: Engineering Economic Analysis & Entrepreneurship";
   const OTHER_COURSES = "11 Other Courses: ";
   const NO_COURSE = "No course added yet";
-  const AREA1 = "Area 1: ";
-  const AREA2 = "Area 2: ";
-  const AREA3 = "Area 3: ";
-  const AREA4 = "Area 4: ";
-  const KERNEL_AREAS = [AREA1, AREA2, AREA3, AREA4];
-  const DEPTH_AREAS = [AREA1, AREA2];
   const NO_ERRORS = "Great job - no errors found!";
 
   const cancelEditingDescription = () => {
@@ -263,13 +260,14 @@ const Timetable = () => {
         setTitle(data?.timetable?.title);
         setDescription(data?.timetable?.description);
         setTimetable(data?.timetable);
-        organizeCourses(data.timetable?.courses);
+        organizeCourses(data?.timetable?.courses);
         areRequirementsMet(
-          data.timetable?.courses,
+          data?.timetable,
           setKernelCourses,
           setDepthCourses,
           setIsECE472Met,
           setIsOtherCoursesMet,
+          setOtherCoursesAmount,
           initialErrors,
           setErrors
         );
@@ -573,34 +571,34 @@ const Timetable = () => {
           <div className="degree-requirements-container">
             <article className="degree-requirement">
               <h3 className="requirement-title">
-                {renderMetRequirementIcons(true)}
+                {renderMetRequirementIcons(kernelCourses.filter(courseObject => courseObject.course).length === AMOUNT_OF_KERNEL_AREAS )}
                 {KERNEL}
-                {`# / 4`}
+                {`${kernelCourses.filter(courseObject => courseObject.course).length} / 4`}
               </h3>
               <ul className="requirement-ul">
-                {KERNEL_AREAS.map((area, index) => (
+                {kernelCourses.map((courseObject, index) => (
                   <li
                     className="requirement-li"
                     key={index}
-                  >{`${area}<course code>, <course title> OR ${NO_COURSE}`}</li>
+                  >{`${ECE_AREAS[courseObject.area]}: ${courseObject.course ? courseObject.course : NO_COURSE}`}</li>
                 ))}
               </ul>
             </article>
             <article className="degree-requirement">
               <h3 className="requirement-title">
-                {renderMetRequirementIcons(true)}
+                {renderMetRequirementIcons(depthCourses.filter(courseObject => courseObject.course).length === AMOUNT_OF_KERNEL_AREAS)}
                 {DEPTH}
-                {`# / 4`}
+                {`${depthCourses.filter(courseObject => courseObject.course).length} / 4`}
               </h3>
               <ul className="requirement-ul">
-                {DEPTH_AREAS.map((area, index) => (
+                {[...Array(2)].map((listItem1, index) => (
                   <span key={index}>
-                    <li className="requirement-li">{area}</li>
+                    <li className="requirement-li">{`${ECE_AREAS[depthCourses[index + 1]?.area]}:`}</li>
                     <ul>
-                      {[...Array(2)].map((course, courseIndex) => (
+                      {[...Array(2)].map((listItem2, courseIndex) => (
                         <li
                           key={courseIndex}
-                        >{`<course code>, <course title> OR ${NO_COURSE}`}</li>
+                        >{`${depthCourses[2*index + courseIndex]?.course ? depthCourses[2*index + courseIndex]?.course : NO_COURSE}`}</li>
                       ))}
                     </ul>
                   </span>
@@ -609,13 +607,13 @@ const Timetable = () => {
             </article>
             <article className="degree-requirement">
               <h3 className="requirement-title">
-                {renderMetRequirementIcons(true)}
+                {renderMetRequirementIcons(isECE472Met)}
                 {ECE472}
               </h3>
               <h3 className="requirement-title">
-                {renderMetRequirementIcons(true)}
+                {renderMetRequirementIcons(isOtherCoursesMet)}
                 {OTHER_COURSES}
-                {`# / 11`}
+                {`${otherCoursesAmount} / 11`}
               </h3>
             </article>
           </div>
