@@ -23,6 +23,7 @@ const {
   DESIGNATION_PATH,
   ELECTRICAL,
   COMPUTER,
+  CONFLICT_STATUS_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -456,6 +457,21 @@ server.patch(`${Path.TIMETABLE}${DESIGNATION_PATH}`, async (req, res, next) => {
 
     const userId = Number(req.session?.user?.id);
     await User.updateTimetableDesignation(userId, Number(timetableId), designation);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.patch(`${Path.TIMETABLE}${CONFLICT_STATUS_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const isConflictFree = req.body?.newStatus;
+  
+  try {
+    if (typeof isConflictFree !== "boolean" ) throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+
+    const userId = Number(req.session?.user?.id);
+    await User.updateTimetableConflictStatus(userId, Number(timetableId), isConflictFree);
     res.status(204).end();
   } catch (err) {
     next(err);

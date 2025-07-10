@@ -17,7 +17,8 @@ import {
   COMPUTER,
   ELECTRICAL,
   DESIGNATION_PATH,
-  initialErrors
+  initialErrors,
+  CONFLICT_STATUS_PATH
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -112,6 +113,32 @@ const Timetable = () => {
       }
     } catch (error) {
       setDesignation(timetable?.designation);
+      setUpdateTimetableError(GENERIC_ERROR);
+    }
+  };
+
+  const toggleConflictStatus = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${CONFLICT_STATUS_PATH}${ID_QUERY_PARAM}${timetable?.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ newStatus: !timetable?.isConflictFree }),
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        fetchTimetableData(timetable?.id);
+      } else {
+        setUpdateTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
       setUpdateTimetableError(GENERIC_ERROR);
     }
   };
@@ -373,6 +400,12 @@ const Timetable = () => {
       updateDesignation(designation);
     }
   }, [designation])
+
+  useEffect(() => {
+    if (timetable && errors.some(errorObject => errorObject.errors.length > 0) === timetable?.isConflictFree) {
+      toggleConflictStatus();
+    }
+  }, errors)
 
   return (
     <div className="page-container">

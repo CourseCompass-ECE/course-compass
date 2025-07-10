@@ -1,4 +1,9 @@
-import { COMPUTER_AREAS, COMPUTER, ELECTRICAL, initialErrors } from "./constants";
+import {
+  COMPUTER_AREAS,
+  COMPUTER,
+  ELECTRICAL,
+  initialErrors,
+} from "./constants";
 
 const ECE472_CODE = "ECE472H1";
 const PREREQ_INDEX = 0;
@@ -85,6 +90,60 @@ const checkForPrereqErrors = (errorsObject, courses) => {
             .map((preReq, index) => {
               return `${preReq.code}${
                 index !== prereqNotMetList.length - 1 ? ", " : ""
+              }`;
+            })
+            .join("")}`
+        );
+      }
+    });
+};
+
+const checkForCoreqErrors = (errorsObject, courses) => {
+  courses
+    .filter((courseObject) => courseObject.course.corequisiteAmount > 0)
+    .forEach((courseObject) => {
+      let coreqNotMetList = courseObject.course.corequisites.filter((coreq) => {
+        let foundCoreq = courses.find(
+          (courseObject) => courseObject.courseId === coreq.id
+        );
+        if (!foundCoreq || foundCoreq?.term !== courseObject.term) return true;
+      });
+      const coreqMetCount =
+        courseObject.course.corequisites.length - coreqNotMetList.length;
+
+      if (coreqMetCount < courseObject.course.corequisiteAmount) {
+        errorsObject[COREQ_INDEX].errors.push(
+          `${courseObject.course.code} has ${coreqMetCount} / ${
+            courseObject.course.corequisiteAmount
+          } corequisites met. Options: ${coreqNotMetList
+            .map((coReq, index) => {
+              return `${coReq.code}${
+                index !== coreqNotMetList.length - 1 ? ", " : ""
+              }`;
+            })
+            .join("")}`
+        );
+      }
+    });
+};
+
+const checkForExclusionErrors = (errorsObject, courses) => {
+  courses
+    .filter((courseObject) => courseObject.course.exclusions.length > 0)
+    .forEach((courseObject) => {
+      let violatedExclusions = courseObject.course.exclusions.filter(
+        (exclusion) =>
+          courses.find((courseObject) => courseObject.courseId === exclusion.id)
+      );
+
+      if (violatedExclusions.length > 0) {
+        errorsObject[EXCLUSIONS_INDEX].errors.push(
+          `${courseObject.course.code} has ${violatedExclusions.length} / ${
+            courseObject.course.exclusions.length
+          } exclusions violated. Violations: ${violatedExclusions
+            .map((exclusion, index) => {
+              return `${exclusion.code}${
+                index !== violatedExclusions.length - 1 ? ", " : ""
               }`;
             })
             .join("")}`
@@ -298,6 +357,8 @@ export const areRequirementsMet = (
 
   let errors = structuredClone(initialErrors);
   checkForPrereqErrors(errors, timetable.courses);
+  checkForCoreqErrors(errors, timetable.courses);
+  checkForExclusionErrors(errors, timetable.courses);
 
   setErrors(errors);
 };

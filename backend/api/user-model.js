@@ -246,6 +246,26 @@ module.exports = {
     });
   },
 
+  async updateTimetableConflictStatus(userId, timetableId, isConflictFree) {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        timetables: {
+          update: {
+            where: {
+              id: timetableId,
+            },
+            data: {
+              isConflictFree: isConflictFree,
+            },
+          },
+        },
+      },
+    });
+  },
+
   async addTimetableCourse(term, position, courseId, timetableId, userId) {
     await prisma.user.update({
       where: {
