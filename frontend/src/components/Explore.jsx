@@ -8,6 +8,7 @@ import {
   CERTIFICATES,
   MINOR,
   CERTIFICATE,
+  RECOMMENDATIONS_PATH,
 } from "../utils/constants";
 
 const Explore = () => {
@@ -18,7 +19,11 @@ const Explore = () => {
   const [selectedMinor, setSelectedMinor] = useState("");
   const [selectedCertificate, setSelectedCertificate] = useState("");
   const [selectedCode, setSelectedCode] = useState("");
+  const [recommendedCourses, setRecommendedCourses] = useState([]);
+  const [recommendedError, setRecommendedError] = useState("");
   const FETCH_COURSES_ERROR_MESSAGE = "Something went wrong fetching courses";
+  const RECOMMEND_COURSES_ERROR =
+    "Something went wrong fetching recommendations";
   const RECOMMENDED = "Recommended";
   const MINOR_TITLE = "Minor: ";
   const CERTIFICATE_TITLE = "Certificate: ";
@@ -139,6 +144,27 @@ const Explore = () => {
     ...courseCodeFilters,
   ];
 
+  const filterRecommendations = (course) => {
+    return (
+      (!searchInput.trim() || filterCourseBySearch(course)) &&
+      (!selectedEceArea ||
+        course.area.some((area) => ECE_AREAS[area] === selectedEceArea)) &&
+      (!selectedMinor ||
+        filterByMinorOrCertificate(
+          course.minorsCertificates,
+          MINOR,
+          selectedMinor
+        )) &&
+      (!selectedCertificate ||
+        filterByMinorOrCertificate(
+          course.minorsCertificates,
+          CERTIFICATE,
+          selectedCertificate
+        )) &&
+      (!selectedCode || filterByCourseCode(course.code, selectedCode))
+    );
+  };
+
   const fetchAllCourseData = async () => {
     try {
       const response = await fetch(
@@ -160,7 +186,31 @@ const Explore = () => {
     }
   };
 
+  const fetchRecommendedCourses = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.EXPLORE
+        }${RECOMMENDATIONS_PATH}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setRecommendedCourses(data?.courses);
+      } else {
+        setRecommendedError(RECOMMEND_COURSES_ERROR);
+      }
+    } catch (error) {
+      setRecommendedError(RECOMMEND_COURSES_ERROR);
+    }
+  };
+
   useEffect(() => {
+    fetchRecommendedCourses();
     fetchAllCourseData();
   }, []);
 
@@ -242,6 +292,20 @@ const Explore = () => {
 
           <section>
             <h2 className="explore-recommend-header">{RECOMMENDED}</h2>
+            {recommendedCourses.length > 0 ? (
+              <ExploreCourseList
+                fetchAllCourseData={fetchAllCourseData}
+                courses={recommendedCourses.filter((course) =>
+                  filterRecommendations(course)
+                )}
+              />
+            ) : (
+              <div className="loader-container">
+                <div className="loader"></div>
+                <h3 className="loader-text">Loading recommended courses...</h3>
+              </div>
+            )}
+            <span className="recommendation-error">{recommendedError}</span>
           </section>
 
           {searchInput.trim() ? (

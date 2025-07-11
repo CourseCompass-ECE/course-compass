@@ -413,6 +413,7 @@ export const TITLE_PATH = "/title";
 export const DESCRIPTION_PATH = "/description";
 export const DESIGNATION_PATH = "/designation";
 export const CONFLICT_STATUS_PATH = "/conflict-status";
+export const RECOMMENDATIONS_PATH = "/recommendations";
 export const ID_QUERY_PARAM = "?id=";
 
 export const YES = "Yes";

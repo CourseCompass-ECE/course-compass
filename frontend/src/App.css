@@ -1335,3 +1335,41 @@ footer {
   position: relative;
   margin-top: -35px;
 }
+
+.loader {
+  border: 10px solid var(--light-gray);
+  border-top: 10px solid var(--background-darker-2);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loader-container {
+  display: flex;
+  gap: 20px;
+  margin: 20px 0 10px 5vw;
+  align-items: center;
+}
+
+.loader-text {
+  font-family: var(--header-font);
+  font-size: var(--subheader-size);
+  font-weight: normal;
+}
+
+.recommendation-error {
+  margin-left: 5vw;
+  font-size: var(--small-text-size);
+  color: var(--error-red);
+  font-weight: 600;
+}

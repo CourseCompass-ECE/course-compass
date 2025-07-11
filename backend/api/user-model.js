@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const { MINOR, CERTIFICATE } = require("../../frontend/src/utils/constants");
 const prisma = new PrismaClient();
+const { SKILL, INTEREST } = require("../../frontend/src/utils/constants");
 
 const getAllTimetables = async (userId) => {
   return await prisma.user.findUnique({
@@ -14,8 +15,8 @@ const getAllTimetables = async (userId) => {
                 include: {
                   prerequisites: true,
                   corequisites: true,
-                  exclusions: true
-                }
+                  exclusions: true,
+                },
               },
             },
           },
@@ -23,6 +24,21 @@ const getAllTimetables = async (userId) => {
       },
     },
   });
+};
+
+const reformatSkillsInterests = (interests, skills) => {
+  let skillsInterests = [];
+  interests.forEach((interest) =>
+    skillsInterests.push({
+      name_skillOrInterest: { name: interest, skillOrInterest: INTEREST },
+    })
+  );
+  skills.forEach((skill) =>
+    skillsInterests.push({
+      name_skillOrInterest: { name: skill, skillOrInterest: SKILL },
+    })
+  );
+  return skillsInterests;
 };
 
 module.exports = {
@@ -50,13 +66,14 @@ module.exports = {
         email: newUser.email,
         password: newUser.password,
         pfpUrl: newUser.pfpUrl,
-        interests: newUser.interests,
-        skills: newUser.skills,
         eceAreas: newUser.eceAreas,
         desiredDesignation: newUser.desiredDesignation,
         learningGoal: newUser.learningGoal,
         desiredMinorsCertificates: {
           connect: minorsCertificates,
+        },
+        skillsInterests: {
+          connect: reformatSkillsInterests(newUser?.interests, newUser?.skills),
         },
       },
     });

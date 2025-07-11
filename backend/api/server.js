@@ -23,7 +23,7 @@ const {
   DESIGNATION_PATH,
   ELECTRICAL,
   COMPUTER,
-  CONFLICT_STATUS_PATH,
+  CONFLICT_STATUS_PATH
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -157,7 +157,11 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
     }
 
     const hash = await argon2.hash(newUser.password);
-    newUser = { ...newUser, email: newUser?.email.trim(), password: hash };
+    newUser = {
+      ...newUser,
+      email: newUser?.email.trim(),
+      password: hash,
+    };
 
     const created = await User.create(newUser);
     req.session.user = created;
@@ -456,27 +460,39 @@ server.patch(`${Path.TIMETABLE}${DESIGNATION_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
 
     const userId = Number(req.session?.user?.id);
-    await User.updateTimetableDesignation(userId, Number(timetableId), designation);
+    await User.updateTimetableDesignation(
+      userId,
+      Number(timetableId),
+      designation
+    );
     res.status(204).end();
   } catch (err) {
     next(err);
   }
 });
 
-server.patch(`${Path.TIMETABLE}${CONFLICT_STATUS_PATH}`, async (req, res, next) => {
-  const timetableId = req.query?.id;
-  const isConflictFree = req.body?.newStatus;
-  
-  try {
-    if (typeof isConflictFree !== "boolean" ) throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+server.patch(
+  `${Path.TIMETABLE}${CONFLICT_STATUS_PATH}`,
+  async (req, res, next) => {
+    const timetableId = req.query?.id;
+    const isConflictFree = req.body?.newStatus;
 
-    const userId = Number(req.session?.user?.id);
-    await User.updateTimetableConflictStatus(userId, Number(timetableId), isConflictFree);
-    res.status(204).end();
-  } catch (err) {
-    next(err);
+    try {
+      if (typeof isConflictFree !== "boolean")
+        throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+
+      const userId = Number(req.session?.user?.id);
+      await User.updateTimetableConflictStatus(
+        userId,
+        Number(timetableId),
+        isConflictFree
+      );
+      res.status(204).end();
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 server.post(Path.TIMETABLE, async (req, res, next) => {
   const timetableCourseData = req.body;
