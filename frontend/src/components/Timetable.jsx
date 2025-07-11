@@ -13,7 +13,12 @@ import {
   DESIGNATIONS,
   SHOPPING_CART,
   AMOUNT_OF_KERNEL_AREAS,
-  ECE_AREAS
+  ECE_AREAS,
+  COMPUTER,
+  ELECTRICAL,
+  DESIGNATION_PATH,
+  initialErrors,
+  CONFLICT_STATUS_PATH
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -32,20 +37,6 @@ const Timetable = () => {
     { title: "3rd Year, Winter", courses: Array(5).fill(null) },
     { title: "4th Year, Fall", courses: Array(5).fill(null) },
     { title: "4th Year, Winter", courses: Array(5).fill(null) },
-  ];
-  const initialErrors = [
-    {
-      title: PREREQ_ERRORS,
-      errors: [],
-    },
-    {
-      title: COREQ_ERRORS,
-      errors: [],
-    },
-    {
-      title: EXCLUSION_ERRORS,
-      errors: [],
-    },
   ];
 
   const navigate = useNavigate();
@@ -71,6 +62,7 @@ const Timetable = () => {
   const [isECE472Met, setIsECE472Met] = useState(false);
   const [isOtherCoursesMet, setIsOtherCoursesMet] = useState(false);
   const [otherCoursesAmount, setOtherCoursesAmount] = useState(0);
+  const [designation, setDesignation] = useState(null);
   const refList = useRef([]);
 
   const TIMETABLE = "Timetable";
@@ -91,6 +83,65 @@ const Timetable = () => {
   const OTHER_COURSES = "11 Other Courses: ";
   const NO_COURSE = "No course added yet";
   const NO_ERRORS = "Great job - no errors found!";
+
+  const updateDesignation = async (newDesignation) => {
+
+    if (newDesignation !== null && newDesignation !== ELECTRICAL && newDesignation !== COMPUTER) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${DESIGNATION_PATH}${ID_QUERY_PARAM}${timetable?.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ newDesignation }),
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        fetchTimetableData(timetable?.id);
+      } else {
+        setDesignation(timetable?.designation);
+        setUpdateTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setDesignation(timetable?.designation);
+      setUpdateTimetableError(GENERIC_ERROR);
+    }
+  };
+
+  const toggleConflictStatus = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${CONFLICT_STATUS_PATH}${ID_QUERY_PARAM}${timetable?.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ newStatus: !timetable?.isConflictFree }),
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        fetchTimetableData(timetable?.id);
+      } else {
+        setUpdateTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setUpdateTimetableError(GENERIC_ERROR);
+    }
+  };
 
   const cancelEditingDescription = () => {
     setDescription(timetable?.description);
@@ -259,6 +310,7 @@ const Timetable = () => {
         const data = await response.json();
         setTitle(data?.timetable?.title);
         setDescription(data?.timetable?.description);
+        setDesignation(data?.timetable?.designation)
         setTimetable(data?.timetable);
         organizeCourses(data?.timetable?.courses);
         areRequirementsMet(
@@ -269,7 +321,8 @@ const Timetable = () => {
           setIsOtherCoursesMet,
           setOtherCoursesAmount,
           initialErrors,
-          setErrors
+          setErrors,
+          setDesignation
         );
       } else {
         navigate(Path.EXPLORE);
@@ -341,6 +394,18 @@ const Timetable = () => {
     callFetchTimetableData(timetableId);
     fetchCoursesInCart(setFetchCartCoursesError, setCoursesInCart);
   }, []);
+
+  useEffect(() => {
+    if (timetable && designation !== timetable?.designation) {
+      updateDesignation(designation);
+    }
+  }, [designation])
+
+  useEffect(() => {
+    if (timetable && errors.some(errorObject => errorObject.errors.length > 0) === timetable?.isConflictFree) {
+      toggleConflictStatus();
+    }
+  }, errors)
 
   return (
     <div className="page-container">
@@ -632,7 +697,7 @@ const Timetable = () => {
                 {error.errors.length === 0 ? (
                   <h4 style={{ textAlign: "center" }}>{NO_ERRORS}</h4>
                 ) : (
-                  <ul className="requirement-ul">
+                  <ul className="requirement-ul" style={{alignSelf: "center"}}>
                     {error.errors.map((error, index) => (
                       <li className="requirement-li" key={index}>
                         {error}

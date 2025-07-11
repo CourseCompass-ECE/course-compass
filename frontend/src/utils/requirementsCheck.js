@@ -1,4 +1,14 @@
+import {
+  COMPUTER_AREAS,
+  COMPUTER,
+  ELECTRICAL,
+  initialErrors,
+} from "./constants";
+
 const ECE472_CODE = "ECE472H1";
+const PREREQ_INDEX = 0;
+const COREQ_INDEX = 1;
+const EXCLUSIONS_INDEX = 2;
 
 const listAllCoursesFromAnArea = (area, courses) => {
   let areaCourses = { area, courses: [] };
@@ -33,6 +43,115 @@ const createCourseObject = (currentCourseObject, newCourse) => {
   };
 };
 
+const checkDesignation = (
+  kernelCourses,
+  depthCourses,
+  kernelAreas,
+  depthAreas
+) => {
+  if (
+    kernelCourses.some((kernelCourseObject) => !kernelCourseObject.course) ||
+    depthCourses.some((depthCourseObject) => !depthCourseObject.course)
+  ) {
+    return null;
+  }
+
+  if (
+    kernelAreas.filter((area) => COMPUTER_AREAS.includes(area)).length === 2 &&
+    depthAreas.filter((area) => COMPUTER_AREAS.includes(area)).length >= 1
+  ) {
+    return COMPUTER;
+  } else {
+    return ELECTRICAL;
+  }
+};
+
+const checkForPrereqErrors = (errorsObject, courses) => {
+  courses
+    .filter((courseObject) => courseObject.course.prerequisiteAmount > 0)
+    .forEach((courseObject) => {
+      let prereqNotMetList = courseObject.course.prerequisites.filter(
+        (prereq) => {
+          let foundPrereq = courses.find(
+            (courseObject) => courseObject.courseId === prereq.id
+          );
+          if (!foundPrereq || foundPrereq?.term >= courseObject.term)
+            return true;
+        }
+      );
+      const prereqMetCount =
+        courseObject.course.prerequisites.length - prereqNotMetList.length;
+
+      if (prereqMetCount < courseObject.course.prerequisiteAmount) {
+        errorsObject[PREREQ_INDEX].errors.push(
+          `${courseObject.course.code} has ${prereqMetCount} / ${
+            courseObject.course.prerequisiteAmount
+          } prerequisites met. Options: ${prereqNotMetList
+            .map((preReq, index) => {
+              return `${preReq.code}${
+                index !== prereqNotMetList.length - 1 ? ", " : ""
+              }`;
+            })
+            .join("")}`
+        );
+      }
+    });
+};
+
+const checkForCoreqErrors = (errorsObject, courses) => {
+  courses
+    .filter((courseObject) => courseObject.course.corequisiteAmount > 0)
+    .forEach((courseObject) => {
+      let coreqNotMetList = courseObject.course.corequisites.filter((coreq) => {
+        let foundCoreq = courses.find(
+          (courseObject) => courseObject.courseId === coreq.id
+        );
+        if (!foundCoreq || foundCoreq?.term !== courseObject.term) return true;
+      });
+      const coreqMetCount =
+        courseObject.course.corequisites.length - coreqNotMetList.length;
+
+      if (coreqMetCount < courseObject.course.corequisiteAmount) {
+        errorsObject[COREQ_INDEX].errors.push(
+          `${courseObject.course.code} has ${coreqMetCount} / ${
+            courseObject.course.corequisiteAmount
+          } corequisites met. Options: ${coreqNotMetList
+            .map((coReq, index) => {
+              return `${coReq.code}${
+                index !== coreqNotMetList.length - 1 ? ", " : ""
+              }`;
+            })
+            .join("")}`
+        );
+      }
+    });
+};
+
+const checkForExclusionErrors = (errorsObject, courses) => {
+  courses
+    .filter((courseObject) => courseObject.course.exclusions.length > 0)
+    .forEach((courseObject) => {
+      let violatedExclusions = courseObject.course.exclusions.filter(
+        (exclusion) =>
+          courses.find((courseObject) => courseObject.courseId === exclusion.id)
+      );
+
+      if (violatedExclusions.length > 0) {
+        errorsObject[EXCLUSIONS_INDEX].errors.push(
+          `${courseObject.course.code} has ${violatedExclusions.length} / ${
+            courseObject.course.exclusions.length
+          } exclusions violated. Violations: ${violatedExclusions
+            .map((exclusion, index) => {
+              return `${exclusion.code}${
+                index !== violatedExclusions.length - 1 ? ", " : ""
+              }`;
+            })
+            .join("")}`
+        );
+      }
+    });
+};
+
 export const areRequirementsMet = (
   timetable,
   setKernelCourses,
@@ -41,14 +160,9 @@ export const areRequirementsMet = (
   setIsOtherCoursesMet,
   setOtherCoursesAmount,
   initialErrors,
-  setErrors
+  setErrors,
+  setDesignation
 ) => {
-  setIsECE472Met(
-    timetable?.courses.some(
-      (courseObject) => courseObject.course.code === ECE472_CODE
-    )
-  );
-
   let areaCoursesList = [];
   let kernelCourses = [];
   let depthCourses = [];
@@ -61,6 +175,7 @@ export const areRequirementsMet = (
   timetable?.kernel
     .filter((area) => !timetable?.depth.includes(area))
     .forEach((nonDepthArea) => {
+      // ensure not already in kernelCourses
       let allCourses = areaCoursesList
         .find((areaCourse) => areaCourse.area === nonDepthArea)
         .courses.filter(
@@ -77,7 +192,23 @@ export const areRequirementsMet = (
           (course) =>
             !course.area.some((area) => timetable?.depth.includes(area))
         );
-        if (coursesNotInDepthArea !== 0) allCourses = coursesNotInDepthArea;
+        if (coursesNotInDepthArea.length !== 0)
+          allCourses = coursesNotInDepthArea;
+      }
+
+      // Also, prioritize courses where it only has 1 area matching the kernel/depth areas (so more flexible courses are still left available to fill another area), and ensure not already in kernelCourses
+      if (allCourses.length !== 0) {
+        let coursesOnlyInCurrentArea = allCourses.filter(
+          (course) =>
+            course.area.filter((area) => timetable?.kernel?.includes(area))
+              .length === 1 &&
+            course.area.filter((area) =>
+              timetable?.kernel?.includes(area)
+            )[0] === nonDepthArea
+        );
+
+        if (coursesOnlyInCurrentArea.length !== 0)
+          allCourses = coursesOnlyInCurrentArea;
       }
 
       kernelCourses.push({
@@ -100,8 +231,27 @@ export const areRequirementsMet = (
           !kernelCourses.some(
             (kernelCourseObject) =>
               kernelCourseObject.course === generateCourseString(course)
+          ) &&
+          !depthCourses.some(
+            (depthCourseObject) =>
+              depthCourseObject.course === generateCourseString(course)
           )
       );
+
+      // Also, prioritize courses where it only has 1 area matching the depth areas (so more flexible courses are still left available to fill another area)
+      if (coursesNotUsedInOtherAreas.length !== 0) {
+        let coursesOnlyInCurrentArea = coursesNotUsedInOtherAreas.filter(
+          (course) =>
+            course.area.filter((area) => timetable?.depth?.includes(area))
+              .length === 1 &&
+            course.area.filter((area) =>
+              timetable?.depth?.includes(area)
+            )[0] === kernelAndDepthArea
+        );
+
+        if (coursesOnlyInCurrentArea.length >= 3)
+          coursesNotUsedInOtherAreas = coursesOnlyInCurrentArea;
+      }
 
       let kernelCourse = { area: kernelAndDepthArea, course: null };
       let depthCourse1 = { area: kernelAndDepthArea, course: null };
@@ -147,7 +297,7 @@ export const areRequirementsMet = (
             depthCourse2
           );
           break;
-        case 2:
+        default: //3 or more
           kernelCourse = createCourseObject(
             kernelCourse,
             coursesNotUsedInOtherAreas[0]
@@ -174,6 +324,20 @@ export const areRequirementsMet = (
   setKernelCourses(kernelCourses);
   setDepthCourses(depthCourses);
 
+  const designation = checkDesignation(
+    kernelCourses,
+    depthCourses,
+    timetable?.kernel,
+    timetable?.depth
+  );
+  setDesignation(designation);
+
+  setIsECE472Met(
+    timetable?.courses.some(
+      (courseObject) => courseObject.course.code === ECE472_CODE
+    )
+  );
+
   const otherCoursesAmount = timetable?.courses.filter(
     (courseObject) =>
       !kernelCourses.some(
@@ -184,9 +348,17 @@ export const areRequirementsMet = (
       !depthCourses.some(
         (depthCourseObject) =>
           depthCourseObject.course === generateCourseString(courseObject.course)
-      )
+      ) &&
+      courseObject.course.code !== ECE472_CODE
   ).length;
 
   setIsOtherCoursesMet(otherCoursesAmount >= 11);
   setOtherCoursesAmount(otherCoursesAmount);
+
+  let errors = structuredClone(initialErrors);
+  checkForPrereqErrors(errors, timetable.courses);
+  checkForCoreqErrors(errors, timetable.courses);
+  checkForExclusionErrors(errors, timetable.courses);
+
+  setErrors(errors);
 };

@@ -1027,7 +1027,7 @@ footer {
 }
 
 .timetable-tag {
-  font-size: var(--small-med-text-size);
+  font-size: var(--small-text-size);
   height: 30px;
   padding: 2px 10px 2px 10px;
   margin-left: 10px;

@@ -10,7 +10,13 @@ const getAllTimetables = async (userId) => {
         include: {
           courses: {
             include: {
-              course: true,
+              course: {
+                include: {
+                  prerequisites: true,
+                  corequisites: true,
+                  exclusions: true
+                }
+              },
             },
           },
         },
@@ -213,6 +219,46 @@ module.exports = {
             },
             data: {
               description: description,
+            },
+          },
+        },
+      },
+    });
+  },
+
+  async updateTimetableDesignation(userId, timetableId, designation) {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        timetables: {
+          update: {
+            where: {
+              id: timetableId,
+            },
+            data: {
+              designation: designation,
+            },
+          },
+        },
+      },
+    });
+  },
+
+  async updateTimetableConflictStatus(userId, timetableId, isConflictFree) {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        timetables: {
+          update: {
+            where: {
+              id: timetableId,
+            },
+            data: {
+              isConflictFree: isConflictFree,
             },
           },
         },

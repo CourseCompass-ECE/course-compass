@@ -34,10 +34,19 @@ export const ECE_AREAS = {
   HARDWARE_NETWORKS: "Computer Hardware & Computer Networks",
   SOFTWARE: "Software",
 };
+export const ELECTRICAL_AREAS = [
+  "PHOTONICS_SEMICONDUCTOR",
+  "ENERGY_ELECTROMAGNETICS",
+  "ANALOG_DIGITAL",
+  "CONTROL_COMM_SIGNAL",
+];
+export const COMPUTER_AREAS = ["HARDWARE_NETWORKS", "SOFTWARE"];
 export const DESIGNATIONS = {
   COMPUTER: "Computer Engineering",
   ELECTRICAL: "Electrical Engineering",
 };
+export const COMPUTER = "COMPUTER";
+export const ELECTRICAL = "ELECTRICAL";
 export const NO_DESIGNATION = "No Designation";
 export const MINOR = "MINOR";
 export const CERTIFICATE = "CERTIFICATE";
@@ -402,6 +411,8 @@ export const CART_PATH = "/cart";
 export const FAVORITES_PATH = "/favorites";
 export const TITLE_PATH = "/title";
 export const DESCRIPTION_PATH = "/description";
+export const DESIGNATION_PATH = "/designation";
+export const CONFLICT_STATUS_PATH = "/conflict-status";
 export const ID_QUERY_PARAM = "?id=";
 
 export const YES = "Yes";
@@ -420,3 +431,21 @@ export const DEPTH_TEXT = "Depth Areas";
 
 export const AMOUNT_OF_KERNEL_AREAS = 4;
 export const AMOUNT_OF_DEPTH_AREAS = 2;
+
+const PREREQ_ERRORS = "Prerequisite Errors";
+const COREQ_ERRORS = "Corequisite Errors";
+const EXCLUSION_ERRORS = "Exclusion Errors";
+export const initialErrors = [
+  {
+    title: PREREQ_ERRORS,
+    errors: [],
+  },
+  {
+    title: COREQ_ERRORS,
+    errors: [],
+  },
+  {
+    title: EXCLUSION_ERRORS,
+    errors: [],
+  },
+];

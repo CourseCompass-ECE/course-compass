@@ -20,6 +20,10 @@ const {
   AMOUNT_OF_KERNEL_AREAS,
   AMOUNT_OF_DEPTH_AREAS,
   ECE_AREAS,
+  DESIGNATION_PATH,
+  ELECTRICAL,
+  COMPUTER,
+  CONFLICT_STATUS_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -361,7 +365,10 @@ server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
       typeof timetableData?.description !== "string" ||
       typeof timetableData?.isRecommendationWanted !== "boolean" ||
       !isEceAreaArrayValid(timetableData?.kernel, AMOUNT_OF_KERNEL_AREAS) ||
-      !isEceAreaArrayValid(timetableData?.depth, AMOUNT_OF_DEPTH_AREAS)
+      !isEceAreaArrayValid(timetableData?.depth, AMOUNT_OF_DEPTH_AREAS) ||
+      timetableData?.depth?.some(
+        (depthArea) => !timetableData?.kernel.includes(depthArea)
+      )
     ) {
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
     }
@@ -370,7 +377,7 @@ server.post(Path.CREATE_TIMETABLE, async (req, res, next) => {
       title: timetableData?.title,
       description: timetableData?.description,
       kernel: timetableData?.kernel,
-      depth: timetableData?.depth
+      depth: timetableData?.depth,
     };
     const newTimetableId = await Timetable.create(timetable, userId);
 
@@ -431,6 +438,40 @@ server.patch(`${Path.TIMETABLE}${DESCRIPTION_PATH}`, async (req, res, next) => {
       Number(timetableId),
       description
     );
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.patch(`${Path.TIMETABLE}${DESIGNATION_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const designation = req.body?.newDesignation;
+  try {
+    if (
+      designation !== null &&
+      designation !== ELECTRICAL &&
+      designation !== COMPUTER
+    )
+      throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+
+    const userId = Number(req.session?.user?.id);
+    await User.updateTimetableDesignation(userId, Number(timetableId), designation);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.patch(`${Path.TIMETABLE}${CONFLICT_STATUS_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const isConflictFree = req.body?.newStatus;
+  
+  try {
+    if (typeof isConflictFree !== "boolean" ) throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+
+    const userId = Number(req.session?.user?.id);
+    await User.updateTimetableConflictStatus(userId, Number(timetableId), isConflictFree);
     res.status(204).end();
   } catch (err) {
     next(err);
