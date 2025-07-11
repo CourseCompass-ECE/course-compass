@@ -1373,3 +1373,11 @@ footer {
   color: var(--error-red);
   font-weight: 600;
 }
+
+.reject-icon {
+  margin-right: 20px;
+}
+
+.reject-icon:hover {
+  color: var(--error-red)
+}
