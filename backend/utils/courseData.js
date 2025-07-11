@@ -26,6 +26,9 @@
   },
   * I then copied & pasted these descriptions for ~80-85% of the courses below into the LLM, pasted its response below, 
   * and manually added the area, prerequisiteAmount, and corequisiteAmount fields
+  * 
+  * For the skills & interests added afterwards, I provided the 2 arrays, asked for output I can copy into this file that contains skills & interests fields with string arrays
+  * corresponding to relevant skills/interests from the initial list I shared. I then provided each course, one-by-one, to generate these skills/interests
  */
 
 export const COURSE_DATA = [
@@ -44,6 +47,25 @@ export const COURSE_DATA = [
     recommendedPrep: ["ECE320H1", "ECE357H1"],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Experiment Design",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Study Skills",
+      "Studying & Learning",
+      "Data Analysis",
+      "Research",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Quantum Physics",
+    ],
   },
   {
     description:
@@ -60,6 +82,24 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Experiment Design",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Study Skills",
+      "Studying & Learning",
+      "Data Analysis",
+      "Research",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "Applied Mathematics",
+    ],
   },
   {
     description:
@@ -76,6 +116,25 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Experiment Design",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Study Skills",
+      "Studying & Learning",
+      "Data Analysis",
+      "Research",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Virtual Reality (VR) & Augmented Reality",
+    ],
   },
   {
     description:
@@ -92,6 +151,26 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Experiment Design",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Study Skills",
+      "Studying & Learning",
+      "Data Analysis",
+      "Research",
+      "Attention to Detail",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Nanotechnology",
+    ],
   },
   {
     description:
@@ -108,6 +187,25 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Study Skills",
+      "Studying & Learning",
+      "Data Analysis",
+      "Research",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Quantum Physics",
+      "Nanotechnology",
+    ],
   },
   {
     description:
@@ -124,6 +222,25 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 2,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Design Thinking",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Research",
+      "Studying & Learning",
+      "Technology",
+    ],
+    interests: [
+      "Science & Technology",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Nanotechnology",
+      "Quantum Physics",
+    ],
   },
   {
     description:
@@ -144,6 +261,24 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Design Thinking",
+      "Information Synthesis",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Research",
+      "Studying & Learning",
+      "Technology",
+    ],
+    interests: [
+      "Science & Technology",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Software Development",
+      "Cloud Computing",
+    ],
   },
   {
     description:
@@ -160,6 +295,23 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Design Thinking",
+      "Information Synthesis",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Research",
+      "Studying & Learning",
+      "Technology",
+    ],
+    interests: [
+      "Science & Technology",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Renewable Energy Studies",
+    ],
   },
   {
     description:
@@ -176,6 +328,23 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Design Thinking",
+      "Information Synthesis",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Research",
+      "Studying & Learning",
+      "Technology",
+    ],
+    interests: [
+      "Science & Technology",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Renewable Energy Studies",
+    ],
   },
   {
     description:
@@ -192,9 +361,26 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Information Synthesis",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Research",
+      "Studying & Learning",
+      "Technology",
+    ],
+    interests: [
+      "Science & Technology",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Renewable Energy Studies",
+    ],
   },
   {
-    description: "An introduction to transmission lines: voltage and current waves, characteristic impedance, reflections from the load and source, transients on a transmission line, Smith's chart, impedance matching. Fundamentals of electromagnetic theory: Maxwell's equations, boundary conditions, wave equation and its solutions in lossless and lossy media. Constitutive relations and dispersion. Plane wave propagation, reflection and transmission at boundaries. Waveguides; propagating and evanescent waveguide modes and cut-off frequencies. Introduction to radiation and antennas.",
+    description:
+      "An introduction to transmission lines: voltage and current waves, characteristic impedance, reflections from the load and source, transients on a transmission line, Smith's chart, impedance matching. Fundamentals of electromagnetic theory: Maxwell's equations, boundary conditions, wave equation and its solutions in lossless and lossy media. Constitutive relations and dispersion. Plane wave propagation, reflection and transmission at boundaries. Waveguides; propagating and evanescent waveguide modes and cut-off frequencies. Introduction to radiation and antennas.",
     code: "ECE357H1",
     title: "Electromagnetic Fields",
     area: ["ENERGY_ELECTROMAGNETICS"],
@@ -207,6 +393,22 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Information Synthesis",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Research",
+      "Studying & Learning",
+      "Technology",
+    ],
+    interests: [
+      "Science & Technology",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Renewable Energy Studies",
+    ],
   },
   {
     description:
@@ -223,6 +425,20 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Design Thinking",
+      "Information Synthesis",
+      "Problem Solving",
+      "Research",
+      "Technology",
+    ],
+    interests: [
+      "Science & Technology",
+      "Electrical Engineering",
+      "Applied Mathematics",
+    ],
   },
   {
     description:
@@ -239,6 +455,19 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Design Thinking",
+      "Problem Solving",
+      "Research",
+      "Technology",
+    ],
+    interests: [
+      "Science & Technology",
+      "Electrical Engineering",
+      "Renewable Energy Studies",
+    ],
   },
   {
     description:
@@ -255,6 +484,19 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Data Analysis",
+      "Research",
+      "Technology",
+      "Analytical Thinking",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Energy & Electromagnetics",
+      "Renewable Energy Studies",
+    ],
   },
   {
     description:
@@ -271,6 +513,14 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Data Analysis",
+      "Research",
+      "Technology",
+    ],
+    interests: ["Electrical Engineering", "Energy & Electromagnetics"],
   },
   {
     description:
@@ -287,6 +537,18 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Data Analysis",
+      "Research",
+      "Technology",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Energy & Electromagnetics",
+      "Communications",
+    ],
   },
   {
     description:
@@ -303,6 +565,18 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 1,
+    skills: [
+      "Problem Solving",
+      "Critical Thinking",
+      "Technology",
+      "Analytical Thinking",
+      "Research",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Mathematics & Engineering",
+      "Science & Technology",
+    ],
   },
   {
     description:
@@ -319,6 +593,18 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Problem Solving",
+      "Analytical Thinking",
+      "Critical Thinking",
+      "Technology",
+      "Data Analysis",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Mathematics & Engineering",
+      "Science & Technology",
+    ],
   },
   {
     description:
@@ -335,6 +621,20 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 3,
     corequisiteAmount: 0,
+    skills: [
+      "Problem Solving",
+      "Critical Thinking",
+      "Technology",
+      "Coding & Scripting",
+      "Data Analysis",
+      "Attention to Detail",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Mathematics & Engineering",
+      "IT & Digital Fields",
+      "Science & Technology",
+    ],
   },
   {
     description:
@@ -351,6 +651,19 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Technology",
+      "Data Analysis",
+      "Attention to Detail",
+      "Math Skills",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Science & Technology",
+      "Mathematics & Engineering",
+    ],
   },
   {
     description:
@@ -379,6 +692,23 @@ export const COURSE_DATA = [
     recommendedPrep: ["PHY365H1"],
     prerequisiteAmount: 5,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Technology",
+      "Math Skills",
+      "Data Analysis",
+      "Research",
+      "Experiment Design",
+      "Systems Thinking",
+    ],
+    interests: [
+      "Quantum Physics",
+      "Electrical Engineering",
+      "Science & Technology",
+      "Applied Mathematics",
+      "Artificial Intelligence",
+    ],
   },
   {
     description:
@@ -395,6 +725,25 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Technology",
+      "Data Analysis",
+      "Research",
+      "Experiment Design",
+      "Systems Thinking",
+      "Creative Writing",
+      "Listening",
+      "Problem Solving",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Science & Technology",
+      "Music Composition",
+      "Biomedical Engineering",
+      "Health & Medicine",
+      "Artificial Intelligence",
+    ],
   },
   {
     description:
@@ -411,6 +760,24 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Experiment Design",
+      "Technology",
+      "Problem Solving",
+      "Research",
+      "Systems Thinking",
+      "Quantitative Analysis",
+      "Information Synthesis",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Science & Technology",
+      "Applied Mathematics",
+      "Artificial Intelligence",
+      "Biomedical Engineering",
+    ],
   },
   {
     description:
@@ -427,6 +794,24 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Technology",
+      "Coding & Scripting",
+      "Problem Solving",
+      "Design Thinking",
+      "Planning",
+      "Collaborating",
+      "Systems Thinking",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "IT & Digital Fields",
+      "Robotics",
+      "Artificial Intelligence",
+      "Software Development",
+    ],
   },
   {
     description:
@@ -443,6 +828,20 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Math Skills",
+      "Analysis",
+      "Systems Thinking",
+      "Planning",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Mechanical Engineering",
+      "Electrical Engineering",
+    ],
   },
   {
     description:
@@ -459,6 +858,19 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 2,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Math Skills",
+      "Analysis",
+      "Data Analysis",
+      "Attention to Detail",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+    ],
   },
   {
     description:
@@ -475,6 +887,21 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Research",
+      "Data Analysis",
+      "Critical Thinking",
+      "Experiment Design",
+      "Problem Solving",
+      "Technology",
+    ],
+    interests: [
+      "Biomedical Engineering",
+      "Neuroscience",
+      "Science & Technology",
+      "Health & Medicine",
+      "Mathematics & Engineering",
+    ],
   },
   {
     description:
@@ -491,6 +918,22 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Research",
+      "Data Analysis",
+      "Critical Thinking",
+      "Experiment Design",
+      "Problem Solving",
+      "Technology",
+      "Mathematics & Engineering",
+    ],
+    interests: [
+      "Biomedical Engineering",
+      "Health & Medicine",
+      "Science & Technology",
+      "Medicine",
+      "Mathematics & Engineering",
+    ],
   },
   {
     description:
@@ -507,6 +950,21 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Probability",
+      "Statistical Analysis",
+      "Mathematics & Engineering",
+      "Data Analysis",
+      "Critical Thinking",
+      "Information Synthesis",
+    ],
+    interests: [
+      "Statistics",
+      "Mathematics & Engineering",
+      "Data Science",
+      "Science & Technology",
+      "Artificial Intelligence",
+    ],
   },
   {
     description:
@@ -523,6 +981,22 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Control Systems",
+      "Linear Algebra",
+      "Mathematics & Engineering",
+      "Problem Solving",
+      "Critical Thinking",
+      "MATLAB",
+      "Experiment Design",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Mathematics & Engineering",
+      "Control & Signal Processing",
+      "Science & Technology",
+      "Applied Mathematics",
+    ],
   },
   {
     description:
@@ -539,6 +1013,24 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 2,
     corequisiteAmount: 0,
+    skills: [
+      "Digital Communication",
+      "Signal Processing",
+      "Error Control Coding",
+      "Modulation Techniques",
+      "Mathematics & Engineering",
+      "Problem Solving",
+      "Critical Thinking",
+      "Information Theory",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Control & Signal Processing",
+      "Mathematics & Engineering",
+      "Science & Technology",
+      "Data Science",
+      "Cybersecurity",
+    ],
   },
   {
     description:
@@ -563,6 +1055,36 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 2,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Data Literacy",
+      "Experiment Design",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Programming & Scripting",
+      "Quantitative Analysis",
+      "Research",
+      "Statistical Analysis",
+      "Systems Thinking",
+      "Technology",
+      "Studying & Learning",
+    ],
+    interests: [
+      "Artificial Intelligence",
+      "Data Science",
+      "Machine Learning",
+      "Statistics",
+      "Applied Mathematics",
+      "Computer Science",
+      "Software Development",
+      "IT & Digital Fields",
+      "Robotics",
+      "Cybersecurity",
+    ],
   },
   {
     description:
@@ -579,6 +1101,34 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Experiment Design",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Programming & Scripting",
+      "Quantitative Analysis",
+      "Research",
+      "Statistical Analysis",
+      "Systems Thinking",
+      "Technology",
+      "Studying & Learning",
+    ],
+    interests: [
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Signal Processing",
+      "Software Development",
+      "IT & Digital Fields",
+      "Communications",
+      "Biomedical Engineering",
+      "Health & Medicine",
+      "Robotics",
+    ],
   },
   {
     description:
@@ -595,6 +1145,31 @@ export const COURSE_DATA = [
     recommendedPrep: ["BME445H1"],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Experiment Design",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Research",
+      "Systems Thinking",
+      "Technology",
+      "Studying & Learning",
+      "Communication",
+    ],
+    interests: [
+      "Biomedical Engineering",
+      "Neuroscience",
+      "Health & Medicine",
+      "Electrical Engineering",
+      "Signal Processing",
+      "Medicine",
+      "Neurotechnology",
+      "Physical Therapy",
+    ],
   },
   {
     description:
@@ -611,6 +1186,32 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Experiment Design",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Coding & Scripting",
+      "Research",
+      "Systems Thinking",
+      "Technology",
+      "Studying & Learning",
+      "Collaborating",
+    ],
+    interests: [
+      "Robotics",
+      "Mechanical Engineering",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Artificial Intelligence",
+      "IT & Digital Fields",
+      "Science & Technology",
+      "Mathematics & Engineering",
+    ],
   },
   {
     description:
@@ -627,6 +1228,31 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Problem Solving",
+      "Research",
+      "Math Skills",
+      "Quantitative Analysis",
+      "Planning",
+      "Goal Planning",
+      "Communication",
+      "Persuasive Writing",
+      "Organizing",
+      "Time Management",
+    ],
+    interests: [
+      "Business & Finance",
+      "Entrepreneurship",
+      "Finance",
+      "Economics",
+      "Mathematics & Engineering",
+      "Science & Technology",
+    ],
   },
   {
     description:
@@ -643,6 +1269,30 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Math Skills",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Research",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Systems Thinking",
+      "Studying & Learning",
+      "Concentration",
+      "Technology",
+    ],
+    interests: [
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "Applied Mathematics",
+      "Data Science",
+      "Artificial Intelligence",
+      "Science & Technology",
+      "IT & Digital Fields",
+    ],
   },
   {
     description:
@@ -659,6 +1309,30 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Problem Solving",
+      "Research",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Systems Thinking",
+      "Studying & Learning",
+      "Math Skills",
+      "Technology",
+      "Experiment Design",
+      "Concentration",
+    ],
+    interests: [
+      "Biomedical Engineering",
+      "Health & Medicine",
+      "Neuroscience",
+      "Mathematics & Engineering",
+      "Science & Technology",
+      "Electrical Engineering",
+      "Sports & Physical Sciences",
+    ],
   },
   {
     description:
@@ -675,6 +1349,30 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Problem Solving",
+      "Research",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Math Skills",
+      "Coding & Scripting",
+      "Experiment Design",
+      "Systems Thinking",
+      "Studying & Learning",
+      "Quantitative Analysis",
+    ],
+    interests: [
+      "Artificial Intelligence",
+      "Robotics",
+      "Data Science",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "Science & Technology",
+      "IT & Digital Fields",
+    ],
   },
   {
     description:
@@ -691,6 +1389,29 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Problem Solving",
+      "Research",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Math Skills",
+      "Coding & Scripting",
+      "Experiment Design",
+      "Systems Thinking",
+      "Studying & Learning",
+    ],
+    interests: [
+      "Artificial Intelligence",
+      "Robotics",
+      "Control Systems",
+      "Electrical Engineering",
+      "Mathematics & Engineering",
+      "Science & Technology",
+      "IT & Digital Fields",
+    ],
   },
   {
     description:
@@ -707,6 +1428,28 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Math Skills",
+      "Problem Solving",
+      "Coding & Scripting",
+      "Technology",
+      "Systems Thinking",
+      "Studying & Learning",
+      "Collaborating",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "IT & Digital Fields",
+      "Electrical Engineering",
+      "Artificial Intelligence",
+      "Digital Marketing",
+    ],
   },
   {
     description:
@@ -723,6 +1466,27 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 2,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Information Gathering",
+      "Information Literacy",
+      "Math Skills",
+      "Problem Solving",
+      "Coding & Scripting",
+      "Technology",
+      "Systems Thinking",
+      "Studying & Learning",
+      "Collaborating",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "IT & Digital Fields",
+      "Artificial Intelligence",
+      "Cybersecurity",
+    ],
   },
   {
     description:
@@ -739,6 +1503,31 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Information Gathering",
+      "Information Literacy",
+      "Math Skills",
+      "Problem Solving",
+      "Coding & Scripting",
+      "Technology",
+      "Systems Thinking",
+      "Studying & Learning",
+      "Visual Communication",
+      "Collaborating",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "Artificial Intelligence",
+      "IT & Digital Fields",
+      "Biomedical Engineering",
+      "Virtual Reality (VR) & Augmented Reality (AR)",
+      "Personal Development & Lifestyle Fields",
+      "Space & Future Studies",
+    ],
   },
   {
     description:
@@ -755,6 +1544,26 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Critical Thinking",
+      "Data Analysis",
+      "Information Gathering",
+      "Information Literacy",
+      "Math Skills",
+      "Problem Solving",
+      "Systems Thinking",
+      "Technology",
+      "Collaborating",
+      "Studying & Learning",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "IT & Digital Fields",
+      "Hardware & Networks",
+    ],
   },
   {
     description:
@@ -771,6 +1580,27 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Critical Thinking",
+      "Data Analysis",
+      "Information Gathering",
+      "Information Literacy",
+      "Math Skills",
+      "Problem Solving",
+      "Systems Thinking",
+      "Technology",
+      "Collaborating",
+      "Studying & Learning",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "IT & Digital Fields",
+      "Software Development",
+      "Hardware & Networks",
+    ],
   },
   {
     description:
@@ -787,6 +1617,26 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Data Analysis",
+      "Information Gathering",
+      "Information Literacy",
+      "Math Skills",
+      "Problem Solving",
+      "Systems Thinking",
+      "Technology",
+      "Coding & Scripting",
+      "Attention to Detail",
+      "Collaborating",
+    ],
+    interests: [
+      "Science & Technology",
+      "Mathematics & Engineering",
+      "Electrical Engineering",
+      "IT & Digital Fields",
+      "Hardware & Networks",
+    ],
   },
   {
     description:
@@ -803,6 +1653,27 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Information Gathering",
+      "Information Literacy",
+      "Problem Solving",
+      "Technology",
+      "Coding & Scripting",
+      "Attention to Detail",
+      "Ethical Reasoning",
+      "Data Analysis",
+      "Research",
+    ],
+    interests: [
+      "Science & Technology",
+      "IT & Digital Fields",
+      "Cybersecurity",
+      "Cryptography",
+      "Computer Security",
+      "Electrical Engineering",
+      "Software Development",
+    ],
   },
   {
     description:
@@ -819,6 +1690,17 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Technology",
+      "Attention to Detail",
+      "Coding & Scripting",
+      "Analysis",
+      "Information Gathering",
+      "Research",
+    ],
+    interests: ["Science & Technology", "Electrical Engineering"],
   },
   {
     description:
@@ -835,6 +1717,25 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Analysis",
+      "Critical Thinking",
+      "Data Analysis",
+      "Information Gathering",
+      "Problem Solving",
+      "Quantitative Analysis",
+      "Research",
+      "Systems Thinking",
+      "Technology",
+    ],
+    interests: [
+      "IT & Digital Fields",
+      "Software Development",
+      "Electrical Engineering",
+      "Mechanical Engineering",
+      "Computer Networks",
+      "Mathematics & Engineering",
+    ],
   },
   {
     description:
@@ -851,6 +1752,25 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Systems Thinking",
+      "Technology",
+      "Data Analysis",
+      "Research",
+      "Coding & Scripting",
+      "Information Gathering",
+      "Information Literacy",
+      "Analysis",
+      "Concentration",
+    ],
+    interests: [
+      "Software Development",
+      "IT & Digital Fields",
+      "Mathematics & Engineering",
+      "Computer Networks",
+    ],
   },
   {
     description:
@@ -867,6 +1787,26 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Analysis",
+      "Data Analysis",
+      "Algorithmic Thinking",
+      "Coding & Scripting",
+      "Mathematics",
+      "Attention to Detail",
+      "Research",
+      "Information Literacy",
+      "Information Gathering",
+      "Concentration",
+    ],
+    interests: [
+      "Software Development",
+      "Mathematics & Engineering",
+      "IT & Digital Fields",
+      "Computer Networks",
+    ],
   },
   {
     description:
@@ -903,6 +1843,29 @@ export const COURSE_DATA = [
     ],
     prerequisiteAmount: 3,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Data Analysis",
+      "Research",
+      "Critical Thinking",
+      "Problem Solving",
+      "Ethical Reasoning",
+      "Experiment Design",
+      "Information Gathering",
+      "Information Literacy",
+      "Information Synthesis",
+      "Mathematics",
+      "Digital Literacy",
+      "Self-Directed Learning",
+    ],
+    interests: [
+      "Artificial Intelligence",
+      "Data Science",
+      "Software Development",
+      "Mathematics & Engineering",
+      "Ethics & Moral Philosophy",
+      "IT & Digital Fields",
+    ],
   },
   {
     description:
@@ -928,6 +1891,26 @@ export const COURSE_DATA = [
     recommendedPrep: ["MAT244H1"],
     prerequisiteAmount: 3,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Algorithmic Thinking",
+      "Problem Solving",
+      "Critical Thinking",
+      "Research",
+      "Mathematics",
+      "Collaboration",
+      "Information Gathering",
+      "Information Literacy",
+      "Visual Communication",
+      "Digital Literacy",
+    ],
+    interests: [
+      "Software Development",
+      "Game Development",
+      "Mathematics & Engineering",
+      "Arts & Media",
+      "IT & Digital Fields",
+    ],
   },
   {
     description:
@@ -964,6 +1947,24 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 3,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Data Analysis",
+      "Information Literacy",
+      "Critical Thinking",
+      "Problem Solving",
+      "Research",
+      "Attention to Detail",
+      "Logical Reasoning",
+      "Digital Literacy",
+    ],
+    interests: [
+      "Software Development",
+      "Data Science",
+      "IT & Digital Fields",
+      "Mathematics & Engineering",
+      "Business & Finance",
+    ],
   },
   {
     description:
@@ -1005,6 +2006,30 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 2,
     corequisiteAmount: 0,
+    skills: [
+      "Critical Thinking",
+      "Problem Solving",
+      "Coding & Scripting",
+      "Data Analysis",
+      "Quantitative Analysis",
+      "Research",
+      "Experiment Design",
+      "Developing a Hypothesis",
+      "Information Synthesis",
+      "Logical Reasoning",
+      "Technology",
+    ],
+    interests: [
+      "Artificial Intelligence",
+      "Data Science",
+      "Software Development",
+      "Computer Science",
+      "Cognitive Science",
+      "Robotics",
+      "Mathematics & Engineering",
+      "IT & Digital Fields",
+      "Science & Technology",
+    ],
   },
   {
     description:
@@ -1021,6 +2046,24 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Critical Thinking",
+      "Problem Solving",
+      "Technology",
+      "Analysis",
+      "Logical Reasoning",
+      "Digital Literacy",
+      "Systematic Review",
+    ],
+    interests: [
+      "Software Development",
+      "IT & Digital Fields",
+      "Computer Science",
+      "Science & Technology",
+      "Artificial Intelligence",
+      "Game Development",
+    ],
   },
   {
     description:
@@ -1037,6 +2080,24 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Collaborating",
+      "Problem Solving",
+      "Communication",
+      "Planning",
+      "Technology",
+      "Attention to Detail",
+      "Systematic Review",
+      "Design Thinking",
+    ],
+    interests: [
+      "Software Development",
+      "Web Development",
+      "IT & Digital Fields",
+      "Science & Technology",
+      "Digital Communication",
+    ],
   },
   {
     description:
@@ -1053,6 +2114,19 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Problem Solving",
+      "Technology",
+      "Attention to Detail",
+      "Data Analysis",
+      "Critical Thinking",
+    ],
+    interests: [
+      "Software Development",
+      "IT & Digital Fields",
+      "Science & Technology",
+    ],
   },
   {
     description:
@@ -1069,6 +2143,19 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Problem Solving",
+      "Critical Thinking",
+      "Technology",
+      "Attention to Detail",
+      "Analysis",
+    ],
+    interests: [
+      "Software Development",
+      "IT & Digital Fields",
+      "Science & Technology",
+    ],
   },
   {
     description:
@@ -1085,6 +2172,20 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Problem Solving",
+      "Critical Thinking",
+      "Technology",
+      "Attention to Detail",
+      "Analysis",
+    ],
+    interests: [
+      "Software Development",
+      "IT & Digital Fields",
+      "Science & Technology",
+      "Cybersecurity",
+    ],
   },
   {
     description:
@@ -1101,6 +2202,22 @@ export const COURSE_DATA = [
     recommendedPrep: [],
     prerequisiteAmount: 0,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Data Analysis",
+      "Research",
+      "Problem Solving",
+      "Critical Thinking",
+      "Quantitative Analysis",
+    ],
+    interests: [
+      "Bioinformatics",
+      "Genetics",
+      "Artificial Intelligence",
+      "Data Science",
+      "Biomedical Engineering",
+      "Science & Technology",
+    ],
   },
   {
     description:
@@ -1117,5 +2234,20 @@ export const COURSE_DATA = [
     recommendedPrep: ["PHY365H1"],
     prerequisiteAmount: 1,
     corequisiteAmount: 0,
+    skills: [
+      "Coding & Scripting",
+      "Problem Solving",
+      "Critical Thinking",
+      "Technology",
+      "Data Analysis",
+      "Research",
+    ],
+    interests: [
+      "Quantum Computing",
+      "Quantum Physics",
+      "Artificial Intelligence",
+      "Software Development",
+      "Science & Technology",
+    ],
   },
 ];

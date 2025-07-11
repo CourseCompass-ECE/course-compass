@@ -12,6 +12,11 @@ enum Designation {
   ELECTRICAL
 }
 
+enum SkillOrInterest {
+  INTEREST
+  SKILL
+}
+
 enum Area {
   PHOTONICS_SEMICONDUCTOR
   ENERGY_ELECTROMAGNETICS
@@ -32,8 +37,7 @@ model User {
   email String @unique
   password String
   pfpUrl String
-  interests String[]
-  skills String[]
+  skillsInterests SkillInterest[] @relation("UsersPossessingSkillsInterests")
   eceAreas Area[]
   desiredDesignation Designation
   desiredMinorsCertificates MinorCertificate[] @relation("UsersLikingMinorsCertificates")
@@ -41,6 +45,8 @@ model User {
   timetables Timetable[]
   shoppingCart Course[] @relation("ShoppingCart")
   favorites Course[] @relation("Favorites")
+  removedFromCart Course[] @relation("RemovedFromUserCarts")
+  removedFromFavorites Course[] @relation("RemovedFromUserFavorites")
   rejectedRecommendations Course[] @relation("RejectedRecommendations")
   emails Email[]
 }
@@ -79,7 +85,10 @@ model Course {
   practicalHours Int @default(0)
   inUserShoppingCart User[] @relation("ShoppingCart")
   inUserFavorites User[] @relation("Favorites")
+  inUserRemovedFromCart User[] @relation("RemovedFromUserCarts")
+  inUserRemovedFromFavorites User[] @relation("RemovedFromUserFavorites")
   inUserRejectedRecommendations User[] @relation("RejectedRecommendations")
+  skillsInterests SkillInterest[] @relation("CoursesPossessingSkillsInterests")
 }
 
 model Timetable {
@@ -116,4 +125,15 @@ model MinorCertificate {
   minorOrCertificate MinorOrCertificate
 
   @@unique([title, minorOrCertificate])
+}
+
+model SkillInterest {
+  id Int @id @default(autoincrement())
+  name String
+  isSpecific Boolean @default(true)
+  skillOrInterest SkillOrInterest
+  users User[] @relation("UsersPossessingSkillsInterests")
+  courses Course[] @relation("CoursesPossessingSkillsInterests")
+
+  @@unique([name, skillOrInterest])
 }

@@ -24,6 +24,7 @@ const {
   ELECTRICAL,
   COMPUTER,
   CONFLICT_STATUS_PATH,
+  RECOMMENDATIONS_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -41,6 +42,7 @@ const Email = require("./email-model");
 const sendGrid = require("@sendgrid/mail");
 sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
+const { findRecommendedCourses } = require("../utils/findRecommendedCourses");
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
@@ -157,7 +159,11 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
     }
 
     const hash = await argon2.hash(newUser.password);
-    newUser = { ...newUser, email: newUser?.email.trim(), password: hash };
+    newUser = {
+      ...newUser,
+      email: newUser?.email.trim(),
+      password: hash,
+    };
 
     const created = await User.create(newUser);
     req.session.user = created;
@@ -314,8 +320,8 @@ server.patch(`${Path.EXPLORE}${CART_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
-    await User.toggleCourseInShoppingCart(userId, Number(courseId));
-    res.status(204).end();
+    const updatedCourse = await User.toggleCourseInShoppingCart(userId, Number(courseId));
+    res.status(200).json({course: updatedCourse});
   } catch (err) {
     next(err);
   }
@@ -328,8 +334,8 @@ server.patch(`${Path.EXPLORE}${FAVORITES_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
-    await User.toggleCourseInFavorites(userId, Number(courseId));
-    res.status(204).end();
+    const updatedCourse = await User.toggleCourseInFavorites(userId, Number(courseId));
+    res.status(200).json({course: updatedCourse});
   } catch (err) {
     next(err);
   }
@@ -456,27 +462,39 @@ server.patch(`${Path.TIMETABLE}${DESIGNATION_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
 
     const userId = Number(req.session?.user?.id);
-    await User.updateTimetableDesignation(userId, Number(timetableId), designation);
+    await User.updateTimetableDesignation(
+      userId,
+      Number(timetableId),
+      designation
+    );
     res.status(204).end();
   } catch (err) {
     next(err);
   }
 });
 
-server.patch(`${Path.TIMETABLE}${CONFLICT_STATUS_PATH}`, async (req, res, next) => {
-  const timetableId = req.query?.id;
-  const isConflictFree = req.body?.newStatus;
-  
-  try {
-    if (typeof isConflictFree !== "boolean" ) throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+server.patch(
+  `${Path.TIMETABLE}${CONFLICT_STATUS_PATH}`,
+  async (req, res, next) => {
+    const timetableId = req.query?.id;
+    const isConflictFree = req.body?.newStatus;
 
-    const userId = Number(req.session?.user?.id);
-    await User.updateTimetableConflictStatus(userId, Number(timetableId), isConflictFree);
-    res.status(204).end();
-  } catch (err) {
-    next(err);
+    try {
+      if (typeof isConflictFree !== "boolean")
+        throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+
+      const userId = Number(req.session?.user?.id);
+      await User.updateTimetableConflictStatus(
+        userId,
+        Number(timetableId),
+        isConflictFree
+      );
+      res.status(204).end();
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 server.post(Path.TIMETABLE, async (req, res, next) => {
   const timetableCourseData = req.body;
@@ -529,6 +547,17 @@ server.delete(Path.TIMETABLE, async (req, res, next) => {
     );
 
     res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.get(`${Path.EXPLORE}${RECOMMENDATIONS_PATH}`, async (req, res, next) => {
+  try {
+    const userId = Number(req.session?.user?.id);
+    const courses = await Course.findCourses(userId);
+    const recommendedCourses = await findRecommendedCourses(courses, userId);
+    res.status(200).json({ recommendedCourses });
   } catch (err) {
     next(err);
   }

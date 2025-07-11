@@ -31,8 +31,8 @@ const ExploreCourseList = (props) => {
             key={index}
             index={index}
             course={course}
-            fetchAllCourseData={props.fetchAllCourseData}
             courseOuterContainerRefList={courseOuterContainerRefList}
+            setCourseData={props.setCourseData}
           />
         ))}
       </div>

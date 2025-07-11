@@ -3,16 +3,14 @@ import { Path } from "../utils/enums";
 import ExploreCourseList from "./exploreCourseList/ExploreCourseList";
 import { SHOPPING_CART } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
+import { updateCoursesInCart } from "../utils/updateCourses";
 
 const ShoppingCart = () => {
   const [coursesInCart, setCoursesInCart] = useState([]);
   const [fetchCoursesError, setFetchCoursesError] = useState("");
 
   const fetchShoppingCart = async () => {
-    await fetchCoursesInCart(
-      setFetchCoursesError,
-      setCoursesInCart
-    );
+    await fetchCoursesInCart(setFetchCoursesError, setCoursesInCart);
   };
 
   useEffect(() => {
@@ -27,7 +25,13 @@ const ShoppingCart = () => {
             {SHOPPING_CART}
           </h1>
           <ExploreCourseList
-            fetchAllCourseData={fetchShoppingCart}
+            setCourseData={(updatedCourse) =>
+              updateCoursesInCart(
+                updatedCourse,
+                setCoursesInCart,
+                coursesInCart
+              )
+            }
             courses={coursesInCart}
           />
         </>

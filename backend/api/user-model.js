@@ -1,6 +1,7 @@
 const { PrismaClient } = require("@prisma/client");
 const { MINOR, CERTIFICATE } = require("../../frontend/src/utils/constants");
 const prisma = new PrismaClient();
+const { SKILL, INTEREST } = require("../../frontend/src/utils/constants");
 
 const getAllTimetables = async (userId) => {
   return await prisma.user.findUnique({
@@ -14,8 +15,8 @@ const getAllTimetables = async (userId) => {
                 include: {
                   prerequisites: true,
                   corequisites: true,
-                  exclusions: true
-                }
+                  exclusions: true,
+                },
               },
             },
           },
@@ -23,6 +24,68 @@ const getAllTimetables = async (userId) => {
       },
     },
   });
+};
+
+const reformatSkillsInterests = (interests, skills) => {
+  let skillsInterests = [];
+  interests.forEach((interest) =>
+    skillsInterests.push({
+      name_skillOrInterest: { name: interest, skillOrInterest: INTEREST },
+    })
+  );
+  skills.forEach((skill) =>
+    skillsInterests.push({
+      name_skillOrInterest: { name: skill, skillOrInterest: SKILL },
+    })
+  );
+  return skillsInterests;
+};
+
+const getUpdatedCourse = async (courseId, userId) => {
+  let updatedCourse = await prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      minorsCertificates: true,
+      prerequisites: {
+        select: {
+          code: true,
+          title: true,
+        },
+      },
+      corequisites: {
+        select: {
+          code: true,
+          title: true,
+        },
+      },
+      exclusions: {
+        select: {
+          code: true,
+          title: true,
+        },
+      },
+      recommendedPrep: {
+        select: {
+          code: true,
+          title: true,
+        },
+      },
+      inUserShoppingCart: true,
+      inUserFavorites: true,
+    },
+  });
+
+  return {
+    ...updatedCourse,
+    inUserShoppingCart: updatedCourse.inUserShoppingCart.some(
+      (user) => user.id === userId
+    ),
+    inUserFavorites: updatedCourse.inUserFavorites.some(
+      (user) => user.id === userId
+    ),
+  };
 };
 
 module.exports = {
@@ -50,13 +113,14 @@ module.exports = {
         email: newUser.email,
         password: newUser.password,
         pfpUrl: newUser.pfpUrl,
-        interests: newUser.interests,
-        skills: newUser.skills,
         eceAreas: newUser.eceAreas,
         desiredDesignation: newUser.desiredDesignation,
         learningGoal: newUser.learningGoal,
         desiredMinorsCertificates: {
           connect: minorsCertificates,
+        },
+        skillsInterests: {
+          connect: reformatSkillsInterests(newUser?.interests, newUser?.skills),
         },
       },
     });
@@ -78,6 +142,22 @@ module.exports = {
       },
     });
     return userData?.emails;
+  },
+
+  async findUserById(userId) {
+    const userData = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        skillsInterests: true,
+        desiredMinorsCertificates: true,
+        shoppingCart: true,
+        favorites: true,
+        removedFromCart: true,
+        removedFromFavorites: true,
+        rejectedRecommendations: true,
+      },
+    });
+    return userData;
   },
 
   async toggleCourseInShoppingCart(userId, courseId) {
@@ -113,6 +193,7 @@ module.exports = {
           },
         });
       }
+
     } else {
       await prisma.user.update({
         where: { id: userId },
@@ -125,6 +206,8 @@ module.exports = {
         },
       });
     }
+
+    return await getUpdatedCourse(courseId, userId);
   },
 
   async toggleCourseInFavorites(userId, courseId) {
@@ -172,6 +255,8 @@ module.exports = {
         },
       });
     }
+
+    return await getUpdatedCourse(courseId, userId);
   },
 
   async findUserTimetablesById(userId) {

@@ -4,6 +4,12 @@ import {
   CERTIFICATES,
   MINOR,
   CERTIFICATE,
+  SKILLS,
+  NUMBER_OF_GENERIC_INTERESTS,
+  NUMBER_OF_GENERIC_SKILLS,
+  INTERESTS,
+  SKILL,
+  INTEREST,
 } from "../../frontend/src/utils/constants.js";
 import { COURSE_DATA } from "../utils/courseData.js";
 import {
@@ -14,6 +20,7 @@ import {
 const prisma = new PrismaClient();
 let id = 1;
 let courseId = 1;
+let skillInterestId = 1;
 
 const removeInvalidRequirements = async (requirementsList) => {
   const updatedList = await Promise.all(
@@ -27,6 +34,28 @@ const removeInvalidRequirements = async (requirementsList) => {
   );
 
   return updatedList.filter((code) => code !== null);
+};
+
+const removeInvalidSkillsInterests = async (
+  skillsInterestsList,
+  skillOrInterest
+) => {
+  const updatedList = await Promise.all(
+    skillsInterestsList.map(async (skillInterest) =>
+      (await prisma.skillInterest.findFirst({
+        where: { name: skillInterest, skillOrInterest: skillOrInterest },
+      }))
+        ? {
+            name_skillOrInterest: {
+              name: skillInterest,
+              skillOrInterest: skillOrInterest,
+            },
+          }
+        : null
+    )
+  );
+
+  return updatedList.filter((skillInterest) => skillInterest !== null);
 };
 
 const seedMinorCertificateCourses = async (
@@ -106,12 +135,24 @@ const seedCourseTable = async () => {
       course.recommendedPrep
     );
 
-    const prerequisiteAmount = course.prerequisiteAmount === 0 || course.prerequisiteAmount > prerequisites.length
-            ? prerequisites.length
-            : course.prerequisiteAmount;
-    const corequisiteAmount = course.corequisiteAmount === 0 || course.corequisiteAmount > corequisites.length
-            ? corequisites.length
-            : course.corequisiteAmount;
+    const skills = await removeInvalidSkillsInterests(course.skills, SKILL);
+    const interests = await removeInvalidSkillsInterests(
+      course.interests,
+      INTEREST
+    );
+
+    const skillsInterests = [...skills, ...interests];
+
+    const prerequisiteAmount =
+      course.prerequisiteAmount === 0 ||
+      course.prerequisiteAmount > prerequisites.length
+        ? prerequisites.length
+        : course.prerequisiteAmount;
+    const corequisiteAmount =
+      course.corequisiteAmount === 0 ||
+      course.corequisiteAmount > corequisites.length
+        ? corequisites.length
+        : course.corequisiteAmount;
 
     await prisma.course.update({
       where: { code: course.code },
@@ -129,15 +170,46 @@ const seedCourseTable = async () => {
           connect: recommendedPrep,
         },
         prerequisiteAmount: prerequisiteAmount,
-        corequisiteAmount: corequisiteAmount
+        corequisiteAmount: corequisiteAmount,
+        skillsInterests: {
+          connect: skillsInterests
+        }
       },
     });
   }
 };
 
-//minorsCertificates - list through courses for each minor/cert & make connection
+const seedSkillsInterestsTable = async () => {
+  for (const skill of SKILLS) {
+    await prisma.skillInterest.upsert({
+      where: { id: skillInterestId },
+      update: {},
+      create: {
+        isSpecific: skillInterestId > NUMBER_OF_GENERIC_SKILLS,
+        id: skillInterestId++,
+        name: skill,
+        skillOrInterest: SKILL,
+      },
+    });
+  }
+
+  for (const interest of INTERESTS) {
+    await prisma.skillInterest.upsert({
+      where: { id: skillInterestId },
+      update: {},
+      create: {
+        isSpecific:
+          skillInterestId - SKILLS.length > NUMBER_OF_GENERIC_INTERESTS,
+        id: skillInterestId++,
+        name: interest,
+        skillOrInterest: INTEREST,
+      },
+    });
+  }
+};
 
 try {
+  await seedSkillsInterestsTable();
   await seedCourseTable();
   await seedMinorCertificateTable();
   await prisma.$disconnect();

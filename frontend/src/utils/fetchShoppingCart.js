@@ -1,4 +1,5 @@
 import { Path } from "./enums";
+import { sortByFavorites } from "./sort";
 
 const FETCH_COURSES_ERROR_MESSAGE =
     "Something went wrong fetching courses in shopping cart";
@@ -18,15 +19,7 @@ export const fetchCoursesInCart = async (setFetchCoursesError, setCoursesInCart)
       if (response.ok) {
         const data = await response.json();
         setCoursesInCart(
-          data?.courses.sort((courseA, courseB) => {
-            if (courseA.inUserFavorites) {
-              return -1;
-            } else if (courseB.inUserFavorites) {
-              return 1;
-            } else {
-              return 0;
-            }
-          })
+          sortByFavorites(data?.courses)
         );
       } else {
         setFetchCoursesError(FETCH_COURSES_ERROR_MESSAGE);
