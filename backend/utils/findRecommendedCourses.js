@@ -23,10 +23,20 @@ const CART_DESIGNATION_MATCH = 0.5;
 const CART_AREA_MATCH = 1.5;
 const CART_MINOR_MATCH = 2.5;
 const CART_CERTIFICATE_MATCH = 2;
+const CART_SPECIFIC_SKILL_INTEREST_MATCH = 1;
+const CART_GENERIC_SKILL_INTEREST_MATCH = 0.5;
+const CART_FAVORITED_MULTIPLER = 2;
+const CART_EXCLUSION = 5;
+// Assumption: requirements directed from the cart course to the course of focus more strongly indicate similarity versus the opposite way
+// E.g. a shopping cart course X needing course Y as a prerequisite more strongly shows similarity versus course Y needing course X while course X
+// does not need course Y
+const CART_PREREQ_COREQ_PREP_FROM_CART = 4;
+const CART_PREREQ_COREQ_PREP_FROM_COURSE = 3.5;
 
-const NUM_DAYS_ROLLING_AVERAGE = 5;
-const ANOMALY_SCORE_JUMP_MULTIPLIER = 1.5;
-const INITIAL_CUTOFF_PERCENTAGE = 0.5;
+const NUM_DAYS_ROLLING_AVERAGE = 8;
+const ANOMALY_SCORE_JUMP_MULTIPLIER = 2.5;
+const CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES = 0.5;
+const JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF = .25;
 
 const cleanseText = (originalText) => {
   return originalText
@@ -36,24 +46,67 @@ const cleanseText = (originalText) => {
     .filter((word) => !stopwords.includes(word));
 };
 
+const minorCertificateScoring = (
+  courseMinorCertificateIds,
+  otherMinorCertificateList,
+  minorMatchScore,
+  certificateMatchScore
+) => {
+  let score = 0;
+
+  otherMinorCertificateList.forEach((minorCertificate) => {
+    if (courseMinorCertificateIds.has(minorCertificate.id)) {
+      score +=
+        minorCertificate.minorOrCertificate === MINOR
+          ? minorMatchScore
+          : certificateMatchScore;
+    }
+  });
+
+  return score;
+};
+
+const skillsInterestsScoring = (
+  courseSkillsInterests,
+  otherSkillsInterestsList,
+  specificSkillInterestScore,
+  genericSkillInterestScore
+) => {
+  let courseSkillsInterestsIds = new Set(
+    courseSkillsInterests.map((skillInterest) => skillInterest.id)
+  );
+
+  let score = 0;
+
+  otherSkillsInterestsList.forEach((skillInterest) => {
+    if (courseSkillsInterestsIds.has(skillInterest.id))
+      score += skillInterest.isSpecific
+        ? specificSkillInterestScore
+        : genericSkillInterestScore;
+  });
+
+  return score;
+};
+
 export const findRecommendedCourses = async (courses, userId) => {
-  let coursesWithScores = structuredClone(courses);
-  let user = await User.findUserById(userId);
+  const shoppingCartCourses = await Course.findCoursesInCart(userId);
+  const shoppingCartCourseIds = new Set(
+    shoppingCartCourses.map((cartCourse) => cartCourse.id)
+  );
+  let coursesWithScores = structuredClone(courses).filter(
+    (course) => !shoppingCartCourseIds.has(course.id)
+  );
+  const user = await User.findUserById(userId);
 
   coursesWithScores.forEach((course) => {
     let score = 0;
 
-    course.skillsInterests.forEach((skillInterest) => {
-      if (
-        user.skillsInterests.some(
-          (userSkillInterest) => userSkillInterest.id === skillInterest.id
-        )
-      ) {
-        score += skillInterest.isSpecific
-          ? SPECIFIC_SKILL_INTEREST_MATCH
-          : GENERIC_SKILL_INTEREST_MATCH;
-      }
-    });
+    score += skillsInterestsScoring(
+      course.skillsInterests,
+      user.skillsInterests,
+      SPECIFIC_SKILL_INTEREST_MATCH,
+      GENERIC_SKILL_INTEREST_MATCH
+    );
 
     let cleansedTitle = CONSIDER_WORD_MATCH_FREQUENCY
       ? cleanseText(course.title)
@@ -97,58 +150,59 @@ export const findRecommendedCourses = async (courses, userId) => {
     let courseMinorCertificateIds = new Set(
       course.minorsCertificates.map((minorCertificate) => minorCertificate.id)
     );
-    user.desiredMinorsCertificates.forEach((minorCertificate) => {
-      if (courseMinorCertificateIds.has(minorCertificate.id)) {
-        score +=
-          minorCertificate.minorOrCertificate === MINOR
-            ? USER_MINOR_MATCH
-            : USER_CERTIFICATE_MATCH;
-      }
-    });
+    score += minorCertificateScoring(
+      courseMinorCertificateIds,
+      user.desiredMinorsCertificates,
+      USER_MINOR_MATCH,
+      USER_CERTIFICATE_MATCH
+    );
 
     course.score = score;
   });
 
   // If more than 10 courses are present, keep the top 25% or until a major gap in scores is found over x-course rolling average
   if (coursesWithScores.length > 10) {
-    let scoreJumpRollingAverage = 0;
+    let scoreJumpRollingSum = 0;
     let cutOffIndex;
 
     coursesWithScores.sort((crsA, crsB) => crsB.score - crsA.score);
 
-    for (const [course, index] in coursesWithScores.entries()) {
+    for (const [index, course] of coursesWithScores.entries()) {
       let jump = course.score - coursesWithScores[index + 1].score;
       if (index < NUM_DAYS_ROLLING_AVERAGE) {
-        scoreJumpRollingAverage += jump;
-        if (index === NUM_DAYS_ROLLING_AVERAGE - 1) {
-          scoreJumpRollingAverage /= NUM_DAYS_ROLLING_AVERAGE;
-        }
+        scoreJumpRollingSum += jump;
         continue;
       }
 
       if (
-        jump >= scoreJumpRollingAverage * ANOMALY_SCORE_JUMP_MULTIPLIER ||
+        jump >= scoreJumpRollingSum / NUM_DAYS_ROLLING_AVERAGE * ANOMALY_SCORE_JUMP_MULTIPLIER ||
         coursesWithScores.length - index <=
-          coursesWithScores.length * INITIAL_CUTOFF_PERCENTAGE
+          coursesWithScores.length * CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES ||
+        course.score < coursesWithScores[0].score * JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF
       ) {
         cutOffIndex = index;
         break;
       }
 
-      scoreJumpRollingAverage -=
-        coursesWithScores[index - 5].score / NUM_DAYS_ROLLING_AVERAGE;
-      scoreJumpRollingAverage += jump / NUM_DAYS_ROLLING_AVERAGE;
+      scoreJumpRollingSum -=
+        (coursesWithScores[index - 5].score -
+          coursesWithScores[index - 4].score);
+      scoreJumpRollingSum += jump;
     }
 
-    coursesWithScores.filter((_, index) => index < cutOffIndex);
+    coursesWithScores = coursesWithScores.filter((_, index) => index < cutOffIndex);
   }
-
-  const shoppingCartCourses = await Course.findCoursesInCart(userId);
 
   shoppingCartCourses.forEach((cartCourse) => {
     let cartCourseDescription = CONSIDER_WORD_MATCH_FREQUENCY
       ? cleanseText(cartCourse.description)
       : new Set(cleanseText(cartCourse.description));
+
+    let cartRequirementsAndPrep = [
+      ...cartCourse.prerequisites,
+      ...cartCourse.corequisites,
+      ...cartCourse.recommendedPrep,
+    ];
 
     coursesWithScores.forEach((course) => {
       let scoreBoost = 0;
@@ -179,8 +233,58 @@ export const findRecommendedCourses = async (courses, userId) => {
       course.area.forEach((area) => {
         if (cartCourse.area.includes(area)) scoreBoost += CART_AREA_MATCH;
       });
+
+      let courseMinorCertificateIds = new Set(
+        course.minorsCertificates.map((minorCertificate) => minorCertificate.id)
+      );
+      scoreBoost += minorCertificateScoring(
+        courseMinorCertificateIds,
+        cartCourse.minorsCertificates,
+        CART_MINOR_MATCH,
+        CART_CERTIFICATE_MATCH
+      );
+
+      scoreBoost += skillsInterestsScoring(
+        course.skillsInterests,
+        cartCourse.skillsInterests,
+        CART_SPECIFIC_SKILL_INTEREST_MATCH,
+        CART_GENERIC_SKILL_INTEREST_MATCH
+      );
+
+      let courseRequirementsAndPrep = [
+        ...course.prerequisites,
+        ...course.corequisites,
+        ...course.recommendedPrep,
+      ];
+
+      cartRequirementsAndPrep.forEach((reqOrPrep) => {
+        if (reqOrPrep.id === course.id)
+          scoreBoost += CART_PREREQ_COREQ_PREP_FROM_CART;
+      });
+
+      courseRequirementsAndPrep.forEach((reqOrPrep) => {
+        if (reqOrPrep.id === cartCourse.id)
+          scoreBoost += CART_PREREQ_COREQ_PREP_FROM_COURSE;
+      });
+
+      if (course.exclusions.some((exclusion) => exclusion.id === cartCourse.id))
+        scoreBoost += CART_EXCLUSION;
+
+      scoreBoost = cartCourse.inUserFavorites
+        ? scoreBoost * CART_FAVORITED_MULTIPLER
+        : scoreBoost;
+
+      course.score += scoreBoost;
     });
   });
+
+  coursesWithScores.sort((crsA, crsB) => crsB.score - crsA.score);
+
+  let topScore = coursesWithScores[0].score;
+
+  coursesWithScores.forEach(
+    (course) => (course.score = Math.round((course.score / topScore) * 100))
+  );
 
   return coursesWithScores;
 };
