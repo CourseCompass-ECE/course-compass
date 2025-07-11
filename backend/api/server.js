@@ -320,8 +320,8 @@ server.patch(`${Path.EXPLORE}${CART_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
-    await User.toggleCourseInShoppingCart(userId, Number(courseId));
-    res.status(204).end();
+    const updatedCourse = await User.toggleCourseInShoppingCart(userId, Number(courseId));
+    res.status(200).json({course: updatedCourse});
   } catch (err) {
     next(err);
   }
@@ -334,8 +334,8 @@ server.patch(`${Path.EXPLORE}${FAVORITES_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
-    await User.toggleCourseInFavorites(userId, Number(courseId));
-    res.status(204).end();
+    const updatedCourse = await User.toggleCourseInFavorites(userId, Number(courseId));
+    res.status(200).json({course: updatedCourse});
   } catch (err) {
     next(err);
   }

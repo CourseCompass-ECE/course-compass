@@ -18,12 +18,13 @@ import {
   ELECTRICAL,
   DESIGNATION_PATH,
   initialErrors,
-  CONFLICT_STATUS_PATH
+  CONFLICT_STATUS_PATH,
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
 import TimetableCourseSummary from "./timetableCourseSummary/TimetableCourseSummary";
 import { areRequirementsMet } from "../utils/requirementsCheck";
+import { updateCoursesInCart } from "../utils/updateCourses";
 
 const Timetable = () => {
   const PREREQ_ERRORS = "Prerequisite Errors";
@@ -85,8 +86,11 @@ const Timetable = () => {
   const NO_ERRORS = "Great job - no errors found!";
 
   const updateDesignation = async (newDesignation) => {
-
-    if (newDesignation !== null && newDesignation !== ELECTRICAL && newDesignation !== COMPUTER) {
+    if (
+      newDesignation !== null &&
+      newDesignation !== ELECTRICAL &&
+      newDesignation !== COMPUTER
+    ) {
       return;
     }
 
@@ -310,7 +314,7 @@ const Timetable = () => {
         const data = await response.json();
         setTitle(data?.timetable?.title);
         setDescription(data?.timetable?.description);
-        setDesignation(data?.timetable?.designation)
+        setDesignation(data?.timetable?.designation);
         setTimetable(data?.timetable);
         organizeCourses(data?.timetable?.courses);
         areRequirementsMet(
@@ -399,13 +403,17 @@ const Timetable = () => {
     if (timetable && designation !== timetable?.designation) {
       updateDesignation(designation);
     }
-  }, [designation])
+  }, [designation]);
 
   useEffect(() => {
-    if (timetable && errors.some(errorObject => errorObject.errors.length > 0) === timetable?.isConflictFree) {
+    if (
+      timetable &&
+      errors.some((errorObject) => errorObject.errors.length > 0) ===
+        timetable?.isConflictFree
+    ) {
       toggleConflictStatus();
     }
-  }, errors)
+  }, errors);
 
   return (
     <div className="page-container">
@@ -536,10 +544,11 @@ const Timetable = () => {
                     >
                       <ExploreCourse
                         index={index}
-                        fetchAllCourseData={() =>
-                          fetchCoursesInCart(
-                            setFetchCartCoursesError,
-                            setCoursesInCart
+                        setCourseData={(updatedCourse) =>
+                          updateCoursesInCart(
+                            updatedCourse,
+                            setCoursesInCart,
+                            coursesInCart
                           )
                         }
                         course={course}
@@ -636,34 +645,51 @@ const Timetable = () => {
           <div className="degree-requirements-container">
             <article className="degree-requirement">
               <h3 className="requirement-title">
-                {renderMetRequirementIcons(kernelCourses.filter(courseObject => courseObject.course).length === AMOUNT_OF_KERNEL_AREAS )}
+                {renderMetRequirementIcons(
+                  kernelCourses.filter((courseObject) => courseObject.course)
+                    .length === AMOUNT_OF_KERNEL_AREAS
+                )}
                 {KERNEL}
-                {`${kernelCourses.filter(courseObject => courseObject.course).length} / 4`}
+                {`${
+                  kernelCourses.filter((courseObject) => courseObject.course)
+                    .length
+                } / 4`}
               </h3>
               <ul className="requirement-ul">
                 {kernelCourses.map((courseObject, index) => (
-                  <li
-                    className="requirement-li"
-                    key={index}
-                  >{`${ECE_AREAS[courseObject.area]}: ${courseObject.course ? courseObject.course : NO_COURSE}`}</li>
+                  <li className="requirement-li" key={index}>{`${
+                    ECE_AREAS[courseObject.area]
+                  }: ${
+                    courseObject.course ? courseObject.course : NO_COURSE
+                  }`}</li>
                 ))}
               </ul>
             </article>
             <article className="degree-requirement">
               <h3 className="requirement-title">
-                {renderMetRequirementIcons(depthCourses.filter(courseObject => courseObject.course).length === AMOUNT_OF_KERNEL_AREAS)}
+                {renderMetRequirementIcons(
+                  depthCourses.filter((courseObject) => courseObject.course)
+                    .length === AMOUNT_OF_KERNEL_AREAS
+                )}
                 {DEPTH}
-                {`${depthCourses.filter(courseObject => courseObject.course).length} / 4`}
+                {`${
+                  depthCourses.filter((courseObject) => courseObject.course)
+                    .length
+                } / 4`}
               </h3>
               <ul className="requirement-ul">
                 {[...Array(2)].map((listItem1, index) => (
                   <span key={index}>
-                    <li className="requirement-li">{`${ECE_AREAS[depthCourses[index + 1]?.area]}:`}</li>
+                    <li className="requirement-li">{`${
+                      ECE_AREAS[depthCourses[index + 1]?.area]
+                    }:`}</li>
                     <ul>
                       {[...Array(2)].map((listItem2, courseIndex) => (
-                        <li
-                          key={courseIndex}
-                        >{`${depthCourses[2*index + courseIndex]?.course ? depthCourses[2*index + courseIndex]?.course : NO_COURSE}`}</li>
+                        <li key={courseIndex}>{`${
+                          depthCourses[2 * index + courseIndex]?.course
+                            ? depthCourses[2 * index + courseIndex]?.course
+                            : NO_COURSE
+                        }`}</li>
                       ))}
                     </ul>
                   </span>
@@ -697,7 +723,10 @@ const Timetable = () => {
                 {error.errors.length === 0 ? (
                   <h4 style={{ textAlign: "center" }}>{NO_ERRORS}</h4>
                 ) : (
-                  <ul className="requirement-ul" style={{alignSelf: "center"}}>
+                  <ul
+                    className="requirement-ul"
+                    style={{ alignSelf: "center" }}
+                  >
                     {error.errors.map((error, index) => (
                       <li className="requirement-li" key={index}>
                         {error}

@@ -11,8 +11,6 @@ export const findRecommendedCourses = async (courses, userId) => {
 
   coursesWithScores.forEach((course) => {
     let score = 0;
-    let cleanedTitle = course.title.trim().toLowerCase();
-    let cleanedDescription = course.description.trim().toLowerCase();
 
     course.skillsInterests.forEach((skillInterest) => {
       if (
@@ -26,21 +24,27 @@ export const findRecommendedCourses = async (courses, userId) => {
       }
     });
 
-    user.learningGoal.forEach(goal => {
+    let cleanedTitle = course.title.trim().toLowerCase();
+    let cleanedDescription = course.description.trim().toLowerCase();
 
-        goal.trim().toLowerCase().split(" ").forEach(word => {
-            cleanedDescription.split(" ").forEach(descriptionWord => {
-                if (word === descriptionWord) score += LEARNING_GOAL_WORD_MATCH;
-            })
+    user.learningGoal.forEach((goal) => {
+      goal
+        .trim()
+        .toLowerCase()
+        .split(" ")
+        .forEach((word) => {
+          cleanedDescription.split(" ").forEach((descriptionWord) => {
+            if (word === descriptionWord) score += LEARNING_GOAL_WORD_MATCH;
+          });
 
-            cleanedTitle.split(" ").forEach(titleWord => {
-                if (word === titleWord) score += LEARNING_GOAL_WORD_MATCH;
-            })
-        })
-    })
+          cleanedTitle.split(" ").forEach((titleWord) => {
+            if (word === titleWord) score += LEARNING_GOAL_WORD_MATCH;
+          });
+        });
+    });
 
     course.score = score;
   });
 
-  let shoppingCartCourses = await Course.findCoursesInCart(userId);
+  return coursesWithScores;
 };

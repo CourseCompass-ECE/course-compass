@@ -41,6 +41,53 @@ const reformatSkillsInterests = (interests, skills) => {
   return skillsInterests;
 };
 
+const getUpdatedCourse = async (courseId, userId) => {
+  let updatedCourse = await prisma.course.findUnique({
+    where: {
+      id: courseId,
+    },
+    include: {
+      minorsCertificates: true,
+      prerequisites: {
+        select: {
+          code: true,
+          title: true,
+        },
+      },
+      corequisites: {
+        select: {
+          code: true,
+          title: true,
+        },
+      },
+      exclusions: {
+        select: {
+          code: true,
+          title: true,
+        },
+      },
+      recommendedPrep: {
+        select: {
+          code: true,
+          title: true,
+        },
+      },
+      inUserShoppingCart: true,
+      inUserFavorites: true,
+    },
+  });
+
+  return {
+    ...updatedCourse,
+    inUserShoppingCart: updatedCourse.inUserShoppingCart.some(
+      (user) => user.id === userId
+    ),
+    inUserFavorites: updatedCourse.inUserFavorites.some(
+      (user) => user.id === userId
+    ),
+  };
+};
+
 module.exports = {
   async create(newUser) {
     let minorsCertificates = newUser.desiredMinors.map((minor) => {
@@ -107,7 +154,7 @@ module.exports = {
         favorites: true,
         removedFromCart: true,
         removedFromFavorites: true,
-        rejectedRecommendations: true
+        rejectedRecommendations: true,
       },
     });
     return userData;
@@ -146,6 +193,7 @@ module.exports = {
           },
         });
       }
+
     } else {
       await prisma.user.update({
         where: { id: userId },
@@ -158,6 +206,8 @@ module.exports = {
         },
       });
     }
+
+    return await getUpdatedCourse(courseId, userId);
   },
 
   async toggleCourseInFavorites(userId, courseId) {
@@ -205,6 +255,8 @@ module.exports = {
         },
       });
     }
+
+    return await getUpdatedCourse(courseId, userId);
   },
 
   async findUserTimetablesById(userId) {

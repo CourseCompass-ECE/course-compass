@@ -32,6 +32,7 @@ const getAllCourses = async () => {
         },
         inUserShoppingCart: true,
         inUserFavorites: true,
+        skillsInterests: true
       },
     });
 }

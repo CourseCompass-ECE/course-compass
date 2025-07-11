@@ -9,6 +9,7 @@ import {
   CODE,
 } from "../../utils/constants";
 import { Path } from "../../utils/enums";
+import { sortByFavorites } from "../../utils/sort";
 
 const ExploreCourse = (props) => {
   const refList = useRef([]);
@@ -125,7 +126,8 @@ const ExploreCourse = (props) => {
       );
 
       if (response.ok) {
-        props.fetchAllCourseData();
+        const data = await response.json();
+        props.setCourseData(data?.course);
       } else {
         setChangeCartError(CHANGE_CART_ERROR_MESSAGE);
         setChangeCartErrorId(courseId);
@@ -154,7 +156,8 @@ const ExploreCourse = (props) => {
       );
 
       if (response.ok) {
-        props.fetchAllCourseData();
+        const data = await response.json();
+        props.setCourseData(data?.course);
       } else {
         setChangeFavoritesError(CHANGE_FAVORITES_ERROR_MESSAGE);
         setChangeFavoritesErrorId(courseId);

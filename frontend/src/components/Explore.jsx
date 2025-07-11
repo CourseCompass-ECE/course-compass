@@ -10,6 +10,7 @@ import {
   CERTIFICATE,
   RECOMMENDATIONS_PATH,
 } from "../utils/constants";
+import { sortByFavorites } from "../utils/sort";
 
 const Explore = () => {
   const [courseData, setCourseData] = useState([]);
@@ -34,6 +35,14 @@ const Explore = () => {
   const MINOR_DROPDOWN_PLACEHOLDER = "All Minors";
   const CERTIFICATE_DROPDOWN_PLACEHOLDER = "All Certificates";
   const CODE_DROPDOWN_PLACEHOLDER = "All Codes";
+
+  const updateCourseData = (updatedCourse) => {
+    setCourseData(
+      courseData?.map((course) =>
+        course.id === updatedCourse.id ? updatedCourse : course
+      )
+    );
+  };
 
   const filterByTitle = (title) => {
     if (
@@ -294,7 +303,7 @@ const Explore = () => {
             <h2 className="explore-recommend-header">{RECOMMENDED}</h2>
             {recommendedCourses.length > 0 ? (
               <ExploreCourseList
-                fetchAllCourseData={fetchAllCourseData}
+                setCourseData={updateCourseData}
                 courses={recommendedCourses.filter((course) =>
                   filterRecommendations(course)
                 )}
@@ -312,7 +321,7 @@ const Explore = () => {
             <section>
               <h2 className="explore-filter-header">{`"${searchInput.trim()}"`}</h2>
               <ExploreCourseList
-                fetchAllCourseData={fetchAllCourseData}
+                setCourseData={updateCourseData}
                 courses={courseData.filter((course) =>
                   filterCourseBySearch(course)
                 )}
@@ -326,7 +335,7 @@ const Explore = () => {
               <section key={index}>
                 <h2 className="explore-filter-header">{filter.title}</h2>
                 <ExploreCourseList
-                  fetchAllCourseData={fetchAllCourseData}
+                  setCourseData={updateCourseData}
                   courses={courseData.filter((course) =>
                     filter.selector(course)
                   )}
