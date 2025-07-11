@@ -45,6 +45,8 @@ model User {
   timetables Timetable[]
   shoppingCart Course[] @relation("ShoppingCart")
   favorites Course[] @relation("Favorites")
+  removedFromCart Course[] @relation("RemovedFromUserCarts")
+  removedFromFavorites Course[] @relation("RemovedFromUserFavorites")
   rejectedRecommendations Course[] @relation("RejectedRecommendations")
   emails Email[]
 }
@@ -83,6 +85,8 @@ model Course {
   practicalHours Int @default(0)
   inUserShoppingCart User[] @relation("ShoppingCart")
   inUserFavorites User[] @relation("Favorites")
+  inUserRemovedFromCart User[] @relation("RemovedFromUserCarts")
+  inUserRemovedFromFavorites User[] @relation("RemovedFromUserFavorites")
   inUserRejectedRecommendations User[] @relation("RejectedRecommendations")
   skillsInterests SkillInterest[] @relation("CoursesPossessingSkillsInterests")
 }

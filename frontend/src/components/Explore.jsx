@@ -200,7 +200,7 @@ const Explore = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setRecommendedCourses(data?.courses);
+        setRecommendedCourses(data?.recommendedCourses);
       } else {
         setRecommendedError(RECOMMEND_COURSES_ERROR);
       }

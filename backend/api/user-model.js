@@ -97,6 +97,22 @@ module.exports = {
     return userData?.emails;
   },
 
+  async findUserById(userId) {
+    const userData = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        skillsInterests: true,
+        desiredMinorsCertificates: true,
+        shoppingCart: true,
+        favorites: true,
+        removedFromCart: true,
+        removedFromFavorites: true,
+        rejectedRecommendations: true
+      },
+    });
+    return userData;
+  },
+
   async toggleCourseInShoppingCart(userId, courseId) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
