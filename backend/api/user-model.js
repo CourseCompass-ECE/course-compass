@@ -88,6 +88,37 @@ const getUpdatedCourse = async (courseId, userId) => {
   };
 };
 
+const courseFieldsToInclude = {
+  include: {
+    minorsCertificates: true,
+    prerequisites: {
+      select: {
+        code: true,
+        title: true,
+      },
+    },
+    corequisites: {
+      select: {
+        code: true,
+        title: true,
+      },
+    },
+    exclusions: {
+      select: {
+        code: true,
+        title: true,
+      },
+    },
+    recommendedPrep: {
+      select: {
+        code: true,
+        title: true,
+      },
+    },
+    skillsInterests: true,
+  },
+};
+
 module.exports = {
   async create(newUser) {
     let minorsCertificates = newUser.desiredMinors.map((minor) => {
@@ -150,11 +181,9 @@ module.exports = {
       include: {
         skillsInterests: true,
         desiredMinorsCertificates: true,
-        shoppingCart: true,
-        favorites: true,
-        removedFromCart: true,
-        removedFromFavorites: true,
-        rejectedRecommendations: true,
+        removedFromCart: courseFieldsToInclude,
+        removedFromFavorites: courseFieldsToInclude,
+        rejectedRecommendations: courseFieldsToInclude,
       },
     });
     return userData;

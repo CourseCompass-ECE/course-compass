@@ -7,7 +7,7 @@ import {
   FAVORITES_PATH,
   ID_QUERY_PARAM,
   CODE,
-  REJECT_PATH
+  REJECT_PATH,
 } from "../../utils/constants";
 import { Path } from "../../utils/enums";
 import { sortByFavorites } from "../../utils/sort";
@@ -224,7 +224,13 @@ const ExploreCourse = (props) => {
         }}
         className="explore-course-container"
       >
-        <div className="explore-course-front">
+        <div
+          className="explore-course-front"
+          style={props.course.score ? { position: "static" } : {}}
+        >
+          {props.course.score ? (
+            <div className="recommendation-score">{props.course.score}%</div>
+          ) : null}
           <div className="explore-course-icon-container">
             {props.course.score ? (
               <span

@@ -7,7 +7,12 @@ import {
   ELECTRICAL_AREAS,
   COMPUTER_AREAS,
   MINOR,
+  SHOPPING_CART,
 } from "../../frontend/src/utils/constants.js";
+
+const REMOVED_FROM_CART = "Removed From Cart";
+const REMOVED_FROM_FAVORITES = "Removed From Favorites";
+const REJECTED_RECOMMENDATIONS = "Rejected Recommendations";
 
 const SPECIFIC_SKILL_INTEREST_MATCH = 2;
 const GENERIC_SKILL_INTEREST_MATCH = 1;
@@ -33,10 +38,15 @@ const CART_EXCLUSION = 5;
 const CART_PREREQ_COREQ_PREP_FROM_CART = 4;
 const CART_PREREQ_COREQ_PREP_FROM_COURSE = 3.5;
 
+const UNFAVORITED_MULTIPLER = -0.2;
+const REMOVED_FROM_CART_MULTIPLER = -0.4;
+const REJECTED_RECOMMENDATION_MULTIPLER = -1.2;
+const EXACT_MATCH_BASE_PENALTY_PERCENTAGE = 0.1; // 10% - multiplied with the above, it will be 2%, 4% or 12% taken off of total score for a course
+
 const NUM_DAYS_ROLLING_AVERAGE = 8;
 const ANOMALY_SCORE_JUMP_MULTIPLIER = 2.5;
 const CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES = 0.5;
-const JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF = .25;
+const JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF = 0.25;
 
 const cleanseText = (originalText) => {
   return originalText
@@ -88,7 +98,103 @@ const skillsInterestsScoring = (
   return score;
 };
 
+const calculateScoreFromSimilarity = (
+  course,
+  otherCourse,
+  otherCourseDescription,
+  otherCourseRequirementsAndPrep,
+  wordMatchScore,
+  designationMatchScore,
+  areaMatchScore,
+  minorMatchScore,
+  certificateMatchScore,
+  specificSkillInterestScore,
+  genericSkillInterestScore,
+  coreqPrereqPrepMatchScoreFromOther,
+  coreqPrereqPrepMatchScoreFromCourse,
+  exclusionScore,
+  scoreMultiplier,
+  exactMatchBasePenaltyPercentage
+) => {
+  // Only possible for courses in removed from cart/favorites & rejected recommendation fields
+  if (course.id === otherCourse.id) {
+    return exactMatchBasePenaltyPercentage * scoreMultiplier * course.score;
+  }
+
+  let score = 0;
+
+  let courseDescription = CONSIDER_WORD_MATCH_FREQUENCY
+    ? cleanseText(course.description)
+    : new Set(cleanseText(course.description));
+
+  courseDescription.forEach((word) => {
+    if (CONSIDER_WORD_MATCH_FREQUENCY) {
+      otherCourseDescription.forEach((otherWord) => {
+        if (word === otherWord) score += wordMatchScore * scoreMultiplier;
+      });
+    } else {
+      if (otherCourseDescription.has(word))
+        score += wordMatchScore * scoreMultiplier;
+    }
+  });
+
+  if (
+    (course.area.some((area) => COMPUTER_AREAS.includes(area)) &&
+      otherCourse.area.some((area) => COMPUTER_AREAS.includes(area))) ||
+    (course.area.some((area) => ELECTRICAL_AREAS.includes(area)) &&
+      otherCourse.area.some((area) => ELECTRICAL_AREAS.includes(area)))
+  ) {
+    score += designationMatchScore * scoreMultiplier;
+  }
+
+  course.area.forEach((area) => {
+    if (otherCourse.area.includes(area))
+      score += areaMatchScore * scoreMultiplier;
+  });
+
+  let courseMinorCertificateIds = new Set(
+    course.minorsCertificates.map((minorCertificate) => minorCertificate.id)
+  );
+  score +=
+    minorCertificateScoring(
+      courseMinorCertificateIds,
+      otherCourse.minorsCertificates,
+      minorMatchScore,
+      certificateMatchScore
+    ) * scoreMultiplier;
+
+  score +=
+    skillsInterestsScoring(
+      course.skillsInterests,
+      otherCourse.skillsInterests,
+      specificSkillInterestScore,
+      genericSkillInterestScore
+    ) * scoreMultiplier;
+
+  let courseRequirementsAndPrep = [
+    ...course.prerequisites,
+    ...course.corequisites,
+    ...course.recommendedPrep,
+  ];
+
+  otherCourseRequirementsAndPrep.forEach((reqOrPrep) => {
+    if (reqOrPrep.id === course.id)
+      score += coreqPrereqPrepMatchScoreFromOther * scoreMultiplier;
+  });
+
+  courseRequirementsAndPrep.forEach((reqOrPrep) => {
+    if (reqOrPrep.id === otherCourse.id)
+      score += coreqPrereqPrepMatchScoreFromCourse * scoreMultiplier;
+  });
+
+  if (course.exclusions.some((exclusion) => exclusion.id === otherCourse.id))
+    score += exclusionScore * scoreMultiplier;
+
+  return score;
+};
+
 export const findRecommendedCourses = async (courses, userId) => {
+  const user = await User.findUserById(userId);
   const shoppingCartCourses = await Course.findCoursesInCart(userId);
   const shoppingCartCourseIds = new Set(
     shoppingCartCourses.map((cartCourse) => cartCourse.id)
@@ -96,7 +202,24 @@ export const findRecommendedCourses = async (courses, userId) => {
   let coursesWithScores = structuredClone(courses).filter(
     (course) => !shoppingCartCourseIds.has(course.id)
   );
-  const user = await User.findUserById(userId);
+  const userActivityData = [
+    {
+      title: SHOPPING_CART,
+      courses: shoppingCartCourses,
+    },
+    {
+      title: REMOVED_FROM_CART,
+      courses: user.removedFromCart,
+    },
+    {
+      title: REMOVED_FROM_FAVORITES,
+      courses: user.removedFromFavorites,
+    },
+    {
+      title: REJECTED_RECOMMENDATIONS,
+      courses: user.rejectedRecommendations,
+    },
+  ];
 
   coursesWithScores.forEach((course) => {
     let score = 0;
@@ -175,114 +298,92 @@ export const findRecommendedCourses = async (courses, userId) => {
       }
 
       if (
-        jump >= scoreJumpRollingSum / NUM_DAYS_ROLLING_AVERAGE * ANOMALY_SCORE_JUMP_MULTIPLIER ||
+        jump >=
+          (scoreJumpRollingSum / NUM_DAYS_ROLLING_AVERAGE) *
+            ANOMALY_SCORE_JUMP_MULTIPLIER ||
         coursesWithScores.length - index <=
           coursesWithScores.length * CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES ||
-        course.score < coursesWithScores[0].score * JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF
+        course.score <
+          coursesWithScores[0].score * JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF
       ) {
         cutOffIndex = index;
         break;
       }
 
       scoreJumpRollingSum -=
-        (coursesWithScores[index - 5].score -
-          coursesWithScores[index - 4].score);
+        coursesWithScores[index - 5].score - coursesWithScores[index - 4].score;
       scoreJumpRollingSum += jump;
     }
 
-    coursesWithScores = coursesWithScores.filter((_, index) => index < cutOffIndex);
+    coursesWithScores = coursesWithScores.filter(
+      (_, index) => index < cutOffIndex
+    );
   }
 
-  shoppingCartCourses.forEach((cartCourse) => {
-    let cartCourseDescription = CONSIDER_WORD_MATCH_FREQUENCY
-      ? cleanseText(cartCourse.description)
-      : new Set(cleanseText(cartCourse.description));
+  userActivityData.forEach((userActivityItem) => {
+    userActivityItem.courses.forEach((userActivityCourse) => {
+      let userActivityCourseDescription = CONSIDER_WORD_MATCH_FREQUENCY
+        ? cleanseText(userActivityCourse.description)
+        : new Set(cleanseText(userActivityCourse.description));
 
-    let cartRequirementsAndPrep = [
-      ...cartCourse.prerequisites,
-      ...cartCourse.corequisites,
-      ...cartCourse.recommendedPrep,
-    ];
-
-    coursesWithScores.forEach((course) => {
-      let scoreBoost = 0;
-
-      let courseDescription = CONSIDER_WORD_MATCH_FREQUENCY
-        ? cleanseText(course.description)
-        : new Set(cleanseText(course.description));
-
-      courseDescription.forEach((word) => {
-        if (CONSIDER_WORD_MATCH_FREQUENCY) {
-          cartCourseDescription.forEach((cartWord) => {
-            if (word === cartWord) scoreBoost += CART_WORD_MATCH;
-          });
-        } else {
-          if (cartCourseDescription.has(word)) scoreBoost += CART_WORD_MATCH;
-        }
-      });
-
-      if (
-        (course.area.some((area) => COMPUTER_AREAS.includes(area)) &&
-          cartCourse.area.some((area) => COMPUTER_AREAS.includes(area))) ||
-        (course.area.some((area) => ELECTRICAL_AREAS.includes(area)) &&
-          cartCourse.area.some((area) => ELECTRICAL_AREAS.includes(area)))
-      ) {
-        scoreBoost += CART_DESIGNATION_MATCH;
-      }
-
-      course.area.forEach((area) => {
-        if (cartCourse.area.includes(area)) scoreBoost += CART_AREA_MATCH;
-      });
-
-      let courseMinorCertificateIds = new Set(
-        course.minorsCertificates.map((minorCertificate) => minorCertificate.id)
-      );
-      scoreBoost += minorCertificateScoring(
-        courseMinorCertificateIds,
-        cartCourse.minorsCertificates,
-        CART_MINOR_MATCH,
-        CART_CERTIFICATE_MATCH
-      );
-
-      scoreBoost += skillsInterestsScoring(
-        course.skillsInterests,
-        cartCourse.skillsInterests,
-        CART_SPECIFIC_SKILL_INTEREST_MATCH,
-        CART_GENERIC_SKILL_INTEREST_MATCH
-      );
-
-      let courseRequirementsAndPrep = [
-        ...course.prerequisites,
-        ...course.corequisites,
-        ...course.recommendedPrep,
+      let userActivityCourseRequirementsAndPrep = [
+        ...userActivityCourse.prerequisites,
+        ...userActivityCourse.corequisites,
+        ...userActivityCourse.recommendedPrep,
       ];
 
-      cartRequirementsAndPrep.forEach((reqOrPrep) => {
-        if (reqOrPrep.id === course.id)
-          scoreBoost += CART_PREREQ_COREQ_PREP_FROM_CART;
+      let multiplier;
+
+      switch (userActivityItem.title) {
+        case SHOPPING_CART:
+          multiplier = 1;
+          break;
+        case REMOVED_FROM_CART:
+          multiplier = REMOVED_FROM_CART_MULTIPLER;
+          break;
+        case REMOVED_FROM_FAVORITES:
+          multiplier = UNFAVORITED_MULTIPLER;
+          break;
+        case REJECTED_RECOMMENDATIONS:
+          multiplier = REJECTED_RECOMMENDATION_MULTIPLER;
+          break;
+        default: 
+          multiplier = 1;
+      }
+
+      coursesWithScores.forEach((course) => {
+        let scoreBoost = calculateScoreFromSimilarity(
+          course,
+          userActivityCourse,
+          userActivityCourseDescription,
+          userActivityCourseRequirementsAndPrep,
+          CART_WORD_MATCH,
+          CART_DESIGNATION_MATCH,
+          CART_AREA_MATCH,
+          CART_MINOR_MATCH,
+          CART_CERTIFICATE_MATCH,
+          CART_SPECIFIC_SKILL_INTEREST_MATCH,
+          CART_GENERIC_SKILL_INTEREST_MATCH,
+          CART_PREREQ_COREQ_PREP_FROM_CART,
+          CART_PREREQ_COREQ_PREP_FROM_COURSE,
+          CART_EXCLUSION,
+          multiplier,
+          EXACT_MATCH_BASE_PENALTY_PERCENTAGE
+        );
+
+        scoreBoost = userActivityItem.title === SHOPPING_CART && userActivityCourse.inUserFavorites
+          ? scoreBoost * CART_FAVORITED_MULTIPLER
+          : scoreBoost;
+
+        course.score += scoreBoost;
       });
-
-      courseRequirementsAndPrep.forEach((reqOrPrep) => {
-        if (reqOrPrep.id === cartCourse.id)
-          scoreBoost += CART_PREREQ_COREQ_PREP_FROM_COURSE;
-      });
-
-      if (course.exclusions.some((exclusion) => exclusion.id === cartCourse.id))
-        scoreBoost += CART_EXCLUSION;
-
-      scoreBoost = cartCourse.inUserFavorites
-        ? scoreBoost * CART_FAVORITED_MULTIPLER
-        : scoreBoost;
-
-      course.score += scoreBoost;
     });
   });
 
   coursesWithScores.sort((crsA, crsB) => crsB.score - crsA.score);
 
   let topScore = coursesWithScores[0].score;
-
-  coursesWithScores.forEach(
+  coursesWithScores.filter(course => course.score > 0).forEach(
     (course) => (course.score = Math.round((course.score / topScore) * 100))
   );
 
