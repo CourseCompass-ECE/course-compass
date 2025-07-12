@@ -42,6 +42,14 @@ const Explore = () => {
         course.id === updatedCourse.id ? updatedCourse : course
       )
     );
+    fetchRecommendedCourses();
+  };
+
+  const updateRecommendations = (updatedCourse) => {
+    setRecommendedCourses(
+      recommendedCourses.filter((course) => course.id !== updatedCourse.id)
+    );
+    fetchAllCourseData();
   };
 
   const filterByTitle = (title) => {
@@ -303,7 +311,7 @@ const Explore = () => {
             <h2 className="explore-recommend-header">{RECOMMENDED}</h2>
             {recommendedCourses.length > 0 ? (
               <ExploreCourseList
-                setCourseData={updateCourseData}
+                setCourseData={updateRecommendations}
                 courses={recommendedCourses.filter((course) =>
                   filterRecommendations(course)
                 )}

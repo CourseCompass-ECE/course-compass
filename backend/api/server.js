@@ -25,6 +25,7 @@ const {
   COMPUTER,
   CONFLICT_STATUS_PATH,
   RECOMMENDATIONS_PATH,
+  REJECT_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -335,6 +336,20 @@ server.patch(`${Path.EXPLORE}${FAVORITES_PATH}`, async (req, res, next) => {
 
     const userId = Number(req.session?.user?.id);
     const updatedCourse = await User.toggleCourseInFavorites(userId, Number(courseId));
+    res.status(200).json({course: updatedCourse});
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.patch(`${Path.EXPLORE}${REJECT_PATH}`, async (req, res, next) => {
+  const courseId = req.query?.id;
+  try {
+    if (!courseId || !ONLY_NUMBERS.test(courseId))
+      throw new Error(INVALID_COURSE_ID);
+
+    const userId = Number(req.session?.user?.id);
+    const updatedCourse = await User.rejectRecommendation(userId, Number(courseId));
     res.status(200).json({course: updatedCourse});
   } catch (err) {
     next(err);

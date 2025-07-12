@@ -409,6 +409,7 @@ export const CC = "CC";
 
 export const CART_PATH = "/cart";
 export const FAVORITES_PATH = "/favorites";
+export const REJECT_PATH = "/reject";
 export const TITLE_PATH = "/title";
 export const DESCRIPTION_PATH = "/description";
 export const DESIGNATION_PATH = "/designation";

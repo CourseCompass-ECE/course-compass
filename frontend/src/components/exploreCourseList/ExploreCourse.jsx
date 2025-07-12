@@ -7,6 +7,7 @@ import {
   FAVORITES_PATH,
   ID_QUERY_PARAM,
   CODE,
+  REJECT_PATH,
 } from "../../utils/constants";
 import { Path } from "../../utils/enums";
 import { sortByFavorites } from "../../utils/sort";
@@ -17,6 +18,8 @@ const ExploreCourse = (props) => {
   const [changeCartErrorId, setChangeCartErrorId] = useState(null);
   const [changeFavoritesError, setChangeFavoritesError] = useState("");
   const [changeFavoritesErrorId, setChangeFavoritesErrorId] = useState(null);
+  const [rejectCourseError, setRejectCourseError] = useState("");
+  const [rejectCourseErrorId, setRejectCourseErrorId] = useState(null);
 
   const AREAS = "Areas: ";
   const MINORS = "Minors: ";
@@ -37,6 +40,7 @@ const ExploreCourse = (props) => {
   const PRACTICAL = "PRA";
   const CHANGE_CART_ERROR_MESSAGE = "Error updating shopping cart";
   const CHANGE_FAVORITES_ERROR_MESSAGE = "Error updating favorites";
+  const REJECT_COURSE_ERROR_MESSAGE = "Error rejecting recommendation";
 
   const renderClassHours = (classType, hours) => {
     let backgroundColor;
@@ -111,8 +115,10 @@ const ExploreCourse = (props) => {
   const toggleCourseInCart = async (courseId) => {
     setChangeCartError("");
     setChangeFavoritesError("");
+    setRejectCourseError("");
     setChangeCartErrorId(null);
     setChangeFavoritesErrorId(null);
+    setRejectCourseErrorId(null);
 
     try {
       const response = await fetch(
@@ -141,8 +147,10 @@ const ExploreCourse = (props) => {
   const toggleCourseInFavorites = async (courseId) => {
     setChangeCartError("");
     setChangeFavoritesError("");
+    setRejectCourseError("");
     setChangeCartErrorId(null);
     setChangeFavoritesErrorId(null);
+    setRejectCourseErrorId(null);
 
     try {
       const response = await fetch(
@@ -168,6 +176,38 @@ const ExploreCourse = (props) => {
     }
   };
 
+  const rejectRecommendation = async (courseId) => {
+    setChangeCartError("");
+    setChangeFavoritesError("");
+    setRejectCourseError("");
+    setChangeCartErrorId(null);
+    setChangeFavoritesErrorId(null);
+    setRejectCourseErrorId(null);
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.EXPLORE
+        }${REJECT_PATH}${ID_QUERY_PARAM}${courseId}`,
+        {
+          method: "PATCH",
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        props.setCourseData(data?.course);
+      } else {
+        setRejectCourseError(REJECT_COURSE_ERROR_MESSAGE);
+        setRejectCourseErrorId(courseId);
+      }
+    } catch (error) {
+      setRejectCourseError(REJECT_COURSE_ERROR_MESSAGE);
+      setRejectCourseErrorId(courseId);
+    }
+  };
+
   return (
     <div
       className="explore-course-outer-container"
@@ -184,8 +224,22 @@ const ExploreCourse = (props) => {
         }}
         className="explore-course-container"
       >
-        <div className="explore-course-front">
+        <div
+          className="explore-course-front"
+          style={props.course.score ? { position: "static" } : {}}
+        >
+          {props.course.score ? (
+            <div className="recommendation-score">{props.course.score}%</div>
+          ) : null}
           <div className="explore-course-icon-container">
+            {props.course.score ? (
+              <span
+                className="material-symbols-outlined explore-course-icon reject-icon"
+                onClick={() => rejectRecommendation(props.course.id)}
+              >
+                block
+              </span>
+            ) : null}
             <span
               className="material-symbols-outlined explore-course-icon cart-icon"
               onClick={() => toggleCourseInCart(props.course.id)}
@@ -209,6 +263,7 @@ const ExploreCourse = (props) => {
             {changeFavoritesErrorId === props.course.id
               ? changeFavoritesError
               : ""}
+            {rejectCourseErrorId === props.course.id ? rejectCourseError : ""}
           </div>
 
           <h3 className="explore-course-title">{props.course.title}</h3>

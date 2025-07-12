@@ -88,6 +88,37 @@ const getUpdatedCourse = async (courseId, userId) => {
   };
 };
 
+const courseFieldsToInclude = {
+  include: {
+    minorsCertificates: true,
+    prerequisites: {
+      select: {
+        code: true,
+        title: true,
+      },
+    },
+    corequisites: {
+      select: {
+        code: true,
+        title: true,
+      },
+    },
+    exclusions: {
+      select: {
+        code: true,
+        title: true,
+      },
+    },
+    recommendedPrep: {
+      select: {
+        code: true,
+        title: true,
+      },
+    },
+    skillsInterests: true,
+  },
+};
+
 module.exports = {
   async create(newUser) {
     let minorsCertificates = newUser.desiredMinors.map((minor) => {
@@ -150,11 +181,9 @@ module.exports = {
       include: {
         skillsInterests: true,
         desiredMinorsCertificates: true,
-        shoppingCart: true,
-        favorites: true,
-        removedFromCart: true,
-        removedFromFavorites: true,
-        rejectedRecommendations: true,
+        removedFromCart: courseFieldsToInclude,
+        removedFromFavorites: courseFieldsToInclude,
+        rejectedRecommendations: courseFieldsToInclude,
       },
     });
     return userData;
@@ -178,6 +207,11 @@ module.exports = {
               id: courseId,
             },
           },
+          removedFromCart: {
+            connect: {
+              id: courseId,
+            },
+          },
         },
       });
 
@@ -190,16 +224,28 @@ module.exports = {
                 id: courseId,
               },
             },
+            removedFromFavorites: {
+              connect: {
+                id: courseId,
+              },
+            },
           },
         });
       }
-
     } else {
       await prisma.user.update({
         where: { id: userId },
         data: {
           shoppingCart: {
             connect: {
+              id: courseId,
+            },
+          },
+          rejectedRecommendations: {
+            disconnect: { id: courseId },
+          },
+          removedFromCart: {
+            disconnect: {
               id: courseId,
             },
           },
@@ -228,6 +274,14 @@ module.exports = {
               id: courseId,
             },
           },
+          removedFromCart: {
+            disconnect: {
+              id: courseId,
+            },
+          },
+          rejectedRecommendations: {
+            disconnect: { id: courseId },
+          },
         },
       });
     }
@@ -238,6 +292,11 @@ module.exports = {
         data: {
           favorites: {
             disconnect: {
+              id: courseId,
+            },
+          },
+          removedFromFavorites: {
+            connect: {
               id: courseId,
             },
           },
@@ -252,9 +311,27 @@ module.exports = {
               id: courseId,
             },
           },
+          removedFromFavorites: {
+            disconnect: {
+              id: courseId,
+            },
+          },
         },
       });
     }
+
+    return await getUpdatedCourse(courseId, userId);
+  },
+
+  async rejectRecommendation(userId, courseId) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        rejectedRecommendations: {
+          connect: { id: courseId },
+        },
+      },
+    });
 
     return await getUpdatedCourse(courseId, userId);
   },

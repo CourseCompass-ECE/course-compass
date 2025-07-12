@@ -1373,3 +1373,30 @@ footer {
   color: var(--error-red);
   font-weight: 600;
 }
+
+.reject-icon {
+  margin-right: 20px;
+}
+
+.reject-icon:hover {
+  color: var(--error-red)
+}
+
+.recommendation-score {
+  background-color: var(--background-darker-2);
+  padding: 25px;
+  width: 35px;
+  height: 35px;
+  border: 1px solid var(--light-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-family: var(--header-font);
+  top: -15px;
+  right: -15px;
+  border-radius: 50%;
+  position: absolute;
+  z-index: 2;
+  font-weight: 500;
+}
