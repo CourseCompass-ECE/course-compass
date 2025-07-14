@@ -284,8 +284,8 @@ export const findRecommendedCourses = async (courses, userId) => {
     course.score = score;
   });
 
-  // If more than 10 courses are present, keep the top 25% or until a major gap in scores is found over x-course rolling average
-  if (coursesWithScores.length > 10) {
+  // If more than two times the rolling average courses are present, keep the top 50% or until a major gap in scores is found
+  if (coursesWithScores.length > NUM_DAYS_ROLLING_AVERAGE * 2) {
     let scoreJumpRollingSum = 0;
     let cutOffIndex;
 
@@ -400,3 +400,8 @@ export const findRecommendedCourses = async (courses, userId) => {
 
   return coursesWithScores;
 };
+
+module.exports = {
+  rollingAverage: NUM_DAYS_ROLLING_AVERAGE,
+  recommendationFunction: findRecommendedCourses
+}
