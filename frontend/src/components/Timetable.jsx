@@ -85,6 +85,13 @@ const Timetable = () => {
   const NO_COURSE = "No course added yet";
   const NO_ERRORS = "Great job - no errors found!";
 
+  const filteredCoursesInCart = coursesInCart.filter(
+    (course) =>
+      !cartSearch.trim() ||
+      course.title.toLowerCase().includes(cartSearch.trim().toLowerCase()) ||
+      course.code.toLowerCase().includes(cartSearch.trim().toLowerCase())
+  );
+
   const updateDesignation = async (newDesignation) => {
     if (
       newDesignation !== null &&
@@ -520,42 +527,31 @@ const Timetable = () => {
           <div className="cart-courses-container">
             {!fetchCartCoursesError ? (
               <>
-                {coursesInCart
-                  .filter(
-                    (course) =>
-                      !cartSearch.trim() ||
-                      course.title
-                        .toLowerCase()
-                        .includes(cartSearch.trim().toLowerCase()) ||
-                      course.code
-                        .toLowerCase()
-                        .includes(cartSearch.trim().toLowerCase())
-                  )
-                  .map((course, index) => (
-                    <div
-                      key={index}
-                      onClick={(event) =>
-                        event.target.innerText !== FAVORITE_ICON &&
-                        event.target.innerText !== CART_ICON
-                          ? setSelectedCourse(course.id)
-                          : null
+                {filteredCoursesInCart.map((course, index) => (
+                  <div
+                    key={index}
+                    onClick={(event) =>
+                      event.target.innerText !== FAVORITE_ICON &&
+                      event.target.innerText !== CART_ICON
+                        ? setSelectedCourse(course.id)
+                        : null
+                    }
+                    style={{ cursor: "pointer" }}
+                  >
+                    <ExploreCourse
+                      index={index}
+                      setCourseData={(updatedCourse) =>
+                        updateCoursesInCart(
+                          updatedCourse,
+                          setCoursesInCart,
+                          coursesInCart
+                        )
                       }
-                      style={{ cursor: "pointer" }}
-                    >
-                      <ExploreCourse
-                        index={index}
-                        setCourseData={(updatedCourse) =>
-                          updateCoursesInCart(
-                            updatedCourse,
-                            setCoursesInCart,
-                            coursesInCart
-                          )
-                        }
-                        course={course}
-                        courseOuterContainerRefList={refList}
-                      />
-                    </div>
-                  ))}
+                      course={course}
+                      courseOuterContainerRefList={refList}
+                    />
+                  </div>
+                ))}
               </>
             ) : (
               <h3 className="timetable-cart-error">{fetchCartCoursesError}</h3>

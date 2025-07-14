@@ -73,7 +73,7 @@ const cleanseText = (originalText) => {
     .filter((word) => !stopwords.includes(word));
 };
 
-const createIdListFromObjectList = (objectList) => {
+export const createIdListFromObjectList = (objectList) => {
   return objectList.map((object) => object.id);
 };
 
@@ -444,6 +444,7 @@ export const findRecommendedCourses = async (
   let coursesWithScores = structuredClone(courses).filter(
     (course) => !shoppingCartCourseIds.has(course.id)
   );
+  if (coursesWithScores.length === 0) return [];
   const userActivityData = [
     {
       title: SHOPPING_CART,
@@ -524,7 +525,7 @@ export const findRecommendedCourses = async (
   });
 
   // If more than two times the rolling average courses are present, keep the top 50% or until a major gap in scores is found
-  if (coursesWithScores.length > NUM_DAYS_ROLLING_AVERAGE * 2) {
+  if (coursesWithScores.length >= NUM_DAYS_ROLLING_AVERAGE * 2) {
     let scoreJumpRollingSum = 0;
     let cutOffIndex;
 

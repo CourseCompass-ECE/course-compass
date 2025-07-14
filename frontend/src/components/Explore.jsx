@@ -20,7 +20,7 @@ const Explore = () => {
   const [selectedMinor, setSelectedMinor] = useState("");
   const [selectedCertificate, setSelectedCertificate] = useState("");
   const [selectedCode, setSelectedCode] = useState("");
-  const [recommendedCourses, setRecommendedCourses] = useState([]);
+  const [recommendedCourses, setRecommendedCourses] = useState(null);
   const [recommendedError, setRecommendedError] = useState("");
   const FETCH_COURSES_ERROR_MESSAGE = "Something went wrong fetching courses";
   const RECOMMEND_COURSES_ERROR =
@@ -46,9 +46,14 @@ const Explore = () => {
   };
 
   const updateRecommendations = (updatedCourse) => {
-    setRecommendedCourses(
-      recommendedCourses.filter((course) => course.id !== updatedCourse.id)
+    let newRecommendedCourses = recommendedCourses?.filter(
+      (course) => course.id !== updatedCourse.id
     );
+    if (newRecommendedCourses?.length === 0) {
+      fetchRecommendedCourses();
+    } else {
+      setRecommendedCourses(newRecommendedCourses);
+    }
     fetchAllCourseData();
   };
 
@@ -309,17 +314,25 @@ const Explore = () => {
 
           <section>
             <h2 className="explore-recommend-header">{RECOMMENDED}</h2>
-            {recommendedCourses.length > 0 ? (
+            {recommendedCourses?.length > 0 ? (
               <ExploreCourseList
                 setCourseData={updateRecommendations}
-                courses={recommendedCourses.filter((course) =>
+                courses={recommendedCourses?.filter((course) =>
                   filterRecommendations(course)
                 )}
               />
             ) : (
               <div className="loader-container">
-                <div className="loader"></div>
-                <h3 className="loader-text">Loading recommended courses...</h3>
+                {Array.isArray(recommendedCourses) ? (
+                  <h3 className="loader-text">No recommendations left - all courses in shopping cart</h3>
+                ) : (
+                  <>
+                    <div className="loader"></div>
+                    <h3 className="loader-text">
+                      Loading recommended courses...
+                    </h3>
+                  </>
+                )}
               </div>
             )}
             <span className="recommendation-error">{recommendedError}</span>
