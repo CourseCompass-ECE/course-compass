@@ -571,7 +571,7 @@ server.get(`${Path.EXPLORE}${RECOMMENDATIONS_PATH}`, async (req, res, next) => {
   try {
     const userId = Number(req.session?.user?.id);
     const courses = await Course.findCourses(userId);
-    const recommendedCourses = await findRecommendedCourses(courses, userId);
+    const recommendedCourses = await findRecommendedCourses(courses, userId, true);
     res.status(200).json({ recommendedCourses });
   } catch (err) {
     next(err);

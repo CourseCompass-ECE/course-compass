@@ -181,12 +181,29 @@ module.exports = {
       include: {
         skillsInterests: true,
         desiredMinorsCertificates: true,
+        shoppingCart: true,
+        favorites: true,
         removedFromCart: courseFieldsToInclude,
         removedFromFavorites: courseFieldsToInclude,
         rejectedRecommendations: courseFieldsToInclude,
       },
     });
     return userData;
+  },
+
+  async findAllOtherUsers(userId) {
+    const userData = await prisma.user.findMany({
+      include: {
+        skillsInterests: true,
+        desiredMinorsCertificates: true,
+        shoppingCart: true,
+        favorites: true,
+        removedFromCart: true,
+        removedFromFavorites: true,
+        rejectedRecommendations: true,
+      },
+    });
+    return userData.filter((user) => user.id !== userId);
   },
 
   async toggleCourseInShoppingCart(userId, courseId) {
