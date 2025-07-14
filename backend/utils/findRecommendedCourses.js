@@ -58,9 +58,12 @@ const REMOVED_FROM_FAVORITES_INDEX = 3;
 const REJECTED_RECOMMENDATIONS_INDEX = 4;
 const MINIMUM_OTHER_USER_SCORE_RELATIVE_TO_TOP_SCORE = 0.8; // 80% of top score
 // For each occurrence of a course in a similar user's recommendations, boost score of that course
-const RECOMMENDATION_FOUND_ACROSS_SIMILAR_USERS = 10;
+const COURSE_LIKED_ACROSS_SIMILAR_USERS = 12;
+const COURSE_DISLIKED_ACROSS_SIMILAR_USERS = -12;
+const FAVORITED_CART_COURSE_MULTIPLER = 1.5;
 // After generating score for each course of user, take weighted average with average of scores for that course across related users
 const OTHER_USERS_COURSE_SCORES_WEIGHTING = 0.3;
+const MINIMUM_PERCENTAGE = 0.3; // 30%
 
 const cleanseText = (originalText) => {
   return originalText
@@ -70,9 +73,20 @@ const cleanseText = (originalText) => {
     .filter((word) => !stopwords.includes(word));
 };
 
-const createIdListFromObjectList = (objectList) => {
+export const createIdListFromObjectList = (objectList) => {
   return objectList.map((object) => object.id);
 };
+
+const areaMatchScoring = (firstAreaList, secondAreaList, scoreIncrease) => {
+  let scoreBoost = 0;
+
+  firstAreaList.forEach((area) => {
+    if (secondAreaList.includes(area))
+      scoreBoost += scoreIncrease;
+  });
+
+  return scoreBoost;
+}
 
 const minorCertificateScoring = (
   minorCertificateIds,
@@ -165,10 +179,7 @@ const calculateScoreFromSimilarity = (
     score += designationMatchScore * scoreMultiplier;
   }
 
-  course.area.forEach((area) => {
-    if (otherCourse.area.includes(area))
-      score += areaMatchScore * scoreMultiplier;
-  });
+  score += areaMatchScoring(course.area, otherCourse.area, areaMatchScore * scoreMultiplier);
 
   let courseMinorCertificateIds = new Set(
     createIdListFromObjectList(course.minorsCertificates)
@@ -296,10 +307,7 @@ const findMatchesToRelatedUsersCourses = async (
       userSimilarityScore += USER_DESIGNATION_MATCH;
     }
 
-    user.eceAreas.forEach((area) => {
-      if (otherUser.eceAreas.includes(area))
-        userSimilarityScore += USER_AREA_MATCH;
-    });
+    userSimilarityScore += areaMatchScoring(user.eceAreas, otherUser.eceAreas, USER_AREA_MATCH);
 
     let minorCertificateIds = new Set(
       otherUser.desiredMinorsCertificates.map(
@@ -340,6 +348,7 @@ const findMatchesToRelatedUsersCourses = async (
 
   otherUsers.sort((userA, userB) => userB.score - userA.score);
   let topScore = otherUsers[0].score;
+  if (topScore < 0) return;
   let filteredOtherUsers = otherUsers.filter(
     (otherUser) =>
       otherUser.score >=
@@ -365,7 +374,7 @@ const findMatchesToRelatedUsersCourses = async (
     );
     if (courseMatchingOtherUserRecommendation) {
       courseMatchingOtherUserRecommendation.score +=
-        RECOMMENDATION_FOUND_ACROSS_SIMILAR_USERS;
+        COURSE_LIKED_ACROSS_SIMILAR_USERS;
 
       let averageCourseScoreObject = otherUsersAverageCourseScores.find(
         (averageCourseScoreObject) =>
@@ -385,6 +394,40 @@ const findMatchesToRelatedUsersCourses = async (
       }
     }
   });
+
+  filteredOtherUsers.forEach((otherUser) => {
+    let favoriteIdList = new Set(
+      createIdListFromObjectList(otherUser.favorites)
+    );
+    otherUser.shoppingCart.forEach((cartCourse) => {
+      let courseMatchingOtherUserCart = coursesWithScores.find(
+        (course) => course.id === cartCourse.id
+      );
+      if (courseMatchingOtherUserCart) {
+        courseMatchingOtherUserCart.score +=
+          COURSE_LIKED_ACROSS_SIMILAR_USERS *
+          (favoriteIdList.has(cartCourse.id)
+            ? FAVORITED_CART_COURSE_MULTIPLER
+            : 1);
+      }
+    });
+
+    let dislikedCourseLists = [
+      ...otherUser.removedFromCart,
+      ...otherUser.removedFromFavorites,
+      ...otherUser.rejectedRecommendations,
+    ];
+    dislikedCourseLists.forEach((dislikedCourse) => {
+      let courseMatchingOtherUserDisliked = coursesWithScores.find(
+        (course) => course.id === dislikedCourse.id
+      );
+
+      if (courseMatchingOtherUserDisliked) {
+        courseMatchingOtherUserDisliked.score +=
+          COURSE_DISLIKED_ACROSS_SIMILAR_USERS;
+      }
+    });
+  });
 };
 
 export const findRecommendedCourses = async (
@@ -401,6 +444,7 @@ export const findRecommendedCourses = async (
   let coursesWithScores = structuredClone(courses).filter(
     (course) => !shoppingCartCourseIds.has(course.id)
   );
+  if (coursesWithScores.length === 0) return [];
   const userActivityData = [
     {
       title: SHOPPING_CART,
@@ -465,9 +509,7 @@ export const findRecommendedCourses = async (
       score += USER_DESIGNATION_MATCH;
     }
 
-    user.eceAreas.forEach((area) => {
-      if (course.area.includes(area)) score += USER_AREA_MATCH;
-    });
+    score += areaMatchScoring(user.eceAreas, course.area, USER_AREA_MATCH);
 
     let courseMinorCertificateIds = new Set(
       createIdListFromObjectList(course.minorsCertificates)
@@ -483,7 +525,7 @@ export const findRecommendedCourses = async (
   });
 
   // If more than two times the rolling average courses are present, keep the top 50% or until a major gap in scores is found
-  if (coursesWithScores.length > NUM_DAYS_ROLLING_AVERAGE * 2) {
+  if (coursesWithScores.length >= NUM_DAYS_ROLLING_AVERAGE * 2) {
     let scoreJumpRollingSum = 0;
     let cutOffIndex;
 
@@ -592,19 +634,16 @@ export const findRecommendedCourses = async (
     );
 
   coursesWithScores.sort((crsA, crsB) => crsB.score - crsA.score);
-  let lowestScoreToAdd = coursesWithScores[coursesWithScores.length - 1].score;
+  let lowestScore = coursesWithScores[coursesWithScores.length - 1].score;
+  let differentBetweenMaxima = coursesWithScores[0].score - lowestScore; // highest - lowest
 
-  // Add constant to all scores to ensure every score is positive before normalizing
-  if (lowestScoreToAdd <= 0) {
-    lowestScoreToAdd = 1 - lowestScoreToAdd;
-  }
-
-  coursesWithScores.forEach((course) => (course.score += lowestScoreToAdd));
-
-  let topScore = coursesWithScores[0].score;
+  // Normalize using min-max normalization such that the relative positions of scores to each other are not lost
   coursesWithScores.forEach(
     (course) =>
-      (course.score = Math.round((course.score / topScore) * 100 * 10) / 10)
+      (course.score =
+        Math.round(
+          (((course.score - lowestScore) / differentBetweenMaxima) * (1 - MINIMUM_PERCENTAGE) + MINIMUM_PERCENTAGE) * 100 * 10
+        ) / 10)
   );
 
   if (checkOtherUsersCourses) {
