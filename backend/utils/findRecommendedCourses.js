@@ -49,8 +49,14 @@ const ANOMALY_SCORE_JUMP_MULTIPLIER = 2.5;
 const CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES = 0.5;
 const JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF = 0.25;
 
-const COURSES_IN_SAME_LIST = 1;
-const COURSES_IN_OPPOSING_LISTS = -1;
+const COURSES_IN_SAME_LIST = 0.5;
+const COURSES_IN_OPPOSING_LISTS = -0.5;
+const SHOPPING_CART_INDEX = 0;
+const FAVORITES_INDEX = 1;
+const REMOVED_FROM_CART_INDEX = 2;
+const REMOVED_FROM_FAVORITES_INDEX = 3;
+const REJECTED_RECOMMENDATIONS_INDEX = 4;
+const MINIMUM_OTHER_USER_SCORE_RELATIVE_TO_TOP_SCORE = 0.8; // 80% of top score
 // For each occurrence of a course in a similar user's recommendations, boost score of that course
 const RECOMMENDATION_FOUND_ACROSS_SIMILAR_USERS = 10;
 // After generating score for each course of user, take weighted average with average of scores for that course across related users
@@ -205,12 +211,41 @@ const calculateScoreFromSimilarity = (
   return score;
 };
 
+const computeSimilarityDeductions = (
+  courseList,
+  otherUserCourseLists,
+  userSimilarityScore,
+  index
+) => {
+  if (index === SHOPPING_CART_INDEX || index === FAVORITES_INDEX) {
+    courseList.forEach((courseId) => {
+      [
+        REMOVED_FROM_CART_INDEX,
+        REMOVED_FROM_FAVORITES_INDEX,
+        REJECTED_RECOMMENDATIONS_INDEX,
+      ].forEach((opposingListIndex) => {
+        if (otherUserCourseLists[opposingListIndex].has(courseId))
+          userSimilarityScore += COURSES_IN_OPPOSING_LISTS;
+      });
+    });
+  } else {
+    courseList.forEach((courseId) => {
+      [SHOPPING_CART_INDEX, FAVORITES_INDEX].forEach((opposingListIndex) => {
+        if (otherUserCourseLists[opposingListIndex].has(courseId))
+          userSimilarityScore += COURSES_IN_OPPOSING_LISTS;
+      });
+    });
+  }
+};
+
 const findMatchesToRelatedUsersCourses = async (
   user,
   coursesWithScores,
-  otherUsersAverageCourseScores
+  otherUsersAverageCourseScores,
+  courses
 ) => {
   const otherUsers = await User.findAllOtherUsers(user.id);
+  if (otherUsers.length === 0) return;
   const userCourseLists = [
     createIdListFromObjectList(user.shoppingCart),
     createIdListFromObjectList(user.favorites),
@@ -287,13 +322,69 @@ const findMatchesToRelatedUsersCourses = async (
     ];
 
     userCourseLists.forEach((courseList, index) => {
-      courseList.forEach(courseId => {
-        if (otherUserCourseLists[index].has(courseId)) userSimilarityScore += COURSES_IN_SAME_LIST;
-      })
+      courseList.forEach((courseId) => {
+        if (otherUserCourseLists[index].has(courseId))
+          userSimilarityScore += COURSES_IN_SAME_LIST;
+      });
+
+      computeSimilarityDeductions(
+        courseList,
+        otherUserCourseLists,
+        userSimilarityScore,
+        index
+      );
     });
 
-    user.score = userSimilarityScore;
+    otherUser.score = userSimilarityScore;
   }
+
+  otherUsers.sort((userA, userB) => userB.score - userA.score);
+  let topScore = otherUsers[0].score;
+  let filteredOtherUsers = otherUsers.filter(
+    (otherUser) =>
+      otherUser.score >=
+      topScore * MINIMUM_OTHER_USER_SCORE_RELATIVE_TO_TOP_SCORE
+  );
+
+  let otherUsersRecommendedCourses = [];
+
+  await Promise.all(
+    filteredOtherUsers.map(async (otherUser) => {
+      const otherUserRecommendedCourses = await findRecommendedCourses(
+        courses,
+        otherUser.id,
+        false
+      );
+      otherUsersRecommendedCourses.push(...otherUserRecommendedCourses);
+    })
+  );
+
+  otherUsersRecommendedCourses.forEach((otherUserRecommendedCourse) => {
+    let courseMatchingOtherUserRecommendation = coursesWithScores.find(
+      (course) => course.id === otherUserRecommendedCourse.id
+    );
+    if (courseMatchingOtherUserRecommendation) {
+      courseMatchingOtherUserRecommendation.score +=
+        RECOMMENDATION_FOUND_ACROSS_SIMILAR_USERS;
+
+      let averageCourseScoreObject = otherUsersAverageCourseScores.find(
+        (averageCourseScoreObject) =>
+          averageCourseScoreObject.id === otherUserRecommendedCourse.id
+      );
+      if (averageCourseScoreObject) {
+        averageCourseScoreObject.occurrences =
+          averageCourseScoreObject.occurrences + 1;
+        averageCourseScoreObject.scoreSum =
+          averageCourseScoreObject.scoreSum + otherUserRecommendedCourse.score;
+      } else {
+        otherUsersAverageCourseScores.push({
+          id: otherUserRecommendedCourse.id,
+          occurrences: 1,
+          scoreSum: otherUserRecommendedCourse.score,
+        });
+      }
+    }
+  });
 };
 
 export const findRecommendedCourses = async (
@@ -303,7 +394,7 @@ export const findRecommendedCourses = async (
 ) => {
   const user = await User.findUserById(userId);
   const shoppingCartCourses = await Course.findCoursesInCart(userId);
-  
+
   const shoppingCartCourseIds = new Set(
     createIdListFromObjectList(shoppingCartCourses)
   );
@@ -493,10 +584,11 @@ export const findRecommendedCourses = async (
   let otherUsersAverageCourseScores = [];
 
   if (checkOtherUsersCourses)
-    findMatchesToRelatedUsersCourses(
+    await findMatchesToRelatedUsersCourses(
       user,
       coursesWithScores,
-      otherUsersAverageCourseScores
+      otherUsersAverageCourseScores,
+      courses
     );
 
   coursesWithScores.sort((crsA, crsB) => crsB.score - crsA.score);
@@ -511,8 +603,28 @@ export const findRecommendedCourses = async (
 
   let topScore = coursesWithScores[0].score;
   coursesWithScores.forEach(
-    (course) => (course.score = Math.round((course.score / topScore) * 100))
+    (course) =>
+      (course.score = Math.round((course.score / topScore) * 100 * 10) / 10)
   );
+
+  if (checkOtherUsersCourses) {
+    otherUsersAverageCourseScores.forEach((otherUsersCourseObject) => {
+      let matchingCourse = coursesWithScores.find(
+        (course) => course.id === otherUsersCourseObject.id
+      );
+      let otherUsersCourseScoreAverage =
+        otherUsersCourseObject.scoreSum / otherUsersCourseObject.occurrences;
+
+      matchingCourse.score =
+        Math.round(
+          (matchingCourse.score * (1 - OTHER_USERS_COURSE_SCORES_WEIGHTING) +
+            otherUsersCourseScoreAverage *
+              OTHER_USERS_COURSE_SCORES_WEIGHTING) *
+            10
+        ) / 10;
+    });
+    coursesWithScores.sort((crsA, crsB) => crsB.score - crsA.score);
+  }
 
   return coursesWithScores;
 };
