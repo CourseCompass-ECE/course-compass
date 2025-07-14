@@ -1,6 +1,6 @@
 const {
-  rollingAverage,
-  recommendationFunction,
+  NUM_DAYS_ROLLING_AVERAGE,
+  findRecommendedCourses,
 } = require("../utils/findRecommendedCourses");
 const Course = require("../api/course-model");
 
@@ -30,12 +30,12 @@ const expectedCourseFields = {
 // Wording of test title based on documentation (https://jestjs.io/docs/asynchronous)
 test("the recommendation function returns list of course objects with a valid course structure", async () => {
   const courses = await Course.findCourses(userId);
-  const recommendedCourses = await recommendationFunction(courses, userId);
+  const recommendedCourses = await findRecommendedCourses(courses, userId, true);
   expect(recommendedCourses).toEqual(expect.arrayContaining([expect.objectContaining(expectedCourseFields)]));
 });
 
 test("the recommendation function returns list with length of at least the rolling average window", async () => {
   const courses = await Course.findCourses(userId);
-  const recommendedCourses = await recommendationFunction(courses, userId);
-  expect(recommendedCourses.length).toBeGreaterThanOrEqual(rollingAverage);
+  const recommendedCourses = await findRecommendedCourses(courses, userId, true);
+  expect(recommendedCourses.length).toBeGreaterThanOrEqual(NUM_DAYS_ROLLING_AVERAGE);
 });
