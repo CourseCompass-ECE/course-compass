@@ -38,10 +38,11 @@ const CART_EXCLUSION = 5;
 const CART_PREREQ_COREQ_PREP_FROM_CART = 4;
 const CART_PREREQ_COREQ_PREP_FROM_COURSE = 3.5;
 
-const UNFAVORITED_MULTIPLER = -0.2;
-const REMOVED_FROM_CART_MULTIPLER = -0.4;
-const REJECTED_RECOMMENDATION_MULTIPLER = -1.2;
-const EXACT_MATCH_BASE_PENALTY_PERCENTAGE = 0.1; // 10% - multiplied with the above, it will be 2%, 4% or 12% taken off of total score for a course
+const UNFAVORITED_MULTIPLER = -0.02; // 2%
+const REMOVED_FROM_CART_MULTIPLER = -0.04; // 4%
+const REJECTED_RECOMMENDATION_MULTIPLER = -0.12; // 12%
+// Double the above multipliers is taken off of total score if course itself is unfavorited/removed from shopping cart/rejected
+const EXACT_MATCH_BASE_PENALTY_PERCENTAGE = 2;
 
 const NUM_DAYS_ROLLING_AVERAGE = 8;
 const ANOMALY_SCORE_JUMP_MULTIPLIER = 2.5;
@@ -347,7 +348,7 @@ export const findRecommendedCourses = async (courses, userId) => {
         case REJECTED_RECOMMENDATIONS:
           multiplier = REJECTED_RECOMMENDATION_MULTIPLER;
           break;
-        default: 
+        default:
           multiplier = 1;
       }
 
@@ -371,9 +372,11 @@ export const findRecommendedCourses = async (courses, userId) => {
           EXACT_MATCH_BASE_PENALTY_PERCENTAGE
         );
 
-        scoreBoost = userActivityItem.title === SHOPPING_CART && userActivityCourse.inUserFavorites
-          ? scoreBoost * CART_FAVORITED_MULTIPLER
-          : scoreBoost;
+        scoreBoost =
+          userActivityItem.title === SHOPPING_CART &&
+          userActivityCourse.inUserFavorites
+            ? scoreBoost * CART_FAVORITED_MULTIPLER
+            : scoreBoost;
 
         course.score += scoreBoost;
       });
@@ -381,9 +384,17 @@ export const findRecommendedCourses = async (courses, userId) => {
   });
 
   coursesWithScores.sort((crsA, crsB) => crsB.score - crsA.score);
+  let lowestScoreToAdd = coursesWithScores[coursesWithScores.length - 1].score;
+
+  // Add constant to all scores to ensure every score is positive before normalizing
+  if (lowestScoreToAdd <= 0) {
+    lowestScoreToAdd = 1 - lowestScoreToAdd;
+  }
+
+  coursesWithScores.forEach((course) => (course.score += lowestScoreToAdd));
 
   let topScore = coursesWithScores[0].score;
-  coursesWithScores.filter(course => course.score > 0).forEach(
+  coursesWithScores.forEach(
     (course) => (course.score = Math.round((course.score / topScore) * 100))
   );
 
