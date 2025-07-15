@@ -26,6 +26,7 @@ const {
   CONFLICT_STATUS_PATH,
   RECOMMENDATIONS_PATH,
   REJECT_PATH,
+  GENERATE_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -44,6 +45,7 @@ const sendGrid = require("@sendgrid/mail");
 sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
 const { findRecommendedCourses } = require("../utils/findRecommendedCourses");
+const { generateTimetable } = require("../utils/generateTimetable");
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
@@ -573,6 +575,16 @@ server.get(`${Path.EXPLORE}${RECOMMENDATIONS_PATH}`, async (req, res, next) => {
     const courses = await Course.findCourses(userId);
     const recommendedCourses = await findRecommendedCourses(courses, userId, true);
     res.status(200).json({ recommendedCourses });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.post(`${Path.TIMETABLE}${GENERATE_PATH}`, async (req, res, next) => {
+  try {
+    const userId = Number(req.session?.user?.id);
+    await generateTimetable(userId);
+    res.status(201).end();
   } catch (err) {
     next(err);
   }

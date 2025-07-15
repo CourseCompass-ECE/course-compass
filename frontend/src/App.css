@@ -1172,6 +1172,9 @@ footer {
   align-items: flex-start;
   justify-content: flex-start;
   gap: 70px;
+  height: 1720px;
+  padding-bottom: 50px;
+  overflow: scroll;
 }
 
 .timetable-cart-error {
@@ -1399,4 +1402,58 @@ footer {
   position: absolute;
   z-index: 2;
   font-weight: 500;
+}
+
+.error-modal-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.386);
+  z-index: 2;
+  display:flex;
+}
+
+.error-modal {
+  width: 40vw;
+  height: 50vh;
+  background-color: var(--background-darker);
+  position: absolute;
+  align-self: center;
+  left: 30vw;
+  border-radius: 30px;
+  box-shadow: 10px 10px 30px black;
+  border: 2px solid var(--light-gray);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.timetable-generate-error-title {
+  font-family: var(--header-font);
+  font-weight: normal;
+  padding-bottom: 8%;
+  margin: 0 15px 0 15px;
+}
+
+.timetable-generate-error-message {
+  font-family: var(--header-font);
+  font-size: var(--subheader-size);
+  font-weight: normal;
+  margin: 0 35px 0 35px;
+  text-align: center;
+}
+
+.close-modal {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: var(--subtitle-size);
+  cursor: pointer;
+}
+
+.close-modal:hover {
+  color: var(--dark-gray)
 }
