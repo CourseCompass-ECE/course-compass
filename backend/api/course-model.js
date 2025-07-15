@@ -10,24 +10,28 @@ const getAllCourses = async () => {
           select: {
             code: true,
             title: true,
+            id: true
           },
         },
         corequisites: {
           select: {
             code: true,
             title: true,
+            id: true
           },
         },
         exclusions: {
           select: {
             code: true,
             title: true,
+            id: true
           },
         },
         recommendedPrep: {
           select: {
             code: true,
             title: true,
+            id: true
           },
         },
         inUserShoppingCart: true,
