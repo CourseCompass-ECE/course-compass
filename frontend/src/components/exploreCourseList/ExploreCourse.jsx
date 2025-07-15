@@ -41,6 +41,8 @@ const ExploreCourse = (props) => {
   const CHANGE_CART_ERROR_MESSAGE = "Error updating shopping cart";
   const CHANGE_FAVORITES_ERROR_MESSAGE = "Error updating favorites";
   const REJECT_COURSE_ERROR_MESSAGE = "Error rejecting recommendation";
+  const PREREQUISITE_AMOUNT = "Minimum Prerequisites: ";
+  const COREQUISITE_AMOUNT = "Minimum Corequisites: ";
 
   const renderClassHours = (classType, hours) => {
     let backgroundColor;
@@ -80,6 +82,15 @@ const ExploreCourse = (props) => {
             </li>
           ))}
         </ul>
+      </h4>
+    );
+  };
+
+  const renderRequirementAmounts = (requirementAmount, requirementMessage) => {
+    return (
+      <h4 className="explore-course-heading">
+        {requirementMessage}
+        <span className="explore-course-heading-item">{requirementAmount}</span>
       </h4>
     );
   };
@@ -292,7 +303,19 @@ const ExploreCourse = (props) => {
           {renderMinorOrCertificate(props.course, CERTIFICATE)}
 
           {renderCourseRequirements(props.course.prerequisites, PREREQUISITES)}
+          {props.course.prerequisiteAmount !== 0
+            ? renderRequirementAmounts(
+                props.course.prerequisiteAmount,
+                PREREQUISITE_AMOUNT
+              )
+            : null}
           {renderCourseRequirements(props.course.corequisites, COREQUISITES)}
+          {props.course.corequisiteAmount !== 0
+            ? renderRequirementAmounts(
+                props.course.corequisiteAmount,
+                COREQUISITE_AMOUNT
+              )
+            : null}
           {renderCourseRequirements(props.course.exclusions, EXCLUSIONS)}
           {renderCourseRequirements(
             props.course.recommendedPrep,

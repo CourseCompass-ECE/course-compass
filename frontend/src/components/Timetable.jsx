@@ -401,7 +401,9 @@ const Timetable = () => {
   const generateTimetable = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BASE_URL}${Path.TIMETABLE}${GENERATE_PATH}`,
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${GENERATE_PATH}${ID_QUERY_PARAM}${timetable?.id}`,
         {
           method: "POST",
           credentials: "include",

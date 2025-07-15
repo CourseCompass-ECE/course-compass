@@ -581,9 +581,14 @@ server.get(`${Path.EXPLORE}${RECOMMENDATIONS_PATH}`, async (req, res, next) => {
 });
 
 server.post(`${Path.TIMETABLE}${GENERATE_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+
   try {
+    if (!timetableId || !ONLY_NUMBERS.test(timetableId))
+      throw new Error(INVALID_TIMETABLE_ID);
+
     const userId = Number(req.session?.user?.id);
-    await generateTimetable(userId);
+    await generateTimetable(userId, Number(timetableId));
     res.status(201).end();
   } catch (err) {
     next(err);
