@@ -20,6 +20,8 @@ const MINIMUM_KERNEL_DEPTH_COURSES_ERROR =
 const NO_TIMETABLE_POSSIBLE =
   "With the given shopping cart courses, no conflict-free combination is possible";
 
+// Given a corequisite or prerequisite course list, determine if the number of courses from this list that is also found in the shopping cart
+// meets or exceeds the minimum prerequisites/corequisites met amount
 const isPrereqOrCoreqMet = (
   prereqOrCoreqList,
   prereqOrCoreqAmount,
@@ -54,6 +56,8 @@ const areMinimumRequirementsMet = (course, shoppingCartIdList) => {
   return true;
 };
 
+// If another area only has enough courses to meet the non-depth kernel or depth/kernel course requirements, 1 or 3 courses respectively,
+// must ensure those courses are not being taken by some other area
 const checkIfOtherAreaNeedsCourse = (
   courseId,
   area,
@@ -89,7 +93,7 @@ const numberOfKernelAreaMatches = (areaList, kernelList) => {
   return matchCount;
 };
 
-// Checking if adding course under a specific kernel/depth area does not make it impossible to meet minimum requirements for other areas
+// Checking if adding a course under a specific kernel/depth area does not make it impossible to meet minimum requirements for other areas
 const checkActionIsLegal = (
   courseId,
   areaAddingCourseTo,
@@ -154,6 +158,7 @@ const numberExtraCourses = (areaCourseList, depthAreas) => {
   return areaCourseList.courses.length - minimumCoursesNeeded;
 };
 
+// Number of courses in shopping cart that a given course meets at least 1 requirement (prerequisite or corequisite) for
 const calculateRequirementSupportScore = (courseId, refinedShoppingCart) => {
   let helpsOtherCourseReqCount = 0;
   refinedShoppingCart.forEach((course) => {
@@ -167,6 +172,8 @@ const calculateRequirementSupportScore = (courseId, refinedShoppingCart) => {
   return helpsOtherCourseReqCount;
 };
 
+// Use a combination of minimizing other kernel areas a course could contribute to (limited flexibility) and maximizing its requirement support score
+// to determine an order indicating which courses are best for a given kernel area
 const calculateBestCourseOrder = (
   crsA,
   crsB,
@@ -189,6 +196,7 @@ const calculateBestCourseOrder = (
   }
 };
 
+// Logic to determine the top 1 (non-depth kernel area) or 3 (depth/kernel area) courses, if possible, to assign to the given area
 const determineValidCoursesForArea = (
   minimumCoursesNeeded,
   currentAreaCourseList,
@@ -226,9 +234,11 @@ const determineValidCoursesForArea = (
       if (courseCount === minimumCoursesNeeded) break;
     }
   }
-  return courseCount
+  return courseCount;
 };
 
+// Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to 
+// 7,168,066,508,321,614 (~7.17 quadrillion) possible 20-course timetable combinations
 export const generateTimetable = async (userId, timetableId) => {
   const computationStartTime = new Date();
 
@@ -245,6 +255,7 @@ export const generateTimetable = async (userId, timetableId) => {
   if (refinedShoppingCart.length < MINIMUM_COURSES)
     throw new Error(NOT_ENOUGH_COURSES_AFTER_REFINING_ERROR);
 
+  // Store object array containing area name & set of IDs containing courses belonging to the area (for each kernel area)
   const timetable = await User.findUserTimetableByIds(timetableId, userId);
   let areaCourseLists = [];
   initializeAreaCoursesList(areaCourseLists, timetable.kernel);
@@ -252,6 +263,7 @@ export const generateTimetable = async (userId, timetableId) => {
     updateAreaCoursesList({ course }, areaCourseLists);
   });
 
+  // Store IDs of the 1 (non-depth kernel area) or 3 (depth/kernel area) courses being assigned to each kernel area
   let usedCourseIds = structuredClone(areaCourseLists);
   usedCourseIds.forEach((areaObject) => {
     areaObject.courses = new Set([]);
@@ -263,6 +275,7 @@ export const generateTimetable = async (userId, timetableId) => {
       numberExtraCourses(areaB, timetable.depth)
   );
 
+  // Check for at least 1 valid combination of 8 courses across the 4 kernel areas before continuing to evaluate timetable combinations
   areaCourseLists.forEach((areaCourseList) => {
     let sortedCourseList = areaCourseList.courses.toSorted(
       (crsA, crsB) =>
@@ -310,6 +323,8 @@ export const generateTimetable = async (userId, timetableId) => {
   });
   let courseOffset = 0;
 
+  // Try different timetable combinations until reach 5-second time limit, proceeding with the highest ranked option or none if all attempts were invalid.
+  // Choose 8 kernel/depth courses from the top courses for each area to the bottom options, incrementing the offset in the order of the area with the most courses to that with the least
   while ((new Date() - computationStartTime) / 1000 < 5) {
     usedCourseIds.forEach((areaObject) => {
       areaObject.courses = new Set([]);
@@ -339,6 +354,8 @@ export const generateTimetable = async (userId, timetableId) => {
     }
     if (areaCourseLists[0].courses.length - courseOffset > 3) courseOffset++;
 
+    // Try kernel/depth course combinations with major differences (3+ different courses per attempt), then once find top combination, try again with
+    // smaller permutations (1-2 different courses per attempt)
     if (courseCombinationNotFound) continue;
   }
 

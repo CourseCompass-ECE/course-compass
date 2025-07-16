@@ -120,3 +120,55 @@ test("the user similarity scoring function returns expected score when comparing
     similarUsers.find((similarUser) => similarUser.id === otherUserId)?.score
   ).toEqual(OTHER_USER_SCORE);
 });
+
+/**
+ * User has the following courses in their shopping cart:
+ * ECE368H1: Probabilistic Reasoning
+ * ECE344H1: Operating Systems
+ * ECE461H1: Internetworking
+ * ECE345H1: Algorithms and Data Structures
+ * ECE454H1: Computer Systems Programming
+ * ECE361H1: Computer Networks I
+ * ECE466H1: Computer Networks II
+ *
+ * Course chosen is highly related: ECE568: Computer Security
+ */
+test("the score boost from similarities between a course & the user's shopping cart course is as expected", async () => {
+  const shoppingCart = await Course.findCoursesInCart(userId);
+  const computerSecurityCourse = (await Course.findCourses(userId)).filter(
+    (course) => course.code === COMPUTER_SECURITY_CODE
+  )[0];
+  let totalScoreBoost = 0;
+
+  shoppingCart.forEach((userActivityCourse) => {
+    let userActivityCourseDescription = CONSIDER_WORD_MATCH_FREQUENCY
+      ? cleanseText(userActivityCourse.description)
+      : new Set(cleanseText(userActivityCourse.description));
+    let userActivityCourseRequirementsAndPrep = [
+      ...userActivityCourse.prerequisites,
+      ...userActivityCourse.corequisites,
+      ...userActivityCourse.recommendedPrep,
+    ];
+
+    totalScoreBoost += calculateScoreFromSimilarity(
+      computerSecurityCourse,
+      userActivityCourse,
+      userActivityCourseDescription,
+      userActivityCourseRequirementsAndPrep,
+      CART_WORD_MATCH,
+      CART_DESIGNATION_MATCH,
+      CART_AREA_MATCH,
+      CART_MINOR_MATCH,
+      CART_CERTIFICATE_MATCH,
+      CART_SPECIFIC_SKILL_INTEREST_MATCH,
+      CART_GENERIC_SKILL_INTEREST_MATCH,
+      CART_PREREQ_COREQ_PREP_FROM_CART,
+      CART_PREREQ_COREQ_PREP_FROM_COURSE,
+      CART_EXCLUSION,
+      SHOPPING_CART_MULTIPLIER,
+      EXACT_MATCH_BASE_PENALTY_PERCENTAGE
+    );
+  });
+
+  expect(totalScoreBoost).toEqual(TOTAL_SCORE_BOOST);
+});
