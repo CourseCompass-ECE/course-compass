@@ -19,6 +19,7 @@ import {
   DESIGNATION_PATH,
   initialErrors,
   CONFLICT_STATUS_PATH,
+  GENERATE_PATH,
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -55,6 +56,8 @@ const Timetable = () => {
   const [fetchCartCoursesError, setFetchCartCoursesError] = useState("");
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [updateTimetableError, setUpdateTimetableError] = useState("");
+  const [generateTimetableError, setGenerateTimetableError] = useState("");
+  const [isTimetableGenerating, setIsTimetableGenerating] = useState(false);
   const [isRequirementsMenuOpen, setIsRequirementsMenuOpen] = useState(false);
   const [terms, setTerms] = useState(initialTerms);
   const [errors, setErrors] = useState(initialErrors);
@@ -84,6 +87,7 @@ const Timetable = () => {
   const OTHER_COURSES = "11 Other Courses: ";
   const NO_COURSE = "No course added yet";
   const NO_ERRORS = "Great job - no errors found!";
+  const TIMETABLE_ERROR_TITLE = "Unable to Generate Timetable";
 
   const filteredCoursesInCart = coursesInCart.filter(
     (course) =>
@@ -395,6 +399,34 @@ const Timetable = () => {
     );
   };
 
+  const generateTimetable = async () => {
+    try {
+      setIsTimetableGenerating(true);
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${GENERATE_PATH}${ID_QUERY_PARAM}${timetable?.id}`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+      setIsTimetableGenerating(false);
+
+      if (response.ok) {
+        fetchTimetableData(timetable?.id);
+      } else {
+        const error = await response.json();
+        setGenerateTimetableError(
+          error?.message ? error.message : GENERIC_ERROR
+        );
+      }
+    } catch (error) {
+      setIsTimetableGenerating(false);
+      setGenerateTimetableError(error?.message ? error.message : GENERIC_ERROR);
+    }
+  };
+
   useEffect(() => {
     const callFetchTimetableData = async (id) => {
       await fetchTimetableData(id);
@@ -579,6 +611,7 @@ const Timetable = () => {
               <button
                 className="create-btn generate-background"
                 style={{ width: "250px" }}
+                onClick={generateTimetable}
               >
                 <span className="material-symbols-outlined">wand_stars</span>
                 {BUTTON_TEXT}
@@ -626,6 +659,34 @@ const Timetable = () => {
             </section>
           ))}
         </div>
+      </div>
+
+      <div
+        className="error-modal-container"
+        onClick={(event) =>
+          event.target.className === "error-modal"
+            ? null
+            : setGenerateTimetableError("")
+        }
+        style={
+          generateTimetableError || isTimetableGenerating
+            ? {}
+            : { display: "none" }
+        }
+      >
+        {isTimetableGenerating ? (
+          <div className="loader timetable-loader"></div>
+        ) : (
+          <div className="error-modal">
+            <span className="material-symbols-outlined close-modal">close</span>
+            <h2 className="timetable-generate-error-title">
+              {TIMETABLE_ERROR_TITLE}
+            </h2>
+            <h3 className="timetable-generate-error-message">
+              {generateTimetableError}
+            </h3>
+          </div>
+        )}
       </div>
 
       <section

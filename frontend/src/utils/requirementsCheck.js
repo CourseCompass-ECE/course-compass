@@ -1,23 +1,26 @@
 import {
   COMPUTER_AREAS,
   COMPUTER,
-  ELECTRICAL,
-  initialErrors,
-} from "./constants";
+  ELECTRICAL
+} from "./constants.js";
 
 const ECE472_CODE = "ECE472H1";
 const PREREQ_INDEX = 0;
 const COREQ_INDEX = 1;
 const EXCLUSIONS_INDEX = 2;
 
-const listAllCoursesFromAnArea = (area, courses) => {
-  let areaCourses = { area, courses: [] };
-
-  courses.forEach((courseObject) => {
-    if (courseObject.course.area.includes(area))
-      areaCourses.courses.push(courseObject.course);
+export const updateAreaCoursesList = (courseObject, areaCoursesList) => {
+  courseObject.course.area.forEach((area) => {
+    areaCoursesList
+      .find((areaCourseList) => areaCourseList.area === area)
+      ?.courses?.push(courseObject.course);
   });
-  return areaCourses;
+};
+
+export const initializeAreaCoursesList = (areaCourseList, kernelAreas) => {
+  kernelAreas.forEach((area) => {
+    areaCourseList.push({ area, courses: [] });
+  });
 };
 
 const generateCourseString = (course) => {
@@ -167,8 +170,9 @@ export const areRequirementsMet = (
   let kernelCourses = [];
   let depthCourses = [];
 
-  timetable?.kernel.forEach((area) => {
-    areaCoursesList.push(listAllCoursesFromAnArea(area, timetable.courses));
+  initializeAreaCoursesList(areaCoursesList, timetable.kernel);
+  timetable.courses.forEach((courseObject) => {
+    updateAreaCoursesList(courseObject, areaCoursesList);
   });
 
   // Look at kernel areas that are not also depth areas
