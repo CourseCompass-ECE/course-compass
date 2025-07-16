@@ -664,7 +664,8 @@ const Timetable = () => {
       <div
         className="error-modal-container"
         onClick={(event) =>
-          event.target.className === "error-modal"
+          !event.target.className.includes("error-modal-container") &&
+          !event.target.className.includes("close-modal")
             ? null
             : setGenerateTimetableError("")
         }

@@ -93,6 +93,16 @@ const numberOfKernelAreaMatches = (areaList, kernelList) => {
   return matchCount;
 };
 
+const remainingCoursesNeeded = (timetableDepths, area, usedCourseIds) => {
+  let minimumCoursesNeededForArea = timetableDepths.includes(area)
+    ? MINIMUM_DEPTH_COURSES
+    : MINIMUM_KERNEL_COURSES;
+  return (
+    minimumCoursesNeededForArea -
+    usedCourseIds.find((areaObject) => areaObject.area === area)?.courses?.size
+  );
+};
+
 // Checking if adding a course under a specific kernel/depth area does not make it impossible to meet minimum requirements for other areas
 const checkActionIsLegal = (
   courseId,
@@ -101,45 +111,72 @@ const checkActionIsLegal = (
   usedCourseIds,
   timetableDepths
 ) => {
+  let uniqueCourseIdsUsed = new Set([]);
+  usedCourseIds.forEach((areaObject) => {
+    areaObject.courses.forEach((usedCourseId) => {
+      uniqueCourseIdsUsed.add(usedCourseId);
+    });
+  });
+
+  if (uniqueCourseIdsUsed.has(courseId)) return false;
+
   let currentAreaAddingTo = usedCourseIds.find(
     (areaObject) => areaObject.area === areaAddingCourseTo
   );
   currentAreaAddingTo?.courses?.add(courseId);
+  uniqueCourseIdsUsed.add(courseId);
   let totalMinimumCoursesNeeded = 0;
-  let uniqueCourseIdsUsed = new Set([]);
-  usedCourseIds.forEach((areaObject) => {
-    areaObject.courses.forEach((courseId) => {
-      uniqueCourseIdsUsed.add(courseId);
-    });
-  });
   let uniqueCourseIdsRemaining = new Set([]);
 
   for (const areaCourseList of areaCourseLists) {
     let uniqueCourseIdsRemainingForArea = 0;
-    let minimumCoursesNeededForArea = timetableDepths.includes(
-      areaCourseList.area
-    )
-      ? MINIMUM_DEPTH_COURSES
-      : MINIMUM_KERNEL_COURSES;
-    let remainingCoursesNeeded =
-      minimumCoursesNeededForArea -
-      usedCourseIds.find(
-        (areaObject) => areaObject.area === areaCourseList.area
-      )?.courses?.size;
+    let remainingCourses = remainingCoursesNeeded(
+      timetableDepths,
+      areaCourseList.area,
+      usedCourseIds
+    );
 
-    areaCourseList.courses.forEach((courseId) => {
-      if (!uniqueCourseIdsUsed.has(courseId)) {
-        uniqueCourseIdsRemaining.add(courseId);
-        uniqueCourseIdsRemainingForArea++;
+    let coursesAvailable = areaCourseList.courses.filter(
+      (courseId) => !uniqueCourseIdsUsed.has(courseId)
+    );
+
+    // If remaining courses needed for given area matches courses that are available (so it needs all the courses available), then ensure another
+    // area does not also rely on those courses to meet its requirements (otherwise, it is invalid)
+    if (coursesAvailable.length === remainingCourses) {
+      for (const otherAreaCourseList of areaCourseLists.filter(
+        (otherAreaCourseList) => otherAreaCourseList.area != areaCourseList.area
+      )) {
+        let remainingCoursesNeededOtherArea = remainingCoursesNeeded(
+          timetableDepths,
+          otherAreaCourseList.area,
+          usedCourseIds
+        );
+
+        if (
+          remainingCoursesNeededOtherArea.length !== 0 &&
+          otherAreaCourseList.courses.filter(
+            (courseId) =>
+              !uniqueCourseIdsUsed.has(courseId) &&
+              !coursesAvailable.includes(courseId)
+          ).length < remainingCoursesNeededOtherArea
+        ) {
+          currentAreaAddingTo?.courses?.delete(courseId);
+          return false;
+        }
       }
+    }
+
+    coursesAvailable.forEach((courseId) => {
+      uniqueCourseIdsRemaining.add(courseId);
+      uniqueCourseIdsRemainingForArea++;
     });
 
-    if (remainingCoursesNeeded > uniqueCourseIdsRemainingForArea) {
+    if (remainingCourses > uniqueCourseIdsRemainingForArea) {
       currentAreaAddingTo?.courses?.delete(courseId);
       return false;
     }
 
-    totalMinimumCoursesNeeded += remainingCoursesNeeded;
+    totalMinimumCoursesNeeded += remainingCourses;
   }
 
   if (totalMinimumCoursesNeeded > uniqueCourseIdsRemaining.size) {
@@ -218,7 +255,6 @@ const determineValidCoursesForArea = (
           depthAreas
         )
       ) &&
-        !usedCourseIds.has(course.id) &&
         checkActionIsLegal(
           course.id,
           currentArea,
@@ -237,7 +273,7 @@ const determineValidCoursesForArea = (
   return courseCount;
 };
 
-// Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to 
+// Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
 // 7,168,066,508,321,614 (~7.17 quadrillion) possible 20-course timetable combinations
 export const generateTimetable = async (userId, timetableId) => {
   const computationStartTime = new Date();
@@ -321,7 +357,6 @@ export const generateTimetable = async (userId, timetableId) => {
       )
     );
   });
-  let courseOffset = 0;
 
   // Try different timetable combinations until reach 5-second time limit, proceeding with the highest ranked option or none if all attempts were invalid.
   // Choose 8 kernel/depth courses from the top courses for each area to the bottom options, incrementing the offset in the order of the area with the most courses to that with the least
