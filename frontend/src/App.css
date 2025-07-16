@@ -1348,6 +1348,14 @@ footer {
   animation: spin 2s ease-in-out infinite;
 }
 
+.timetable-loader {
+  width: 10vw;
+  height: 10vw;
+  align-self: center;
+  left: 45vw;
+  position: relative;
+}
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);

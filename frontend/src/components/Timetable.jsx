@@ -57,6 +57,7 @@ const Timetable = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [updateTimetableError, setUpdateTimetableError] = useState("");
   const [generateTimetableError, setGenerateTimetableError] = useState("");
+  const [isTimetableGenerating, setIsTimetableGenerating] = useState(false);
   const [isRequirementsMenuOpen, setIsRequirementsMenuOpen] = useState(false);
   const [terms, setTerms] = useState(initialTerms);
   const [errors, setErrors] = useState(initialErrors);
@@ -400,6 +401,7 @@ const Timetable = () => {
 
   const generateTimetable = async () => {
     try {
+      setIsTimetableGenerating(true);
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${
           Path.TIMETABLE
@@ -409,6 +411,7 @@ const Timetable = () => {
           credentials: "include",
         }
       );
+      setIsTimetableGenerating(false);
 
       if (response.ok) {
         fetchTimetableData(timetable?.id);
@@ -419,6 +422,7 @@ const Timetable = () => {
         );
       }
     } catch (error) {
+      setIsTimetableGenerating(false);
       setGenerateTimetableError(error?.message ? error.message : GENERIC_ERROR);
     }
   };
@@ -664,17 +668,25 @@ const Timetable = () => {
             ? null
             : setGenerateTimetableError("")
         }
-        style={generateTimetableError ? {} : { display: "none" }}
+        style={
+          generateTimetableError || isTimetableGenerating
+            ? {}
+            : { display: "none" }
+        }
       >
-        <div className="error-modal">
-          <span className="material-symbols-outlined close-modal">close</span>
-          <h2 className="timetable-generate-error-title">
-            {TIMETABLE_ERROR_TITLE}
-          </h2>
-          <h3 className="timetable-generate-error-message">
-            {generateTimetableError}
-          </h3>
-        </div>
+        {isTimetableGenerating ? (
+          <div className="loader timetable-loader"></div>
+        ) : (
+          <div className="error-modal">
+            <span className="material-symbols-outlined close-modal">close</span>
+            <h2 className="timetable-generate-error-title">
+              {TIMETABLE_ERROR_TITLE}
+            </h2>
+            <h3 className="timetable-generate-error-message">
+              {generateTimetableError}
+            </h3>
+          </div>
+        )}
       </div>
 
       <section

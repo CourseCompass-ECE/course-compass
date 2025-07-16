@@ -9,18 +9,21 @@ import {
 const MINIMUM_COURSES = 20;
 const MINIMUM_KERNEL_COURSES = 1;
 const MINIMUM_DEPTH_COURSES = 3;
+const BOOST_FROM_SUPPORTING_COURSE_REQ = 0.5;
+
 const NOT_ENOUGH_COURSES_ERROR =
   "A minimum of 20 courses are required in the shopping cart to generate a timetable";
 const NOT_ENOUGH_COURSES_AFTER_REFINING_ERROR =
   "A minimum of 20 courses are required in the shopping cart, with all course requirements met by other shopping cart courses, to generate a timetable";
 const MINIMUM_KERNEL_DEPTH_COURSES_ERROR =
-  "A minimum of 1 unique course is needed per non-depth kernel area & 2 unique courses per depth/kernel area";
+  "A minimum of 1 unique course is needed per non-depth kernel area & 3 unique courses per depth/kernel area";
+const NO_TIMETABLE_POSSIBLE =
+  "With the given shopping cart courses, no conflict-free combination is possible";
 
 const isPrereqOrCoreqMet = (
   prereqOrCoreqList,
   prereqOrCoreqAmount,
-  shoppingCartIdList,
-  crs
+  shoppingCartIdList
 ) => {
   if (prereqOrCoreqAmount === 0) return true;
   let requirementsMet = 0;
@@ -164,23 +167,71 @@ const calculateRequirementSupportScore = (courseId, refinedShoppingCart) => {
   return helpsOtherCourseReqCount;
 };
 
-const calculateBestKernelAreaMatchAndRequirementScore = (
+const calculateBestCourseOrder = (
   crsA,
   crsB,
   kernelAreas,
   requirementSupportScoreMap
 ) => {
-  const courseAKernelAreaMatch = numberOfKernelAreaMatches(
-    crsA.area,
-    kernelAreas
-  );
-  const courseBKernelAreaMatch = numberOfKernelAreaMatches(
-    crsB.area,
-    kernelAreas
-  );
+  const courseAAreaMatches = numberOfKernelAreaMatches(crsA.area, kernelAreas);
+  const courseBAreaMatches = numberOfKernelAreaMatches(crsB.area, kernelAreas);
+
+  if (courseAAreaMatches === 1 && courseBAreaMatches !== 1) return -1;
+  else if (courseAAreaMatches !== 1 && courseBAreaMatches === 1) return 1;
+  else {
+    const crsASupportScore = requirementSupportScoreMap.get(crsA.id);
+    const crsBSupportScore = requirementSupportScoreMap.get(crsB.id);
+    return (
+      courseAAreaMatches -
+      crsASupportScore * BOOST_FROM_SUPPORTING_COURSE_REQ -
+      (courseBAreaMatches - crsBSupportScore * BOOST_FROM_SUPPORTING_COURSE_REQ)
+    );
+  }
+};
+
+const determineValidCoursesForArea = (
+  minimumCoursesNeeded,
+  currentAreaCourseList,
+  currentArea,
+  areaCourseLists,
+  usedCourseIds,
+  kernelAreas,
+  depthAreas
+) => {
+  let courseCount = 0;
+  for (const course of currentAreaCourseList) {
+    if (
+      numberOfKernelAreaMatches(course.area, kernelAreas) === 1 ||
+      (!course.area.some((area) =>
+        checkIfOtherAreaNeedsCourse(
+          course.id,
+          area,
+          areaCourseLists,
+          depthAreas
+        )
+      ) &&
+        !usedCourseIds.has(course.id) &&
+        checkActionIsLegal(
+          course.id,
+          currentArea,
+          areaCourseLists,
+          usedCourseIds,
+          depthAreas
+        ))
+    ) {
+      courseCount++;
+      usedCourseIds
+        .find((areaObject) => areaObject.area === currentArea)
+        ?.courses?.add(course.id);
+      if (courseCount === minimumCoursesNeeded) break;
+    }
+  }
+  return courseCount
 };
 
 export const generateTimetable = async (userId, timetableId) => {
+  const computationStartTime = new Date();
+
   const shoppingCartCourses = await Course.findCoursesInCart(userId);
   if (shoppingCartCourses.length < MINIMUM_COURSES)
     throw new Error(NOT_ENOUGH_COURSES_ERROR);
@@ -218,38 +269,19 @@ export const generateTimetable = async (userId, timetableId) => {
         numberOfKernelAreaMatches(crsA.area, timetable.kernel) -
         numberOfKernelAreaMatches(crsB.area, timetable.kernel)
     );
-    let courseCount = 0;
+
     let minimumCoursesNeeded = timetable.depth.includes(areaCourseList.area)
       ? MINIMUM_DEPTH_COURSES
       : MINIMUM_KERNEL_COURSES;
-
-    for (const course of sortedCourseList) {
-      if (
-        numberOfKernelAreaMatches(course.area, timetable.kernel) === 1 ||
-        (!course.area.some((area) =>
-          checkIfOtherAreaNeedsCourse(
-            course.id,
-            area,
-            areaCourseLists,
-            timetable.depth
-          )
-        ) &&
-          !usedCourseIds.has(course.id) &&
-          checkActionIsLegal(
-            course.id,
-            areaCourseList.area,
-            areaCourseLists,
-            usedCourseIds,
-            timetable.depth
-          ))
-      ) {
-        courseCount++;
-        usedCourseIds
-          .find((areaObject) => areaObject.area === areaCourseList.area)
-          ?.courses?.add(course.id);
-        if (courseCount === minimumCoursesNeeded) break;
-      }
-    }
+    const courseCount = determineValidCoursesForArea(
+      minimumCoursesNeeded,
+      sortedCourseList,
+      areaCourseList.area,
+      areaCourseLists,
+      usedCourseIds,
+      timetable.kernel,
+      timetable.depth
+    );
 
     if (courseCount < minimumCoursesNeeded)
       throw new Error(MINIMUM_KERNEL_DEPTH_COURSES_ERROR);
@@ -266,12 +298,9 @@ export const generateTimetable = async (userId, timetableId) => {
     }
   });
 
-  usedCourseIds.forEach((areaObject) => {
-    areaObject.courses = new Set([]);
-  });
   areaCourseLists.forEach((areaCourseList) => {
     areaCourseList.courses.sort((crsA, crsB) =>
-      calculateBestKernelAreaMatchAndRequirementScore(
+      calculateBestCourseOrder(
         crsA,
         crsB,
         timetable.kernel,
@@ -279,5 +308,39 @@ export const generateTimetable = async (userId, timetableId) => {
       )
     );
   });
-  areaCourseLists.forEach((areaCourseList) => {});
+  let courseOffset = 0;
+
+  while ((new Date() - computationStartTime) / 1000 < 5) {
+    usedCourseIds.forEach((areaObject) => {
+      areaObject.courses = new Set([]);
+    });
+    let courseCombinationNotFound = false;
+
+    for (const areaCourseList of areaCourseLists) {
+      let shiftedCourseList = areaCourseList.courses.filter(
+        (_, index) => index >= courseOffset
+      );
+      let minimumCoursesNeeded = timetable.depth.includes(areaCourseList.area)
+        ? MINIMUM_DEPTH_COURSES
+        : MINIMUM_KERNEL_COURSES;
+
+      const courseCount = determineValidCoursesForArea(
+        minimumCoursesNeeded,
+        shiftedCourseList,
+        areaCourseList.area,
+        areaCourseLists,
+        usedCourseIds,
+        timetable.kernel,
+        timetable.depth
+      );
+
+      if (courseCount < minimumCoursesNeeded) courseCombinationNotFound = true;
+      break;
+    }
+    if (areaCourseLists[0].courses.length - courseOffset > 3) courseOffset++;
+
+    if (courseCombinationNotFound) continue;
+  }
+
+  throw new Error(NO_TIMETABLE_POSSIBLE);
 };
