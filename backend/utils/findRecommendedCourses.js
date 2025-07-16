@@ -14,41 +14,46 @@ const REMOVED_FROM_CART = "Removed From Cart";
 const REMOVED_FROM_FAVORITES = "Removed From Favorites";
 const REJECTED_RECOMMENDATIONS = "Rejected Recommendations";
 
+// Scoring constants for courses matching to user's profile data
 const SPECIFIC_SKILL_INTEREST_MATCH = 2;
 const GENERIC_SKILL_INTEREST_MATCH = 1;
 const LEARNING_GOAL_WORD_MATCH = 1;
-const CONSIDER_WORD_MATCH_FREQUENCY = true; // consider mutliple instances of words in both lists of word being compared
+export const CONSIDER_WORD_MATCH_FREQUENCY = true; // consider mutliple instances of words in both lists of word being compared
 const USER_DESIGNATION_MATCH = 3;
 const USER_AREA_MATCH = 3;
 const USER_MINOR_MATCH = 5;
 const USER_CERTIFICATE_MATCH = 4;
 
-const CART_WORD_MATCH = 0.25;
-const CART_DESIGNATION_MATCH = 0.5;
-const CART_AREA_MATCH = 1.5;
-const CART_MINOR_MATCH = 2.5;
-const CART_CERTIFICATE_MATCH = 2;
-const CART_SPECIFIC_SKILL_INTEREST_MATCH = 1;
-const CART_GENERIC_SKILL_INTEREST_MATCH = 0.5;
+// Scoring constants for courses matching to user's shopping cart data
+export const CART_WORD_MATCH = 0.25;
+export const CART_DESIGNATION_MATCH = 0.5;
+export const CART_AREA_MATCH = 1.5;
+export const CART_MINOR_MATCH = 2.5;
+export const CART_CERTIFICATE_MATCH = 2;
+export const CART_SPECIFIC_SKILL_INTEREST_MATCH = 1;
+export const CART_GENERIC_SKILL_INTEREST_MATCH = 0.5;
 const CART_FAVORITED_MULTIPLER = 2;
-const CART_EXCLUSION = 5;
+export const CART_EXCLUSION = 5;
 // Assumption: requirements directed from the cart course to the course of focus more strongly indicate similarity versus the opposite way
 // E.g. a shopping cart course X needing course Y as a prerequisite more strongly shows similarity versus course Y needing course X while course X
 // does not need course Y
-const CART_PREREQ_COREQ_PREP_FROM_CART = 4;
-const CART_PREREQ_COREQ_PREP_FROM_COURSE = 3.5;
+export const CART_PREREQ_COREQ_PREP_FROM_CART = 4;
+export const CART_PREREQ_COREQ_PREP_FROM_COURSE = 3.5;
 
+// Multipliers applied to scores used in matching to cart courses
 const UNFAVORITED_MULTIPLER = -0.02; // 2%
 const REMOVED_FROM_CART_MULTIPLER = -0.04; // 4%
 const REJECTED_RECOMMENDATION_MULTIPLER = -0.12; // 12%
 // Double the above multipliers is taken off of total score if course itself is unfavorited/removed from shopping cart/rejected
-const EXACT_MATCH_BASE_PENALTY_PERCENTAGE = 2;
+export const EXACT_MATCH_BASE_PENALTY_PERCENTAGE = 2;
 
+// Constants used to determine when to stop including courses in initial filtering of top matches
 export const NUM_DAYS_ROLLING_AVERAGE = 8;
 const ANOMALY_SCORE_JUMP_MULTIPLIER = 2.5;
 const CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES = 0.5;
 const JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF = 0.25;
 
+// Constants used when finding similar users & using their recommended courses to adjust course ratings
 const COURSES_IN_SAME_LIST = 0.5;
 const COURSES_IN_OPPOSING_LISTS = -0.5;
 const SHOPPING_CART_INDEX = 0;
@@ -65,7 +70,7 @@ const FAVORITED_CART_COURSE_MULTIPLER = 1.5;
 const OTHER_USERS_COURSE_SCORES_WEIGHTING = 0.3;
 const MINIMUM_PERCENTAGE = 0.3; // 30%
 
-const cleanseText = (originalText) => {
+export const cleanseText = (originalText) => {
   return originalText
     .trim()
     .toLowerCase()
@@ -81,12 +86,11 @@ const areaMatchScoring = (firstAreaList, secondAreaList, scoreIncrease) => {
   let scoreBoost = 0;
 
   firstAreaList.forEach((area) => {
-    if (secondAreaList.includes(area))
-      scoreBoost += scoreIncrease;
+    if (secondAreaList.includes(area)) scoreBoost += scoreIncrease;
   });
 
   return scoreBoost;
-}
+};
 
 const minorCertificateScoring = (
   minorCertificateIds,
@@ -130,7 +134,7 @@ const skillsInterestsScoring = (
   return score;
 };
 
-const calculateScoreFromSimilarity = (
+export const calculateScoreFromSimilarity = (
   course,
   otherCourse,
   otherCourseDescription,
@@ -155,6 +159,7 @@ const calculateScoreFromSimilarity = (
 
   let score = 0;
 
+  // For each match in non-stopword words, boost score
   let courseDescription = CONSIDER_WORD_MATCH_FREQUENCY
     ? cleanseText(course.description)
     : new Set(cleanseText(course.description));
@@ -179,7 +184,11 @@ const calculateScoreFromSimilarity = (
     score += designationMatchScore * scoreMultiplier;
   }
 
-  score += areaMatchScoring(course.area, otherCourse.area, areaMatchScore * scoreMultiplier);
+  score += areaMatchScoring(
+    course.area,
+    otherCourse.area,
+    areaMatchScore * scoreMultiplier
+  );
 
   let courseMinorCertificateIds = new Set(
     createIdListFromObjectList(course.minorsCertificates)
@@ -206,6 +215,7 @@ const calculateScoreFromSimilarity = (
     ...course.recommendedPrep,
   ];
 
+  // Boost score when similarities via requirements are found between a course user interacted with & current course of focus
   otherCourseRequirementsAndPrep.forEach((reqOrPrep) => {
     if (reqOrPrep.id === course.id)
       score += coreqPrereqPrepMatchScoreFromOther * scoreMultiplier;
@@ -222,6 +232,8 @@ const calculateScoreFromSimilarity = (
   return score;
 };
 
+// For any courses found in opposing lists (one in a positive indicator list - cart/favorites; other in negative indicator list - removed
+// from cart, removed from favorites, rejected), deduct similarity score of users
 const computeSimilarityDeductions = (
   courseList,
   otherUserCourseLists,
@@ -249,7 +261,9 @@ const computeSimilarityDeductions = (
   }
 };
 
-const findMatchesToRelatedUsersCourses = async (
+// Use recommended courses of similar users to boost scores for courses; then store recommended courses of similar users to perform weighted average
+// on final score for courses matching any of a similar user's recommended courses
+export const findMatchesToRelatedUsersCourses = async (
   user,
   coursesWithScores,
   otherUsersAverageCourseScores,
@@ -265,6 +279,7 @@ const findMatchesToRelatedUsersCourses = async (
     createIdListFromObjectList(user.rejectedRecommendations),
   ];
 
+  // Compute similarity score, considering skill/interest, learning goal, designation, area, minor/certificate, and matches in positive/negative indicator lists
   for (const otherUser of otherUsers) {
     let userSimilarityScore = 0;
 
@@ -307,7 +322,11 @@ const findMatchesToRelatedUsersCourses = async (
       userSimilarityScore += USER_DESIGNATION_MATCH;
     }
 
-    userSimilarityScore += areaMatchScoring(user.eceAreas, otherUser.eceAreas, USER_AREA_MATCH);
+    userSimilarityScore += areaMatchScoring(
+      user.eceAreas,
+      otherUser.eceAreas,
+      USER_AREA_MATCH
+    );
 
     let minorCertificateIds = new Set(
       otherUser.desiredMinorsCertificates.map(
@@ -321,6 +340,8 @@ const findMatchesToRelatedUsersCourses = async (
       USER_CERTIFICATE_MATCH
     );
 
+    // Store sets of course ids across all 5 user activity lists, then use this to increase similarity score when a course is found in same list across
+    // user of focus & another user
     const otherUserCourseLists = [
       new Set(createIdListFromObjectList(otherUser.shoppingCart)),
       new Set(createIdListFromObjectList(otherUser.favorites)),
@@ -346,6 +367,7 @@ const findMatchesToRelatedUsersCourses = async (
     otherUser.score = userSimilarityScore;
   }
 
+  // Sort scores from greatest to least, then keeping those with a score greater than/equal to a minimum percentage of the top score
   otherUsers.sort((userA, userB) => userB.score - userA.score);
   let topScore = otherUsers[0].score;
   if (topScore < 0) return;
@@ -368,6 +390,8 @@ const findMatchesToRelatedUsersCourses = async (
     })
   );
 
+  // Given all similar users recommended courses, increment course score for every match to a recommendation, then store the average
+  // score given to each recommended course across all similar users
   otherUsersRecommendedCourses.forEach((otherUserRecommendedCourse) => {
     let courseMatchingOtherUserRecommendation = coursesWithScores.find(
       (course) => course.id === otherUserRecommendedCourse.id
@@ -395,6 +419,8 @@ const findMatchesToRelatedUsersCourses = async (
     }
   });
 
+  // Similar to considering score boosts/deductions when other users had courses in same/opposing course lists to user of focus,
+  // now boost/deduct score of courses when matching a course in the user activity course lists of similar users
   filteredOtherUsers.forEach((otherUser) => {
     let favoriteIdList = new Set(
       createIdListFromObjectList(otherUser.favorites)
@@ -428,6 +454,8 @@ const findMatchesToRelatedUsersCourses = async (
       }
     });
   });
+
+  return otherUsers
 };
 
 export const findRecommendedCourses = async (
@@ -481,6 +509,7 @@ export const findRecommendedCourses = async (
       ? cleanseText(course.description)
       : new Set(cleanseText(course.description));
 
+    // Depending if want to consider each occurrence of each word, boost score when matches are found between the learning goals & a course's description/title
     user.learningGoal.forEach((goal) => {
       let cleansedGoal = CONSIDER_WORD_MATCH_FREQUENCY
         ? cleanseText(goal)
@@ -524,13 +553,14 @@ export const findRecommendedCourses = async (
     course.score = score;
   });
 
-  // If more than two times the rolling average courses are present, keep the top 50% or until a major gap in scores is found
+  // If more than two times the rolling average worth of courses are present, filter them down
   if (coursesWithScores.length >= NUM_DAYS_ROLLING_AVERAGE * 2) {
     let scoreJumpRollingSum = 0;
     let cutOffIndex;
 
     coursesWithScores.sort((crsA, crsB) => crsB.score - crsA.score);
 
+    // Calculate the index to stop including courses in the initial filtering
     for (const [index, course] of coursesWithScores.entries()) {
       let jump = course.score - coursesWithScores[index + 1].score;
       if (index < NUM_DAYS_ROLLING_AVERAGE) {
@@ -538,29 +568,34 @@ export const findRecommendedCourses = async (
         continue;
       }
 
+      // If the current courses jump in score to the next course is significantly greater than the rolling average, or a maximum percentage of the
+      // total courses has been added, or the score is significantly lower than the top score (catching irrelevant courses even without steep score drops)
       if (
         jump >=
           (scoreJumpRollingSum / NUM_DAYS_ROLLING_AVERAGE) *
             ANOMALY_SCORE_JUMP_MULTIPLIER ||
-        coursesWithScores.length - index <=
+        coursesWithScores.length - (index + 1) <=
           coursesWithScores.length * CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES ||
-        course.score <
+        course.score[index + 1] <
           coursesWithScores[0].score * JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF
       ) {
         cutOffIndex = index;
         break;
       }
 
+      // Update rolling average sum by removing score jump at oldest iteration & adding newest iteration of score jump calculation
       scoreJumpRollingSum -=
         coursesWithScores[index - 5].score - coursesWithScores[index - 4].score;
       scoreJumpRollingSum += jump;
     }
 
     coursesWithScores = coursesWithScores.filter(
-      (_, index) => index < cutOffIndex
+      (_, index) => index <= cutOffIndex
     );
   }
 
+  // Boost/deduct scores with similarities of each course with a user activity course list (boost for positive indicators - cart/favorites, deduct
+  // for negative indicators - remove from cart, remove from favorites, rejected recommendations)
   userActivityData.forEach((userActivityItem) => {
     userActivityItem.courses.forEach((userActivityCourse) => {
       let userActivityCourseDescription = CONSIDER_WORD_MATCH_FREQUENCY
@@ -625,6 +660,7 @@ export const findRecommendedCourses = async (
 
   let otherUsersAverageCourseScores = [];
 
+  // Adjust scores based on similarities/differences to similar user profiles & recommended courses
   if (checkOtherUsersCourses)
     await findMatchesToRelatedUsersCourses(
       user,
@@ -637,15 +673,21 @@ export const findRecommendedCourses = async (
   let lowestScore = coursesWithScores[coursesWithScores.length - 1].score;
   let differentBetweenMaxima = coursesWithScores[0].score - lowestScore; // highest - lowest
 
-  // Normalize using min-max normalization such that the relative positions of scores to each other are not lost
+  // Normalize using min-max normalization such that the relative positions of scores to each other are not lost; will be from 30% to 100%
   coursesWithScores.forEach(
     (course) =>
       (course.score =
         Math.round(
-          (((course.score - lowestScore) / differentBetweenMaxima) * (1 - MINIMUM_PERCENTAGE) + MINIMUM_PERCENTAGE) * 100 * 10
+          (((course.score - lowestScore) / differentBetweenMaxima) *
+            (1 - MINIMUM_PERCENTAGE) +
+            MINIMUM_PERCENTAGE) *
+            100 *
+            10
         ) / 10)
   );
 
+  // With similar users discovered, take weighted average of current score found for each course & the average of that same course
+  // found across recommendations for similar users (if not recommended for a similar user, keep current scoring)
   if (checkOtherUsersCourses) {
     otherUsersAverageCourseScores.forEach((otherUsersCourseObject) => {
       let matchingCourse = coursesWithScores.find(
