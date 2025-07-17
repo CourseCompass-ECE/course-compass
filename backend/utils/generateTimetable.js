@@ -31,21 +31,54 @@ const NO_TIMETABLE_POSSIBLE =
   "With the given shopping cart courses, no conflict-free combination is possible";
 
 // Given a corequisite or prerequisite course list, determine if the number of courses from this list that is also found in the shopping cart
-// meets or exceeds the minimum prerequisites/corequisites met amount
+// meets or exceeds the minimum prerequisites/corequisites met amount + remove any prereq/coreq not in the cart
 const isPrereqOrCoreqMet = (
   prereqOrCoreqList,
   prereqOrCoreqAmount,
   shoppingCartIdList
 ) => {
   if (prereqOrCoreqAmount === 0) return true;
+  else if (prereqOrCoreqList.length < prereqOrCoreqAmount) return false;
+
   let requirementsMet = 0;
-  for (const requirementCourse of prereqOrCoreqList) {
+  prereqOrCoreqList.forEach((requirementCourse, index) => {
     if (shoppingCartIdList.has(requirementCourse.id)) {
       requirementsMet++;
-      if (requirementsMet === prereqOrCoreqAmount) return true;
+    } else {
+      prereqOrCoreqList.splice(index, 1);
+    }
+  });
+  if (requirementsMet >= prereqOrCoreqAmount) return true;
+  return false;
+};
+
+// Filter out courses without enough prereq/coreq in the cart, then restart review in case previously checked courses have course requirements that were just removed from cart
+const filterOutCoursesNotMeetingRequirements = (shoppingCartCourses) => {
+  let endIndex = shoppingCartCourses.length;
+  let refinedShoppingCart = structuredClone(shoppingCartCourses);
+  let currentIndex = 0;
+  let refinedShoppingCartIdList;
+
+  while (currentIndex < endIndex) {
+    refinedShoppingCartIdList = new Set(
+      createIdListFromObjectList(refinedShoppingCart)
+    );
+    let cartCourse = refinedShoppingCart[currentIndex];
+    const areMinReqMet = areMinimumRequirementsMet(
+      cartCourse,
+      refinedShoppingCartIdList
+    );
+
+    if (areMinReqMet) {
+      currentIndex++;
+    } else {
+      refinedShoppingCart.splice(currentIndex, 1);
+      currentIndex = 0;
+      endIndex = refinedShoppingCart.length;
     }
   }
-  return false;
+
+  return refinedShoppingCart;
 };
 
 const areMinimumRequirementsMet = (course, shoppingCartIdList) => {
@@ -62,7 +95,6 @@ const areMinimumRequirementsMet = (course, shoppingCartIdList) => {
     )
   )
     return false;
-
   return true;
 };
 
@@ -664,13 +696,8 @@ export const generateTimetable = async (userId, timetableId) => {
   const shoppingCartCourses = await Course.findCoursesInCart(userId);
   if (shoppingCartCourses.length < MINIMUM_COURSES)
     throw new Error(NOT_ENOUGH_COURSES_ERROR);
-
-  const shoppingCartIdList = new Set(
-    createIdListFromObjectList(shoppingCartCourses)
-  );
-  const refinedShoppingCart = shoppingCartCourses.filter((cartCourse) =>
-    areMinimumRequirementsMet(cartCourse, shoppingCartIdList)
-  );
+  const refinedShoppingCart =
+    filterOutCoursesNotMeetingRequirements(shoppingCartCourses);
   if (refinedShoppingCart.length < MINIMUM_COURSES)
     throw new Error(NOT_ENOUGH_COURSES_AFTER_REFINING_ERROR);
 
