@@ -13,6 +13,8 @@ const BOOST_FROM_SUPPORTING_COURSE_REQ = 0.5;
 const MINIMUM_DIFFERENCES_FOR_MAJOR_PERMUTATIONS = 3;
 const MAXIMUM_DIFFERENCES_FOR_MINOR_PERMUTATIONS = 2;
 const MAXIMUM_FAILED_ATTEMPTS_WITH_RANDOM_OFFSETS_EXPONENT = 2;
+const MINIMUM_MAJOR_PERMUTATIONS_MULTIPLIER = 0.6;
+const MAX_OFFSET_DIFFERENCE = 5;
 const KERNEL_DEPTH_COURSES_NEEDED = 8;
 const AREA1_INDEX = 0;
 const AREA2_INDEX = 1;
@@ -282,13 +284,17 @@ const determineValidCoursesForArea = (
 };
 
 // If there is any existing combination such that the difference in courses between it & the new combination is under 3 (for major permutations) or over 2
-// (for minor permutations), conclude the combination is invalid
+// (for minor permutations) relative to current top combination or they are identical, conclude the combination is invalid
 const isCombinationValid = (
   combination,
   existingCombinations,
-  isExploringMajorPermutations
+  isExploringMajorPermutations,
+  topCombinationIndex
 ) => {
-  for (const existingCombination of existingCombinations) {
+  for (const [
+    combinationIndex,
+    existingCombination,
+  ] of existingCombinations.entries()) {
     let differentCoursesCount = 0;
 
     combination.forEach((courseId) => {
@@ -297,13 +303,14 @@ const isCombinationValid = (
 
     if (differentCoursesCount === 0) return false;
     else if (
-      isExploringMajorPermutations &&
-      differentCoursesCount < MINIMUM_DIFFERENCES_FOR_MAJOR_PERMUTATIONS
+      combinationIndex === topCombinationIndex &&
+      !isExploringMajorPermutations &&
+      differentCoursesCount > MAXIMUM_DIFFERENCES_FOR_MINOR_PERMUTATIONS
     )
       return false;
     else if (
-      !isExploringMajorPermutations &&
-      differentCoursesCount > MAXIMUM_DIFFERENCES_FOR_MINOR_PERMUTATIONS
+      isExploringMajorPermutations &&
+      differentCoursesCount < MINIMUM_DIFFERENCES_FOR_MAJOR_PERMUTATIONS
     )
       return false;
   }
@@ -311,21 +318,22 @@ const isCombinationValid = (
 };
 
 // Increment offsets from area 4 (most extra courses) to area 1, continuing until all offsets reach 3rd last (for depth/kernel areas) or last (for non-depth kernel
-// areas) course in their respective areas, then switch to minor permutations of the major combination with the highest valid timetable score
+// areas) course in their respective areas; then randomize offsets until a streak of failed attempts occur and/or switch to minor permutations for the top valid timetable
 const incrementNextOffset = (
   areaOffsets,
   areaOffsetMaximums,
-  maximumFailedAttemptsWithRandomOffset,
-  currentFailedAttempts,
-  haveRandomizingOffsetsBegun
+  haveRandomizingOffsetsBegun,
+  uniqueKernelCourseCount,
+  currentCombinationsFound
 ) => {
-  if (haveRandomizingOffsetsBegun &&
-    currentFailedAttempts >= 0 &&
-    currentFailedAttempts < maximumFailedAttemptsWithRandomOffset
-  )
-    randomizeOffsets(areaOffsets, areaOffsetMaximums);
-  else if (currentFailedAttempts === maximumFailedAttemptsWithRandomOffset)
-    return false;
+  if (haveRandomizingOffsetsBegun)
+    if (
+      currentCombinationsFound <
+      (uniqueKernelCourseCount - KERNEL_DEPTH_COURSES_NEEDED) *
+        MINIMUM_MAJOR_PERMUTATIONS_MULTIPLIER
+    )
+      randomizeOffsets(areaOffsets, areaOffsetMaximums);
+    else return false;
   else if (
     areaOffsets[AREA3_INDEX] < areaOffsets[AREA4_INDEX] &&
     areaOffsets[AREA3_INDEX] < areaOffsetMaximums[AREA3_INDEX]
@@ -343,12 +351,11 @@ const incrementNextOffset = (
     areaOffsets[AREA1_INDEX]++;
   } else if (areaOffsets[AREA4_INDEX] < areaOffsetMaximums[AREA4_INDEX]) {
     areaOffsets[AREA4_INDEX]++;
-  } else {
-    randomizeOffsets(areaOffsets, areaOffsetMaximums);
   }
   return true;
 };
 
+// Randomize the offsets to be between 0 & their maximum offset
 const randomizeOffsets = (areaOffsets, areaOffsetMaximums) => {
   areaOffsets.forEach(
     (_, index) =>
@@ -364,6 +371,30 @@ const calculateLastOffset = (areaCourseList, timetableDepths) => {
     : MINIMUM_KERNEL_COURSES;
 
   return areaCourseList.courses.length - lastOffsetCourse;
+};
+
+// Randomize offsets such that each is within a MAX_OFFSET_DIFFERENCE distance from its respective offset in "topOffsets"
+const randomizeMinorChangeOffsets = (
+  areaOffsets,
+  areaOffsetMaximums,
+  topOffsets,
+  removeLimitsOnOffsetRandomization
+) => {
+  areaOffsets.forEach((_, index) => {
+    const maxOffset = removeLimitsOnOffsetRandomization
+      ? areaOffsetMaximums[index]
+      : Math.min(
+          topOffsets[index] + MAX_OFFSET_DIFFERENCE,
+          areaOffsetMaximums[index]
+        );
+    const minOffset = removeLimitsOnOffsetRandomization
+      ? 0
+      : Math.max(topOffsets[index] - MAX_OFFSET_DIFFERENCE, 0);
+
+    areaOffsets[index] = Math.floor(
+      Math.random() * (maxOffset - minOffset + 1) + minOffset
+    );
+  });
 };
 
 // Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
@@ -448,12 +479,19 @@ export const generateTimetable = async (userId, timetableId) => {
   let uniqueKernelCourseCount = refinedShoppingCart.filter((cartCourse) =>
     cartCourse.area.some((area) => kernelAreasSet.has(area))
   ).length;
+  // Determine the maximum streak of failed attempts using randomizing offsets before moving onto minor permutations; exponential growth
+  // for this constant as number of valid courses to be used as a kernel/depth course increases, due to factorial relationship found in "x choose y"
   let maximumFailedAttemptsWithRandomOffset = Math.pow(
     uniqueKernelCourseCount - KERNEL_DEPTH_COURSES_NEEDED,
     MAXIMUM_FAILED_ATTEMPTS_WITH_RANDOM_OFFSETS_EXPONENT
   );
   let currentFailedAttempts = 0;
   let haveRandomizingOffsetsBegun = false;
+  let topCombinationIndex = null;
+  let topOffsets = [];
+  let removeLimitsOnOffsetRandomization = false;
+  let minorPermutationsFailedAttempts = 0;
+  let maximumFailedMinorPermutationAttempts;
 
   areaCourseLists.forEach((areaCourseList, index) => {
     areaCourseList.courses.sort((crsA, crsB) =>
@@ -469,10 +507,26 @@ export const generateTimetable = async (userId, timetableId) => {
     );
   });
 
-  // Try different timetable combinations until reach 5-second time limit, proceeding with the highest ranked option or none if all attempts were invalid.
-  // Choose 8 kernel/depth courses from the top courses for each area to the bottom options, incrementing the offset in the order of the area with the most extra courses to that with the least
+  // Try different timetable combinations until reach 5-second time limit, proceeding with the highest ranked option or none if all attempts were invalid. Choose 8 kernel/depth courses
+  // from each area, incrementing offset index in each area list in order of area with the most extra courses to that with the least (& randomized if insufficient course combos found)
   while ((new Date() - computationStartTime) / 1000 < 5) {
-    if (!isExploringMajorPermutations) break;
+    if (topCombinationIndex !== null) {
+      let totalOffsetsConsideredInInitialRandomization = 0;
+      topOffsets.forEach(
+        (offset, index) =>
+          (totalOffsetsConsideredInInitialRandomization +=
+            Math.min(
+              offset + MAX_OFFSET_DIFFERENCE,
+              areaOffsetMaximums[index]
+            ) - Math.max(topOffsets[index] - MAX_OFFSET_DIFFERENCE, 0))
+      );
+
+      maximumFailedMinorPermutationAttempts = Math.pow(
+        totalOffsetsConsideredInInitialRandomization,
+        MAXIMUM_FAILED_ATTEMPTS_WITH_RANDOM_OFFSETS_EXPONENT
+      );
+    }
+
     usedCourseIds.forEach((areaObject) => {
       areaObject.courses = new Set([]);
     });
@@ -505,45 +559,96 @@ export const generateTimetable = async (userId, timetableId) => {
       }
     }
 
-    // Try kernel/depth course combinations with major differences (3+ different courses per attempt), then once find top combination, try again with
-    // smaller permutations (1-2 different courses per attempt)
-    let isExploringMajorPermutationsNext =
-      uniqueKernelCourseCount === KERNEL_DEPTH_COURSES_NEEDED
-        ? false
-        : incrementNextOffset(
-            areaOffsets,
-            areaOffsetMaximums,
-            maximumFailedAttemptsWithRandomOffset,
-            currentFailedAttempts,
-            haveRandomizingOffsetsBegun
-          );
+    let currentCombinationOffsets = areaOffsets;
 
     let kernelDepthCourses = usedCourseIds.flatMap((areaObject) => [
       ...areaObject.courses,
     ]);
 
+    // Check if discovered kernel/depth course combination is not a duplicate & with major (3+ different courses) or minor (2 or less different courses)
+    // differences; flag randomizing to begin if reach end of incremental offset change strategy
     if (
       courseCombinationNotFound ||
       !isCombinationValid(
         kernelDepthCourses,
         kernelDepthCrsCombinations,
-        isExploringMajorPermutations
+        isExploringMajorPermutations,
+        topCombinationIndex
       )
     ) {
-      if (haveRandomizingOffsetsBegun) currentFailedAttempts++;
-      else haveRandomizingOffsetsBegun = !areaOffsets.some((offset, index) => offset !== areaOffsetMaximums[index]);
+      if (isExploringMajorPermutations && haveRandomizingOffsetsBegun) {
+        currentFailedAttempts++;
+        if (currentFailedAttempts === maximumFailedAttemptsWithRandomOffset)
+          isExploringMajorPermutations = false;
+      } else if (isExploringMajorPermutations)
+        haveRandomizingOffsetsBegun = !areaOffsets.some(
+          (offset, index) => offset !== areaOffsetMaximums[index]
+        );
+      else {
+        minorPermutationsFailedAttempts++;
+        if (
+          minorPermutationsFailedAttempts ===
+          maximumFailedMinorPermutationAttempts
+        )
+          removeLimitsOnOffsetRandomization = true;
+      }
 
-      isExploringMajorPermutations = isExploringMajorPermutationsNext;
+      if (!isExploringMajorPermutations && topCombinationIndex === null) break;
+
+      if (isExploringMajorPermutations)
+        isExploringMajorPermutations =
+          uniqueKernelCourseCount === KERNEL_DEPTH_COURSES_NEEDED
+            ? false
+            : incrementNextOffset(
+                areaOffsets,
+                areaOffsetMaximums,
+                haveRandomizingOffsetsBegun,
+                uniqueKernelCourseCount,
+                kernelDepthCrsCombinations.length
+              );
+      else {
+        // After trying kernel/depth course combinations with major differences, try again with smaller permutations
+        randomizeMinorChangeOffsets(
+          areaOffsets,
+          areaOffsetMaximums,
+          topOffsets,
+          removeLimitsOnOffsetRandomization
+        );
+      }
       continue;
     }
 
-    isExploringMajorPermutations = isExploringMajorPermutationsNext;
-
+    if (isExploringMajorPermutations)
+      isExploringMajorPermutations =
+        uniqueKernelCourseCount === KERNEL_DEPTH_COURSES_NEEDED
+          ? false
+          : incrementNextOffset(
+              areaOffsets,
+              areaOffsetMaximums,
+              maximumFailedAttemptsWithRandomOffset,
+              currentFailedAttempts,
+              haveRandomizingOffsetsBegun,
+              uniqueKernelCourseCount,
+              kernelDepthCrsCombinations.length
+            );
+    else {
+      randomizeMinorChangeOffsets(
+        areaOffsets,
+        areaOffsetMaximums,
+        topOffsets,
+        removeLimitsOnOffsetRandomization
+      );
+    }
     currentFailedAttempts = 0;
-
+    minorPermutationsFailedAttempts = 0;
     kernelDepthCrsCombinations.push(kernelDepthCourses);
+
+    topCombinationIndex = 0; // placeholder; adjusted after finding valid timetable
+    // placeholder - assuming first combination leads to the top combination, keep its offsets for minor permutations
+    if (kernelDepthCrsCombinations.length === 1) {
+      topOffsets = [...currentCombinationOffsets];
+    }
   }
-  console.log(kernelDepthCrsCombinations);
 
   throw new Error(NO_TIMETABLE_POSSIBLE);
 };
