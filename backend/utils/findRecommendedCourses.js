@@ -48,7 +48,7 @@ const REJECTED_RECOMMENDATION_MULTIPLER = -0.12; // 12%
 export const EXACT_MATCH_BASE_PENALTY_PERCENTAGE = 2;
 
 // Constants used to determine when to stop including courses in initial filtering of top matches
-export const NUM_DAYS_ROLLING_AVERAGE = 8;
+export const NUM_COURSES_ROLLING_AVERAGE = 8;
 const ANOMALY_SCORE_JUMP_MULTIPLIER = 2.5;
 const CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES = 0.5;
 const JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF = 0.25;
@@ -56,11 +56,15 @@ const JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF = 0.25;
 // Constants used when finding similar users & using their recommended courses to adjust course ratings
 const COURSES_IN_SAME_LIST = 0.5;
 const COURSES_IN_OPPOSING_LISTS = -0.5;
-const SHOPPING_CART_INDEX = 0;
-const FAVORITES_INDEX = 1;
-const REMOVED_FROM_CART_INDEX = 2;
-const REMOVED_FROM_FAVORITES_INDEX = 3;
-const REJECTED_RECOMMENDATIONS_INDEX = 4;
+const positiveIndicatorListIndices = {
+  SHOPPING_CART_INDEX: 0,
+  FAVORITES_INDEX: 1,
+};
+const negativeIndicatorListIndices = {
+  REMOVED_FROM_CART_INDEX: 2,
+  REMOVED_FROM_FAVORITES_INDEX: 3,
+  REJECTED_RECOMMENDATIONS_INDEX: 4,
+};
 const MINIMUM_OTHER_USER_SCORE_RELATIVE_TO_TOP_SCORE = 0.8; // 80% of top score
 // For each occurrence of a course in a similar user's recommendations, boost score of that course
 const COURSE_LIKED_ACROSS_SIMILAR_USERS = 12;
@@ -240,12 +244,15 @@ const computeSimilarityDeductions = (
   userSimilarityScore,
   index
 ) => {
-  if (index === SHOPPING_CART_INDEX || index === FAVORITES_INDEX) {
+  if (
+    index === positiveIndicatorListIndices.SHOPPING_CART_INDEX ||
+    index === positiveIndicatorListIndices.FAVORITES_INDEX
+  ) {
     courseList.forEach((courseId) => {
       [
-        REMOVED_FROM_CART_INDEX,
-        REMOVED_FROM_FAVORITES_INDEX,
-        REJECTED_RECOMMENDATIONS_INDEX,
+        negativeIndicatorListIndices.REMOVED_FROM_CART_INDEX,
+        negativeIndicatorListIndices.REMOVED_FROM_FAVORITES_INDEX,
+        negativeIndicatorListIndices.REJECTED_RECOMMENDATIONS_INDEX,
       ].forEach((opposingListIndex) => {
         if (otherUserCourseLists[opposingListIndex].has(courseId))
           userSimilarityScore += COURSES_IN_OPPOSING_LISTS;
@@ -253,7 +260,10 @@ const computeSimilarityDeductions = (
     });
   } else {
     courseList.forEach((courseId) => {
-      [SHOPPING_CART_INDEX, FAVORITES_INDEX].forEach((opposingListIndex) => {
+      [
+        positiveIndicatorListIndices.SHOPPING_CART_INDEX,
+        positiveIndicatorListIndices.FAVORITES_INDEX,
+      ].forEach((opposingListIndex) => {
         if (otherUserCourseLists[opposingListIndex].has(courseId))
           userSimilarityScore += COURSES_IN_OPPOSING_LISTS;
       });
@@ -261,25 +271,7 @@ const computeSimilarityDeductions = (
   }
 };
 
-// Use recommended courses of similar users to boost scores for courses; then store recommended courses of similar users to perform weighted average
-// on final score for courses matching any of a similar user's recommended courses
-export const findMatchesToRelatedUsersCourses = async (
-  user,
-  coursesWithScores,
-  otherUsersAverageCourseScores,
-  courses
-) => {
-  const otherUsers = await User.findAllOtherUsers(user.id);
-  if (otherUsers.length === 0) return;
-  const userCourseLists = [
-    createIdListFromObjectList(user.shoppingCart),
-    createIdListFromObjectList(user.favorites),
-    createIdListFromObjectList(user.removedFromCart),
-    createIdListFromObjectList(user.removedFromFavorites),
-    createIdListFromObjectList(user.rejectedRecommendations),
-  ];
-
-  // Compute similarity score, considering skill/interest, learning goal, designation, area, minor/certificate, and matches in positive/negative indicator lists
+const computeUserSimilarityScore = (otherUsers, user, userCourseLists) => {
   for (const otherUser of otherUsers) {
     let userSimilarityScore = 0;
 
@@ -366,6 +358,28 @@ export const findMatchesToRelatedUsersCourses = async (
 
     otherUser.score = userSimilarityScore;
   }
+};
+
+// Use recommended courses of similar users to boost scores for courses; then store recommended courses of similar users to perform weighted average
+// on final score for courses matching any of a similar user's recommended courses
+export const findMatchesToRelatedUsersCourses = async (
+  user,
+  coursesWithScores,
+  otherUsersAverageCourseScores,
+  courses
+) => {
+  const otherUsers = await User.findAllOtherUsers(user.id);
+  if (otherUsers.length === 0) return;
+  const userCourseLists = [
+    createIdListFromObjectList(user.shoppingCart),
+    createIdListFromObjectList(user.favorites),
+    createIdListFromObjectList(user.removedFromCart),
+    createIdListFromObjectList(user.removedFromFavorites),
+    createIdListFromObjectList(user.rejectedRecommendations),
+  ];
+
+  // Compute similarity score, considering skill/interest, learning goal, designation, area, minor/certificate, and matches in positive/negative indicator lists
+  computeUserSimilarityScore(otherUsers, user, userCourseLists);
 
   // Sort scores from greatest to least, then keeping those with a score greater than/equal to a minimum percentage of the top score
   otherUsers.sort((userA, userB) => userB.score - userA.score);
@@ -455,43 +469,10 @@ export const findMatchesToRelatedUsersCourses = async (
     });
   });
 
-  return otherUsers
+  return otherUsers;
 };
 
-export const findRecommendedCourses = async (
-  courses,
-  userId,
-  checkOtherUsersCourses
-) => {
-  const user = await User.findUserById(userId);
-  const shoppingCartCourses = await Course.findCoursesInCart(userId);
-
-  const shoppingCartCourseIds = new Set(
-    createIdListFromObjectList(shoppingCartCourses)
-  );
-  let coursesWithScores = structuredClone(courses).filter(
-    (course) => !shoppingCartCourseIds.has(course.id)
-  );
-  if (coursesWithScores.length === 0) return [];
-  const userActivityData = [
-    {
-      title: SHOPPING_CART,
-      courses: shoppingCartCourses,
-    },
-    {
-      title: REMOVED_FROM_CART,
-      courses: user.removedFromCart,
-    },
-    {
-      title: REMOVED_FROM_FAVORITES,
-      courses: user.removedFromFavorites,
-    },
-    {
-      title: REJECTED_RECOMMENDATIONS,
-      courses: user.rejectedRecommendations,
-    },
-  ];
-
+const scoreCoursesAgainstUser = (coursesWithScores, user) => {
   coursesWithScores.forEach((course) => {
     let score = 0;
 
@@ -552,50 +533,9 @@ export const findRecommendedCourses = async (
 
     course.score = score;
   });
+};
 
-  // If more than two times the rolling average worth of courses are present, filter them down
-  if (coursesWithScores.length >= NUM_DAYS_ROLLING_AVERAGE * 2) {
-    let scoreJumpRollingSum = 0;
-    let cutOffIndex;
-
-    coursesWithScores.sort((crsA, crsB) => crsB.score - crsA.score);
-
-    // Calculate the index to stop including courses in the initial filtering
-    for (const [index, course] of coursesWithScores.entries()) {
-      let jump = course.score - coursesWithScores[index + 1].score;
-      if (index < NUM_DAYS_ROLLING_AVERAGE) {
-        scoreJumpRollingSum += jump;
-        continue;
-      }
-
-      // If the current courses jump in score to the next course is significantly greater than the rolling average, or a maximum percentage of the
-      // total courses has been added, or the score is significantly lower than the top score (catching irrelevant courses even without steep score drops)
-      if (
-        jump >=
-          (scoreJumpRollingSum / NUM_DAYS_ROLLING_AVERAGE) *
-            ANOMALY_SCORE_JUMP_MULTIPLIER ||
-        coursesWithScores.length - (index + 1) <=
-          coursesWithScores.length * CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES ||
-        course.score[index + 1] <
-          coursesWithScores[0].score * JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF
-      ) {
-        cutOffIndex = index;
-        break;
-      }
-
-      // Update rolling average sum by removing score jump at oldest iteration & adding newest iteration of score jump calculation
-      scoreJumpRollingSum -=
-        coursesWithScores[index - 5].score - coursesWithScores[index - 4].score;
-      scoreJumpRollingSum += jump;
-    }
-
-    coursesWithScores = coursesWithScores.filter(
-      (_, index) => index <= cutOffIndex
-    );
-  }
-
-  // Boost/deduct scores with similarities of each course with a user activity course list (boost for positive indicators - cart/favorites, deduct
-  // for negative indicators - remove from cart, remove from favorites, rejected recommendations)
+const modifyScoresUsingUserActivity = (userActivityData, coursesWithScores) => {
   userActivityData.forEach((userActivityItem) => {
     userActivityItem.courses.forEach((userActivityCourse) => {
       let userActivityCourseDescription = CONSIDER_WORD_MATCH_FREQUENCY
@@ -657,6 +597,89 @@ export const findRecommendedCourses = async (
       });
     });
   });
+};
+
+export const findRecommendedCourses = async (
+  courses,
+  userId,
+  checkOtherUsersCourses
+) => {
+  const user = await User.findUserById(userId);
+  const shoppingCartCourses = await Course.findCoursesInCart(userId);
+
+  const shoppingCartCourseIds = new Set(
+    createIdListFromObjectList(shoppingCartCourses)
+  );
+  let coursesWithScores = structuredClone(courses).filter(
+    (course) => !shoppingCartCourseIds.has(course.id)
+  );
+  if (coursesWithScores.length === 0) return [];
+  const userActivityData = [
+    {
+      title: SHOPPING_CART,
+      courses: shoppingCartCourses,
+    },
+    {
+      title: REMOVED_FROM_CART,
+      courses: user.removedFromCart,
+    },
+    {
+      title: REMOVED_FROM_FAVORITES,
+      courses: user.removedFromFavorites,
+    },
+    {
+      title: REJECTED_RECOMMENDATIONS,
+      courses: user.rejectedRecommendations,
+    },
+  ];
+
+  scoreCoursesAgainstUser(coursesWithScores, user);
+
+  // If more than two times the rolling average worth of courses are present, filter them down
+  if (coursesWithScores.length >= NUM_COURSES_ROLLING_AVERAGE * 2) {
+    let scoreJumpRollingSum = 0;
+    let cutOffIndex;
+
+    coursesWithScores.sort((crsA, crsB) => crsB.score - crsA.score);
+
+    // Calculate the index to stop including courses in the initial filtering
+    for (const [index, course] of coursesWithScores.entries()) {
+      let jump = course.score - coursesWithScores[index + 1].score;
+      if (index < NUM_COURSES_ROLLING_AVERAGE) {
+        scoreJumpRollingSum += jump;
+        continue;
+      }
+
+      let newRollingAverage = scoreJumpRollingSum / NUM_COURSES_ROLLING_AVERAGE;
+
+      // If the current courses jump in score to the next course is significantly greater than the rolling average, or a maximum percentage of the
+      // total courses has been added, or the score is significantly lower than the top score (catching irrelevant courses even without steep score drops)
+      if (
+        jump >= newRollingAverage * ANOMALY_SCORE_JUMP_MULTIPLIER ||
+        coursesWithScores.length - (index + 1) <=
+          coursesWithScores.length * CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES ||
+        course.score[index + 1] <
+          coursesWithScores[0].score * JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF
+      ) {
+        cutOffIndex = index;
+        break;
+      }
+
+      // Update rolling average sum by removing score jump at oldest iteration & adding newest iteration of score jump calculation
+      let oldestSum =
+        coursesWithScores[index - 5].score - coursesWithScores[index - 4].score;
+      scoreJumpRollingSum -= oldestSum;
+      scoreJumpRollingSum += jump;
+    }
+
+    coursesWithScores = coursesWithScores.filter(
+      (_, index) => index <= cutOffIndex
+    );
+  }
+
+  // Boost/deduct scores with similarities of each course with a user activity course list (boost for positive indicators - cart/favorites, deduct
+  // for negative indicators - remove from cart, remove from favorites, rejected recommendations)
+  modifyScoresUsingUserActivity(userActivityData, coursesWithScores);
 
   let otherUsersAverageCourseScores = [];
 
