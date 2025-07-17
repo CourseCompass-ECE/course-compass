@@ -10,6 +10,14 @@ const MINIMUM_COURSES = 20;
 const MINIMUM_KERNEL_COURSES = 1;
 const MINIMUM_DEPTH_COURSES = 3;
 const BOOST_FROM_SUPPORTING_COURSE_REQ = 0.5;
+const MINIMUM_DIFFERENCES_FOR_MAJOR_PERMUTATIONS = 3;
+const MAXIMUM_DIFFERENCES_FOR_MINOR_PERMUTATIONS = 2;
+const MAXIMUM_FAILED_ATTEMPTS_WITH_RANDOM_OFFSETS_EXPONENT = 2;
+const KERNEL_DEPTH_COURSES_NEEDED = 8;
+const AREA1_INDEX = 0;
+const AREA2_INDEX = 1;
+const AREA3_INDEX = 2;
+const AREA4_INDEX = 3;
 
 const NOT_ENOUGH_COURSES_ERROR =
   "A minimum of 20 courses are required in the shopping cart to generate a timetable";
@@ -273,6 +281,91 @@ const determineValidCoursesForArea = (
   return courseCount;
 };
 
+// If there is any existing combination such that the difference in courses between it & the new combination is under 3 (for major permutations) or over 2
+// (for minor permutations), conclude the combination is invalid
+const isCombinationValid = (
+  combination,
+  existingCombinations,
+  isExploringMajorPermutations
+) => {
+  for (const existingCombination of existingCombinations) {
+    let differentCoursesCount = 0;
+
+    combination.forEach((courseId) => {
+      if (!existingCombination.includes(courseId)) differentCoursesCount++;
+    });
+
+    if (differentCoursesCount === 0) return false;
+    else if (
+      isExploringMajorPermutations &&
+      differentCoursesCount < MINIMUM_DIFFERENCES_FOR_MAJOR_PERMUTATIONS
+    )
+      return false;
+    else if (
+      !isExploringMajorPermutations &&
+      differentCoursesCount > MAXIMUM_DIFFERENCES_FOR_MINOR_PERMUTATIONS
+    )
+      return false;
+  }
+  return true;
+};
+
+// Increment offsets from area 4 (most extra courses) to area 1, continuing until all offsets reach 3rd last (for depth/kernel areas) or last (for non-depth kernel
+// areas) course in their respective areas, then switch to minor permutations of the major combination with the highest valid timetable score
+const incrementNextOffset = (
+  areaOffsets,
+  areaOffsetMaximums,
+  maximumFailedAttemptsWithRandomOffset,
+  currentFailedAttempts,
+  haveRandomizingOffsetsBegun
+) => {
+  if (haveRandomizingOffsetsBegun &&
+    currentFailedAttempts >= 0 &&
+    currentFailedAttempts < maximumFailedAttemptsWithRandomOffset
+  )
+    randomizeOffsets(areaOffsets, areaOffsetMaximums);
+  else if (currentFailedAttempts === maximumFailedAttemptsWithRandomOffset)
+    return false;
+  else if (
+    areaOffsets[AREA3_INDEX] < areaOffsets[AREA4_INDEX] &&
+    areaOffsets[AREA3_INDEX] < areaOffsetMaximums[AREA3_INDEX]
+  ) {
+    areaOffsets[AREA3_INDEX]++;
+  } else if (
+    areaOffsets[AREA2_INDEX] < areaOffsets[AREA4_INDEX] &&
+    areaOffsets[AREA2_INDEX] < areaOffsetMaximums[AREA2_INDEX]
+  ) {
+    areaOffsets[AREA2_INDEX]++;
+  } else if (
+    areaOffsets[AREA1_INDEX] < areaOffsets[AREA4_INDEX] &&
+    areaOffsets[AREA1_INDEX] < areaOffsetMaximums[AREA1_INDEX]
+  ) {
+    areaOffsets[AREA1_INDEX]++;
+  } else if (areaOffsets[AREA4_INDEX] < areaOffsetMaximums[AREA4_INDEX]) {
+    areaOffsets[AREA4_INDEX]++;
+  } else {
+    randomizeOffsets(areaOffsets, areaOffsetMaximums);
+  }
+  return true;
+};
+
+const randomizeOffsets = (areaOffsets, areaOffsetMaximums) => {
+  areaOffsets.forEach(
+    (_, index) =>
+      (areaOffsets[index] = Math.floor(
+        Math.random() * (areaOffsetMaximums[index] + 1)
+      ))
+  );
+};
+
+const calculateLastOffset = (areaCourseList, timetableDepths) => {
+  const lastOffsetCourse = timetableDepths.includes(areaCourseList.area)
+    ? MINIMUM_DEPTH_COURSES
+    : MINIMUM_KERNEL_COURSES;
+
+  return areaCourseList.courses.length - lastOffsetCourse;
+};
+
 // Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
 // 7,168,066,508,321,614 (~7.17 quadrillion) possible 20-course timetable combinations
 export const generateTimetable = async (userId, timetableId) => {
@@ -347,7 +440,22 @@ export const generateTimetable = async (userId, timetableId) => {
     }
   });
 
-  areaCourseLists.forEach((areaCourseList) => {
+  let areaOffsetMaximums = [];
+  let areaOffsets = Array(4).fill(0);
+  let isExploringMajorPermutations = true;
+  let kernelDepthCrsCombinations = [];
+  let kernelAreasSet = new Set(timetable.kernel);
+  let uniqueKernelCourseCount = refinedShoppingCart.filter((cartCourse) =>
+    cartCourse.area.some((area) => kernelAreasSet.has(area))
+  ).length;
+  let maximumFailedAttemptsWithRandomOffset = Math.pow(
+    uniqueKernelCourseCount - KERNEL_DEPTH_COURSES_NEEDED,
+    MAXIMUM_FAILED_ATTEMPTS_WITH_RANDOM_OFFSETS_EXPONENT
+  );
+  let currentFailedAttempts = 0;
+  let haveRandomizingOffsetsBegun = false;
+
+  areaCourseLists.forEach((areaCourseList, index) => {
     areaCourseList.courses.sort((crsA, crsB) =>
       calculateBestCourseOrder(
         crsA,
@@ -356,19 +464,26 @@ export const generateTimetable = async (userId, timetableId) => {
         requirementSupportScoreMap
       )
     );
+    areaOffsetMaximums.push(
+      calculateLastOffset(areaCourseLists[index], timetable.depth)
+    );
   });
 
   // Try different timetable combinations until reach 5-second time limit, proceeding with the highest ranked option or none if all attempts were invalid.
-  // Choose 8 kernel/depth courses from the top courses for each area to the bottom options, incrementing the offset in the order of the area with the most courses to that with the least
+  // Choose 8 kernel/depth courses from the top courses for each area to the bottom options, incrementing the offset in the order of the area with the most extra courses to that with the least
   while ((new Date() - computationStartTime) / 1000 < 5) {
+    if (!isExploringMajorPermutations) break;
     usedCourseIds.forEach((areaObject) => {
       areaObject.courses = new Set([]);
     });
     let courseCombinationNotFound = false;
 
-    for (const areaCourseList of areaCourseLists) {
+    for (const [
+      areaCourseListIndex,
+      areaCourseList,
+    ] of areaCourseLists.entries()) {
       let shiftedCourseList = areaCourseList.courses.filter(
-        (_, index) => index >= courseOffset
+        (_, index) => index >= areaOffsets[areaCourseListIndex]
       );
       let minimumCoursesNeeded = timetable.depth.includes(areaCourseList.area)
         ? MINIMUM_DEPTH_COURSES
@@ -384,15 +499,51 @@ export const generateTimetable = async (userId, timetableId) => {
         timetable.depth
       );
 
-      if (courseCount < minimumCoursesNeeded) courseCombinationNotFound = true;
-      break;
+      if (courseCount < minimumCoursesNeeded) {
+        courseCombinationNotFound = true;
+        break;
+      }
     }
-    if (areaCourseLists[0].courses.length - courseOffset > 3) courseOffset++;
 
     // Try kernel/depth course combinations with major differences (3+ different courses per attempt), then once find top combination, try again with
     // smaller permutations (1-2 different courses per attempt)
-    if (courseCombinationNotFound) continue;
+    let isExploringMajorPermutationsNext =
+      uniqueKernelCourseCount === KERNEL_DEPTH_COURSES_NEEDED
+        ? false
+        : incrementNextOffset(
+            areaOffsets,
+            areaOffsetMaximums,
+            maximumFailedAttemptsWithRandomOffset,
+            currentFailedAttempts,
+            haveRandomizingOffsetsBegun
+          );
+
+    let kernelDepthCourses = usedCourseIds.flatMap((areaObject) => [
+      ...areaObject.courses,
+    ]);
+
+    if (
+      courseCombinationNotFound ||
+      !isCombinationValid(
+        kernelDepthCourses,
+        kernelDepthCrsCombinations,
+        isExploringMajorPermutations
+      )
+    ) {
+      if (haveRandomizingOffsetsBegun) currentFailedAttempts++;
+      else haveRandomizingOffsetsBegun = !areaOffsets.some((offset, index) => offset !== areaOffsetMaximums[index]);
+
+      isExploringMajorPermutations = isExploringMajorPermutationsNext;
+      continue;
+    }
+
+    isExploringMajorPermutations = isExploringMajorPermutationsNext;
+
+    currentFailedAttempts = 0;
+
+    kernelDepthCrsCombinations.push(kernelDepthCourses);
   }
+  console.log(kernelDepthCrsCombinations);
 
   throw new Error(NO_TIMETABLE_POSSIBLE);
 };
