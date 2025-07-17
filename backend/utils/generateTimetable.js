@@ -622,6 +622,40 @@ const prepareCourseListsAndConstants = (
   });
 };
 
+const findCourseCombination = (
+  areaCourseLists,
+  areaOffsets,
+  timetable,
+  usedCourseIds
+) => {
+  for (const [
+    areaCourseListIndex,
+    areaCourseList,
+  ] of areaCourseLists.entries()) {
+    let shiftedCourseList = areaCourseList.courses.filter(
+      (_, index) => index >= areaOffsets[areaCourseListIndex]
+    );
+    let minimumCoursesNeeded = timetable.depth.includes(areaCourseList.area)
+      ? MINIMUM_DEPTH_COURSES
+      : MINIMUM_KERNEL_COURSES;
+
+    const courseCount = determineValidCoursesForArea(
+      minimumCoursesNeeded,
+      shiftedCourseList,
+      areaCourseList.area,
+      areaCourseLists,
+      usedCourseIds,
+      timetable.kernel,
+      timetable.depth
+    );
+
+    if (courseCount < minimumCoursesNeeded) {
+      return true;
+    }
+  }
+  return false;
+};
+
 // Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
 // 7,168,066,508,321,614 (~7.17 quadrillion) possible 20-course timetable combinations
 export const generateTimetable = async (userId, timetableId) => {
@@ -710,32 +744,12 @@ export const generateTimetable = async (userId, timetableId) => {
     });
     let courseCombinationNotFound = false;
 
-    for (const [
-      areaCourseListIndex,
-      areaCourseList,
-    ] of areaCourseLists.entries()) {
-      let shiftedCourseList = areaCourseList.courses.filter(
-        (_, index) => index >= areaOffsets[areaCourseListIndex]
-      );
-      let minimumCoursesNeeded = timetable.depth.includes(areaCourseList.area)
-        ? MINIMUM_DEPTH_COURSES
-        : MINIMUM_KERNEL_COURSES;
-
-      const courseCount = determineValidCoursesForArea(
-        minimumCoursesNeeded,
-        shiftedCourseList,
-        areaCourseList.area,
-        areaCourseLists,
-        usedCourseIds,
-        timetable.kernel,
-        timetable.depth
-      );
-
-      if (courseCount < minimumCoursesNeeded) {
-        courseCombinationNotFound = true;
-        break;
-      }
-    }
+    courseCombinationNotFound = findCourseCombination(
+      areaCourseLists,
+      areaOffsets,
+      timetable,
+      usedCourseIds
+    );
 
     let currentCombinationOffsets = areaOffsets;
     let kernelDepthCourses = usedCourseIds.flatMap((areaObject) => [
