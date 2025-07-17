@@ -397,6 +397,133 @@ const randomizeMinorChangeOffsets = (
   });
 };
 
+// Dynamically determine streak of failed attempts to switch from limited randomization to unrestricted randomization for offsets of minor permutations
+const calculateMaxFailedAttempts = (topOffsets, areaOffsetMaximums) => {
+  let totalOffsetsConsideredInInitialRandomization = 0;
+  topOffsets.forEach(
+    (offset, index) =>
+      (totalOffsetsConsideredInInitialRandomization +=
+        Math.min(offset + MAX_OFFSET_DIFFERENCE, areaOffsetMaximums[index]) -
+        Math.max(topOffsets[index] - MAX_OFFSET_DIFFERENCE, 0))
+  );
+
+  return Math.pow(
+    totalOffsetsConsideredInInitialRandomization,
+    MAXIMUM_FAILED_ATTEMPTS_WITH_RANDOM_OFFSETS_EXPONENT
+  );
+};
+
+// Order from greatest to least prerequisites, then corequisites, as prerequisites are more complex to address (unlike corequisites limited to max. 1 coreq/course)
+const sortByNumberOfReq = (courseIdA, courseIdB, refinedShoppingCart) => {
+  let courseA = refinedShoppingCart.find((course) => course.id === courseIdA);
+  let courseB = refinedShoppingCart.find((course) => course.id === courseIdB);
+
+  if (courseA.prerequisiteAmount > courseB.prerequisiteAmount) return -1;
+  else if (courseB.prerequisiteAmount > courseA.prerequisiteAmount) return 1;
+  else if (courseA.corequisiteAmount > courseB.corequisiteAmount) return -1;
+  else if (courseB.corequisiteAmount > courseA.corequisiteAmount) return 1;
+  return 0;
+};
+
+const countPrereqCoreqMet = (
+  requirementList,
+  requirementsMet,
+  requirementsNotMet,
+  timetableCourses,
+  kernelDepthCourses
+) => {
+  let requirementsMetCount = 0;
+  requirementList.forEach((req) => {
+    if (
+      timetableCourses.some(
+        (timetableCourse) => timetableCourse.id === req.id
+      ) ||
+      kernelDepthCourses.some(
+        (kernelDepthCourseId) => kernelDepthCourseId === req.id
+      )
+    ) {
+      requirementsMet.push(req);
+      requirementsMetCount++;
+    } else requirementsNotMet.push(req);
+  });
+  return requirementsMetCount;
+};
+
+// Consider number of requirements left to meet for a course, 2 layers deep (its prerequisites/corequisites, then the minimum requirements from those prereq/coreq)
+const calculateEasyToEnrollScore = (
+  course,
+  timetableCourses,
+  kernelDepthCourses
+) => {
+  let easyToEnrollScore = 0;
+  let prerequisitesMetCount = 0;
+  let prerequisitesMet = [];
+  let prerequisitesNotMet = [];
+  let corequisitesMetCount = 0;
+  let corequisitesMet = [];
+  let corequisitesNotMet = [];
+
+  prerequisitesMetCount = countPrereqCoreqMet(
+    course.prerequisites,
+    prerequisitesMet,
+    prerequisitesNotMet,
+    timetableCourses,
+    kernelDepthCourses
+  );
+  corequisitesMetCount = countPrereqCoreqMet(
+    course.corequisites,
+    corequisitesMet,
+    corequisitesNotMet,
+    timetableCourses,
+    kernelDepthCourses
+  );
+
+  easyToEnrollScore +=
+    prerequisitesMetCount > course.prerequisiteAmount
+      ? 0
+      : course.prerequisiteAmount - prerequisitesMetCount;
+  easyToEnrollScore +=
+    corequisitesMetCount > course.corequisiteAmount
+      ? 0
+      : course.corequisiteAmount - corequisitesMetCount;
+
+  return easyToEnrollScore
+};
+
+// Given a course ID, place it in timetable along with all of its prerequisites/corequisites, and its prerequisites/corequisites, and so on
+const placeCourseAndRequirementsInTimetable = (
+  kernelDepthCourseId,
+  refinedShoppingCart,
+  timetableCourses,
+  kernelDepthCourses
+) => {
+  const kernelDepthCourse = refinedShoppingCart.find(
+    (course) => course.id === kernelDepthCourseId
+  );
+
+  const orderedPrereq = kernelDepthCourse.prerequisites.toSorted(
+    (prereqA, prereqB) =>
+      calculateEasyToEnrollScore(
+        prereqA,
+        timetableCourses,
+        kernelDepthCourses
+      ) -
+      calculateEasyToEnrollScore(prereqB, timetableCourses, kernelDepthCourses)
+  );
+  const orderedCoreq = kernelDepthCourse.corequisites.toSorted(
+    (coreqA, coreqB) =>
+      calculateEasyToEnrollScore(coreqA) - calculateEasyToEnrollScore(coreqB)
+  );
+
+  // After identifying/filtering for easiest-to-fulfill prerequisites/corequisites, reverse ordering to focus on hardest requirements that must be addressed first
+  orderedPrereq
+    .filter((_, index) => index < kernelDepthCourse.prerequisiteAmount)
+    .reverse();
+  orderedCoreq
+    .filter((_, index) => index < kernelDepthCourse.corequisiteAmount)
+    .reverse();
+};
+
 // Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
 // 7,168,066,508,321,614 (~7.17 quadrillion) possible 20-course timetable combinations
 export const generateTimetable = async (userId, timetableId) => {
@@ -471,6 +598,7 @@ export const generateTimetable = async (userId, timetableId) => {
     }
   });
 
+  // After complete with initial check, initialize various helper variables to explore timetable combinations
   let areaOffsetMaximums = [];
   let areaOffsets = Array(4).fill(0);
   let isExploringMajorPermutations = true;
@@ -492,6 +620,7 @@ export const generateTimetable = async (userId, timetableId) => {
   let removeLimitsOnOffsetRandomization = false;
   let minorPermutationsFailedAttempts = 0;
   let maximumFailedMinorPermutationAttempts;
+  let timetableCourses = [];
 
   areaCourseLists.forEach((areaCourseList, index) => {
     areaCourseList.courses.sort((crsA, crsB) =>
@@ -511,19 +640,9 @@ export const generateTimetable = async (userId, timetableId) => {
   // from each area, incrementing offset index in each area list in order of area with the most extra courses to that with the least (& randomized if insufficient course combos found)
   while ((new Date() - computationStartTime) / 1000 < 5) {
     if (topCombinationIndex !== null) {
-      let totalOffsetsConsideredInInitialRandomization = 0;
-      topOffsets.forEach(
-        (offset, index) =>
-          (totalOffsetsConsideredInInitialRandomization +=
-            Math.min(
-              offset + MAX_OFFSET_DIFFERENCE,
-              areaOffsetMaximums[index]
-            ) - Math.max(topOffsets[index] - MAX_OFFSET_DIFFERENCE, 0))
-      );
-
-      maximumFailedMinorPermutationAttempts = Math.pow(
-        totalOffsetsConsideredInInitialRandomization,
-        MAXIMUM_FAILED_ATTEMPTS_WITH_RANDOM_OFFSETS_EXPONENT
+      maximumFailedMinorPermutationAttempts = calculateMaxFailedAttempts(
+        topOffsets,
+        areaOffsetMaximums
       );
     }
 
@@ -560,7 +679,6 @@ export const generateTimetable = async (userId, timetableId) => {
     }
 
     let currentCombinationOffsets = areaOffsets;
-
     let kernelDepthCourses = usedCourseIds.flatMap((areaObject) => [
       ...areaObject.courses,
     ]);
@@ -595,6 +713,8 @@ export const generateTimetable = async (userId, timetableId) => {
 
       if (!isExploringMajorPermutations && topCombinationIndex === null) break;
 
+      // Determine next set of offsets, either incremental/randomized for major permutations or randomized within a limited range/fully randomized
+      // for minor permutations
       if (isExploringMajorPermutations)
         isExploringMajorPermutations =
           uniqueKernelCourseCount === KERNEL_DEPTH_COURSES_NEEDED
@@ -607,7 +727,6 @@ export const generateTimetable = async (userId, timetableId) => {
                 kernelDepthCrsCombinations.length
               );
       else {
-        // After trying kernel/depth course combinations with major differences, try again with smaller permutations
         randomizeMinorChangeOffsets(
           areaOffsets,
           areaOffsetMaximums,
@@ -648,6 +767,19 @@ export const generateTimetable = async (userId, timetableId) => {
     if (kernelDepthCrsCombinations.length === 1) {
       topOffsets = [...currentCombinationOffsets];
     }
+
+    kernelDepthCourses.sort((courseIdA, courseIdB) =>
+      sortByNumberOfReq(courseIdA, courseIdB, refinedShoppingCart)
+    );
+
+    kernelDepthCourses.forEach((kernelDepthCourseId) => {
+      placeCourseAndRequirementsInTimetable(
+        kernelDepthCourseId,
+        refinedShoppingCart,
+        timetableCourses,
+        kernelDepthCourses
+      );
+    });
   }
 
   throw new Error(NO_TIMETABLE_POSSIBLE);
