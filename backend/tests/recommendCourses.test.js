@@ -1,5 +1,5 @@
 const {
-  NUM_DAYS_ROLLING_AVERAGE,
+  NUM_COURSES_ROLLING_AVERAGE,
   findRecommendedCourses,
   createIdListFromObjectList,
   findMatchesToRelatedUsersCourses,
@@ -79,8 +79,8 @@ test("the recommendation function returns list with length of at least the rolli
     true
   );
   expect(recommendedCourses.length).toBeGreaterThanOrEqual(
-    coursesNotInCart.length >= NUM_DAYS_ROLLING_AVERAGE * 2
-      ? NUM_DAYS_ROLLING_AVERAGE
+    coursesNotInCart.length >= NUM_COURSES_ROLLING_AVERAGE * 2
+      ? NUM_COURSES_ROLLING_AVERAGE
       : coursesNotInCart.length
   );
 });
