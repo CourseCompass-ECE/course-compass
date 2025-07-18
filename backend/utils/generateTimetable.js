@@ -22,6 +22,8 @@ const AREA3_INDEX = 2;
 const AREA4_INDEX = 3;
 const EXCLUSION_INFLUENCE_MULTIPLIER = 0.25;
 const INVALID_COURSE = -1;
+const MAX_COURSES_PER_TERM = 5;
+const AVAILABLE_POSIITONS = [1, 2, 3, 4, 5];
 
 const NOT_ENOUGH_COURSES_ERROR =
   "A minimum of 20 courses are required in the shopping cart to generate a timetable";
@@ -743,33 +745,157 @@ const getSortedRequirements = (
   return newScoredReqList;
 };
 
+const findIdSetOfCoursesInTimetable = (
+  kernelDepthCourses,
+  timetableCourses
+) => {
+  return new Set([
+    ...kernelDepthCourses,
+    ...timetableCourses.map((course) => course.id),
+  ]);
+};
+
+// Identify the index of the next requirement to fulfill, choosing the hardest neccessary requirement out of the most easiest to enroll requirements
+const calculateIndexOfNextPrereqToAdd = (reqList, kernelDepthCourses, timetableCourses, totalReqNeeded) => {
+  let currentTimetableCourseIds = findIdSetOfCoursesInTimetable(kernelDepthCourses, timetableCourses);
+  let reqLeftToFulfill =
+    totalReqNeeded -
+    reqList.filter((req) => currentTimetableCourseIds.has(req.id)).length;
+
+  return reqLeftToFulfill - 1;
+};
+
+// Add all courses & their requirements into the timetable (from the lowest level of requirements to the initial course itself),
+// removing them from coursesToAdd as they are added in the earliest available term; if any course cannot be added, recall all added courses
+const isPlacedInTimetable = (coursesToAdd, timetableCourses) => {
+  let originalCoursesToAdd = structuredClone(coursesToAdd);
+  coursesToAdd.reverse().forEach((course) => {
+    let numCoursesPerTerm = timetableCourses.reduce((total, course) => {
+      total[course.term] = (total[course.term] || 0) + 1;
+      return total;
+    }, {});
+    let orderedTerms = Object.entries(numCoursesPerTerm).sort(
+      ([termA], [termB]) => termA - termB
+    );
+    let earliestTerm = orderedTerms.find(
+      ([_, numCourses]) => numCourses < MAX_COURSES_PER_TERM
+    );
+
+    let availablePositions = AVAILABLE_POSIITONS.filter(
+      (position) =>
+        !timetableCourses.some(
+          (course) =>
+            course.term === earliestTerm && course.position === position
+        )
+    );
+
+    if (availablePositions.length > 0) {
+      timetableCourses.push({
+        id: course.id,
+        term: earliestTerm,
+        position: availablePositions[0],
+      });
+      coursesToAdd.splice(0, 1);
+    } else {
+      originalCoursesToAdd.forEach((originalCourse) => {
+        timetableCourses = timetableCourses.filter(
+          (timetableCourse) => timetableCourse.id !== originalCourse.id
+        );
+      });
+      return false;
+    }
+  });
+
+  return true;
+};
+
+// Loop through all requirements for a given course & add them before the course itself
+const isRequirementsPlacedInTimetable = (scoredPrereqList, kernelDepthCourses, timetableCourses, courseToPlace, refinedShoppingCart, coursesToAdd) => {
+  let currentPrerequisiteIndex = calculateIndexOfNextPrereqToAdd(scoredPrereqList, kernelDepthCourses, timetableCourses, courseToPlace.prerequisiteAmount);
+
+  // Filter for the top easiest-to-fulfill prerequisites/corequisites needed, then given these requirements, fulfill the hardest neccessary requirement first,
+  // working towards the easiest to enroll requirement
+  while (currentPrerequisiteIndex >= 0) {
+    let currentTimetableCourseIds = findIdSetOfCoursesInTimetable(kernelDepthCourses, timetableCourses);
+    let remainingScoredPrereq = scoredPrereqList.filter(
+      (prereq) => !currentTimetableCourseIds.has(prereq.id)
+    );
+    if (currentPrerequisiteIndex >= remainingScoredPrereq.length) return false;
+
+    let currentScoredPrereq = remainingScoredPrereq[currentPrerequisiteIndex];
+    if (
+      !isCoursePlacedInTimetable(currentScoredPrereq.id, refinedShoppingCart, timetableCourses, kernelDepthCourses, coursesToAdd)
+    )
+      return false;
+
+    currentPrerequisiteIndex = calculateIndexOfNextPrereqToAdd(
+      scoredPrereqList,
+      kernelDepthCourses,
+      timetableCourses,
+      courseToPlace.prerequisiteAmount
+    );
+  }
+
+  if (
+    calculateIndexOfNextPrereqToAdd(
+      courseToPlace.prerequisites,
+      kernelDepthCourses,
+      timetableCourses,
+      courseToPlace.prerequisiteAmount
+    ) >= 0
+  )
+    return false;
+
+  return isPlacedInTimetable(coursesToAdd, timetableCourses);
+};
+
 // Given a course ID, place it in timetable along with all of its prerequisites/corequisites, and its prerequisites/corequisites, and so on
-const placeCourseAndRequirementsInTimetable = (
+const isCoursePlacedInTimetable = (
   courseToPlaceId,
   refinedShoppingCart,
   timetableCourses,
-  kernelDepthCourses
+  kernelDepthCourses,
+  coursesToAdd
 ) => {
   const courseToPlace = refinedShoppingCart.find(
     (course) => course.id === courseToPlaceId
   );
+  coursesToAdd.push(courseToPlace);
 
-  let scoredPrereq = structuredClone(courseToPlace.prerequisites);
-  scoredPrereq = getSortedRequirements(
-    scoredPrereq,
+  let scoredPrereqList = structuredClone(courseToPlace.prerequisites);
+  scoredPrereqList = getSortedRequirements(
+    scoredPrereqList,
     timetableCourses,
     kernelDepthCourses,
     refinedShoppingCart
   );
-  let scoredCoreq = structuredClone(courseToPlace.corequisites);
-  scoredCoreq = getSortedRequirements(
-    scoredCoreq,
+  let scoredCoreqList = structuredClone(courseToPlace.corequisites);
+  scoredCoreqList = getSortedRequirements(
+    scoredCoreqList,
     timetableCourses,
     kernelDepthCourses,
     refinedShoppingCart
   );
 
-  if (scoredPrereq.length < courseToPlace.prerequisiteAmount || scoredCoreq.length < courseToPlace.corequisiteAmount) return false;
+  if (
+    scoredPrereqList.length < courseToPlace.prerequisiteAmount ||
+    scoredCoreqList.length < courseToPlace.corequisiteAmount
+  )
+    return false;
+
+  // After retrieving a valid set of ranked prerequisites & corequisites, place those courses & its requirements in the timetable first, then the course itself
+  if (
+    !isRequirementsPlacedInTimetable(
+      scoredPrereqList,
+      kernelDepthCourses,
+      timetableCourses,
+      courseToPlace,
+      refinedShoppingCart,
+      coursesToAdd
+    )
+  )
+    return false;
+
   return true;
 };
 
@@ -865,7 +991,7 @@ const prepareCourseListsAndConstants = (
   });
 };
 
-const findCourseCombination = (
+const isCourseCombinationFound = (
   areaCourseLists,
   areaOffsets,
   timetable,
@@ -893,10 +1019,10 @@ const findCourseCombination = (
     );
 
     if (courseCount < minimumCoursesNeeded) {
-      return true;
+      return false;
     }
   }
-  return false;
+  return true;
 };
 
 // Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
@@ -980,9 +1106,9 @@ export const generateTimetable = async (userId, timetableId) => {
     usedCourseIds.forEach((areaObject) => {
       areaObject.courses = new Set([]);
     });
-    let courseCombinationNotFound = false;
+    let courseCombinationFound = true;
 
-    courseCombinationNotFound = findCourseCombination(
+    courseCombinationFound = isCourseCombinationFound(
       areaCourseLists,
       areaOffsets,
       timetable,
@@ -997,7 +1123,7 @@ export const generateTimetable = async (userId, timetableId) => {
     // Check if discovered kernel/depth course combination is not a duplicate & with major (3+ different courses) or minor (2 or less different courses)
     // differences; flag randomizing to begin if reach end of incremental offset change strategy
     if (
-      courseCombinationNotFound ||
+      !courseCombinationFound ||
       !isCombinationValid(
         kernelDepthCourses,
         kernelDepthCrsCombinations,
@@ -1064,22 +1190,23 @@ export const generateTimetable = async (userId, timetableId) => {
       sortByNumberOfReq(courseIdA, courseIdB, refinedShoppingCart)
     );
 
-    let kernelDepthCoursesAddedSuccessfully = true;
+    let areKernelDepthCoursesAddedSuccessfully = true;
     for (const kernelDepthCourseId of kernelDepthCourses) {
       // Format of timetableCourses: { id, term, position }
-      let isCoursePossibleToInclude = placeCourseAndRequirementsInTimetable(
+      let isCoursePossibleToInclude = isCoursePlacedInTimetable(
         kernelDepthCourseId,
         refinedShoppingCart,
         timetableCourses,
-        kernelDepthCourses
+        kernelDepthCourses,
+        []
       );
 
       if (!isCoursePossibleToInclude) {
-        kernelDepthCoursesAddedSuccessfully = false;
+        areKernelDepthCoursesAddedSuccessfully = false;
         break;
-      };
+      }
     }
-    if (!kernelDepthCoursesAddedSuccessfully) continue;
+    if (!areKernelDepthCoursesAddedSuccessfully) continue;
   }
 
   throw new Error(NO_TIMETABLE_POSSIBLE);
