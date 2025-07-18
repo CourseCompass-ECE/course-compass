@@ -6,8 +6,16 @@ const prereqCoreqNestedDetailsNeeded = {
   code: true,
   title: true,
   id: true,
-  prerequisites: true,
-  corequisites: true,
+  prerequisites: {
+    include: {
+      exclusions: true,
+    },
+  },
+  corequisites: {
+    include: {
+      exclusions: true,
+    },
+  },
   prerequisiteAmount: true,
   corequisiteAmount: true,
   exclusions: true,
@@ -36,7 +44,7 @@ const getAllCourses = async () => {
         select: prereqCoreqDetailsNeeded,
       },
       corequisites: {
-        select: prereqCoreqDetailsNeeded
+        select: prereqCoreqDetailsNeeded,
       },
       exclusions: {
         select: {
