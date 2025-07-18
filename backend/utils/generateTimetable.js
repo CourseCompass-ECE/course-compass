@@ -756,8 +756,16 @@ const findIdSetOfCoursesInTimetable = (
 };
 
 // Identify the index of the next requirement to fulfill, choosing the hardest neccessary requirement out of the most easiest to enroll requirements
-const calculateIndexOfNextPrereqToAdd = (reqList, kernelDepthCourses, timetableCourses, totalReqNeeded) => {
-  let currentTimetableCourseIds = findIdSetOfCoursesInTimetable(kernelDepthCourses, timetableCourses);
+const calculateIndexOfNextReqToAdd = (
+  reqList,
+  kernelDepthCourses,
+  timetableCourses,
+  totalReqNeeded
+) => {
+  let currentTimetableCourseIds = findIdSetOfCoursesInTimetable(
+    kernelDepthCourses,
+    timetableCourses
+  );
   let reqLeftToFulfill =
     totalReqNeeded -
     reqList.filter((req) => currentTimetableCourseIds.has(req.id)).length;
@@ -765,88 +773,152 @@ const calculateIndexOfNextPrereqToAdd = (reqList, kernelDepthCourses, timetableC
   return reqLeftToFulfill - 1;
 };
 
+const findLatestTermWithRequirements = (reqList, timetableCourses) => {
+  let latestTerm = null;
+  reqList.forEach((req) => {
+    let reqTimetableCourse = timetableCourses.find(
+      (timetableCourse) => timetableCourse.id === req.id
+    );
+    if (
+      reqTimetableCourse &&
+      (!latestTerm || reqTimetableCourse.term > latestTerm)
+    )
+      latestTerm = reqTimetableCourse.term;
+  });
+  return latestTerm;
+};
+
 // Add all courses & their requirements into the timetable (from the lowest level of requirements to the initial course itself),
 // removing them from coursesToAdd as they are added in the earliest available term; if any course cannot be added, recall all added courses
 const isPlacedInTimetable = (coursesToAdd, timetableCourses) => {
-  let originalCoursesToAdd = structuredClone(coursesToAdd);
-  coursesToAdd.reverse().forEach((course) => {
-    let numCoursesPerTerm = timetableCourses.reduce((total, course) => {
-      total[course.term] = (total[course.term] || 0) + 1;
-      return total;
-    }, {});
-    let orderedTerms = Object.entries(numCoursesPerTerm).sort(
-      ([termA], [termB]) => termA - termB
-    );
-    let earliestTerm = orderedTerms.find(
-      ([_, numCourses]) => numCourses < MAX_COURSES_PER_TERM
-    );
+  let course = coursesToAdd[coursesToAdd.length - 1];
+  let latestTermOfPrereq = findLatestTermWithRequirements(
+    course.prerequisites,
+    timetableCourses
+  );
+  let latestTermOfCoreq = findLatestTermWithRequirements(
+    course.corequisites,
+    timetableCourses
+  );
+  let courseCorequisite = coursesToAdd.length > 1 && !latestTermOfCoreq ? coursesToAdd[0] : null;
 
-    let availablePositions = AVAILABLE_POSIITONS.filter(
-      (position) =>
-        !timetableCourses.some(
-          (course) =>
-            course.term === earliestTerm && course.position === position
-        )
-    );
+  let numCoursesPerTerm = timetableCourses.reduce((total, course) => {
+    total[course.term] = (total[course.term] || 0) + 1;
+    return total;
+  }, {});
+  let orderedTerms = Object.entries(numCoursesPerTerm).sort(
+    ([termA], [termB]) => termA - termB
+  );
 
-    if (availablePositions.length > 0) {
+  let earliestTerm;
+  if (latestTermOfCoreq && latestTermOfPrereq) {
+    earliestTerm =
+      latestTermOfCoreq > latestTermOfPrereq ? latestTermOfCoreq : null;
+  } else if (latestTermOfCoreq) {
+    earliestTerm = latestTermOfCoreq;
+  } else {
+    earliestTerm = orderedTerms.find(
+      ([termNumber, numCourses]) =>
+        termNumber > (latestTermOfPrereq ? latestTermOfPrereq : 0) &&
+        numCourses < MAX_COURSES_PER_TERM - (courseCorequisite ? 1 : 0)
+    );
+  }
+
+  let availablePositions = AVAILABLE_POSIITONS.filter(
+    (position) =>
+      !timetableCourses.some((course) =>
+        course.term === earliestTerm
+          ? earliestTerm[1]
+          : null && course.position === position
+      )
+  );
+
+  if (availablePositions.length > (courseCorequisite ? 1 : 0) && earliestTerm) {
+    timetableCourses.push({
+      id: course.id,
+      term: earliestTerm,
+      position: availablePositions[0],
+    });
+    if (courseCorequisite) {
       timetableCourses.push({
-        id: course.id,
+        id: courseCorequisite.id,
         term: earliestTerm,
-        position: availablePositions[0],
+        position: availablePositions[1],
       });
-      coursesToAdd.splice(0, 1);
-    } else {
-      originalCoursesToAdd.forEach((originalCourse) => {
-        timetableCourses = timetableCourses.filter(
-          (timetableCourse) => timetableCourse.id !== originalCourse.id
-        );
-      });
-      return false;
     }
-  });
-
-  return true;
+    coursesToAdd.splice(0, 2);
+    return true;
+  } else {
+    return false;
+  }
 };
 
 // Loop through all requirements for a given course & add them before the course itself
-const isRequirementsPlacedInTimetable = (scoredPrereqList, kernelDepthCourses, timetableCourses, courseToPlace, refinedShoppingCart, coursesToAdd) => {
-  let currentPrerequisiteIndex = calculateIndexOfNextPrereqToAdd(scoredPrereqList, kernelDepthCourses, timetableCourses, courseToPlace.prerequisiteAmount);
+const isRequirementsPlacedInTimetable = (
+  scoredReqList,
+  originalReqList,
+  totalReqAmount,
+  kernelDepthCourses,
+  timetableCourses,
+  refinedShoppingCart,
+  coursesToAdd
+) => {
+  let currentReqIndex = calculateIndexOfNextReqToAdd(
+    scoredReqList,
+    kernelDepthCourses,
+    timetableCourses,
+    totalReqAmount
+  );
 
   // Filter for the top easiest-to-fulfill prerequisites/corequisites needed, then given these requirements, fulfill the hardest neccessary requirement first,
   // working towards the easiest to enroll requirement
-  while (currentPrerequisiteIndex >= 0) {
-    let currentTimetableCourseIds = findIdSetOfCoursesInTimetable(kernelDepthCourses, timetableCourses);
-    let remainingScoredPrereq = scoredPrereqList.filter(
-      (prereq) => !currentTimetableCourseIds.has(prereq.id)
+  while (currentReqIndex >= 0) {
+    let currentTimetableCourseIds = findIdSetOfCoursesInTimetable(
+      kernelDepthCourses,
+      timetableCourses
     );
-    if (currentPrerequisiteIndex >= remainingScoredPrereq.length) return false;
+    let remainingScoredReq = scoredReqList.filter(
+      (req) => !currentTimetableCourseIds.has(req.id)
+    );
+    if (currentReqIndex >= remainingScoredReq.length) return false;
 
-    let currentScoredPrereq = remainingScoredPrereq[currentPrerequisiteIndex];
+    let currentScoredReq = remainingScoredReq[currentReqIndex];
     if (
-      !isCoursePlacedInTimetable(currentScoredPrereq.id, refinedShoppingCart, timetableCourses, kernelDepthCourses, coursesToAdd)
+      !isCoursePlacedInTimetable(
+        currentScoredReq.id,
+        refinedShoppingCart,
+        timetableCourses,
+        kernelDepthCourses,
+        coursesToAdd
+      )
     )
       return false;
 
-    currentPrerequisiteIndex = calculateIndexOfNextPrereqToAdd(
-      scoredPrereqList,
+    currentReqIndex = calculateIndexOfNextReqToAdd(
+      scoredReqList,
       kernelDepthCourses,
       timetableCourses,
-      courseToPlace.prerequisiteAmount
+      totalReqAmount
     );
   }
 
   if (
-    calculateIndexOfNextPrereqToAdd(
-      courseToPlace.prerequisites,
+    calculateIndexOfNextReqToAdd(
+      originalReqList,
       kernelDepthCourses,
       timetableCourses,
-      courseToPlace.prerequisiteAmount
+      totalReqAmount
     ) >= 0
   )
     return false;
 
-  return isPlacedInTimetable(coursesToAdd, timetableCourses);
+  return true;
+};
+
+const checkIfCourseAlreadyInTimetable = (timetableCourses, courseId) => {
+  return timetableCourses.some(
+    (timetableCourse) => timetableCourse.id === courseId
+  );
 };
 
 // Given a course ID, place it in timetable along with all of its prerequisites/corequisites, and its prerequisites/corequisites, and so on
@@ -857,6 +929,8 @@ const isCoursePlacedInTimetable = (
   kernelDepthCourses,
   coursesToAdd
 ) => {
+  if (checkIfCourseAlreadyInTimetable(timetableCourses, courseToPlaceId))
+    return true;
   const courseToPlace = refinedShoppingCart.find(
     (course) => course.id === courseToPlaceId
   );
@@ -887,16 +961,32 @@ const isCoursePlacedInTimetable = (
   if (
     !isRequirementsPlacedInTimetable(
       scoredPrereqList,
+      courseToPlace.prerequisites,
+      courseToPlace.prerequisiteAmount,
       kernelDepthCourses,
       timetableCourses,
-      courseToPlace,
       refinedShoppingCart,
       coursesToAdd
     )
   )
     return false;
 
-  return true;
+  if (
+    !isRequirementsPlacedInTimetable(
+      scoredCoreqList,
+      courseToPlace.corequisites,
+      courseToPlace.corequisiteAmount,
+      kernelDepthCourses,
+      timetableCourses,
+      refinedShoppingCart,
+      coursesToAdd
+    )
+  )
+    return false;
+
+  if (checkIfCourseAlreadyInTimetable(timetableCourses, courseToPlaceId))
+    return true;
+  return isPlacedInTimetable(coursesToAdd, timetableCourses);
 };
 
 const updateOffsets = (
