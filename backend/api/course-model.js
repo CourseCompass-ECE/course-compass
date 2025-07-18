@@ -2,44 +2,62 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
+const prereqCoreqNestedDetailsNeeded = {
+  code: true,
+  title: true,
+  id: true,
+  prerequisites: true,
+  corequisites: true,
+  prerequisiteAmount: true,
+  corequisiteAmount: true,
+  exclusions: true,
+};
+
+const prereqCoreqDetailsNeeded = {
+  code: true,
+  title: true,
+  id: true,
+  prerequisites: {
+    select: prereqCoreqNestedDetailsNeeded,
+  },
+  corequisites: {
+    select: prereqCoreqNestedDetailsNeeded,
+  },
+  prerequisiteAmount: true,
+  corequisiteAmount: true,
+  exclusions: true,
+};
+
 const getAllCourses = async () => {
   return await prisma.course.findMany({
-      include: {
-        minorsCertificates: true,
-        prerequisites: {
-          select: {
-            code: true,
-            title: true,
-            id: true
-          },
-        },
-        corequisites: {
-          select: {
-            code: true,
-            title: true,
-            id: true
-          },
-        },
-        exclusions: {
-          select: {
-            code: true,
-            title: true,
-            id: true
-          },
-        },
-        recommendedPrep: {
-          select: {
-            code: true,
-            title: true,
-            id: true
-          },
-        },
-        inUserShoppingCart: true,
-        inUserFavorites: true,
-        skillsInterests: true
+    include: {
+      minorsCertificates: true,
+      prerequisites: {
+        select: prereqCoreqDetailsNeeded,
       },
-    });
-}
+      corequisites: {
+        select: prereqCoreqDetailsNeeded
+      },
+      exclusions: {
+        select: {
+          code: true,
+          title: true,
+          id: true,
+        },
+      },
+      recommendedPrep: {
+        select: {
+          code: true,
+          title: true,
+          id: true,
+        },
+      },
+      inUserShoppingCart: true,
+      inUserFavorites: true,
+      skillsInterests: true,
+    },
+  });
+};
 
 module.exports = {
   async findCourses(userId) {

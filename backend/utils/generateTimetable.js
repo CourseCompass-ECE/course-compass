@@ -463,22 +463,14 @@ const sortByNumberOfReq = (courseIdA, courseIdB, refinedShoppingCart) => {
   return 0;
 };
 
-const countPrereqCoreqMet = (
-  requirementList,
-  requirementsMet,
-  requirementsNotMet,
-  timetableCourses,
-  kernelDepthCourses
-) => {
+const countPrereqCoreqMet = (requirementList, requirementsMet, requirementsNotMet, timetableCourseIds, kernelDepthCourseIds, topRequirementOptionIds, courseId) => {
   let requirementsMetCount = 0;
   requirementList.forEach((req) => {
     if (
-      timetableCourses.some(
-        (timetableCourse) => timetableCourse.id === req.id
-      ) ||
-      kernelDepthCourses.some(
-        (kernelDepthCourseId) => kernelDepthCourseId === req.id
-      )
+      timetableCourseIds.has(req.id) ||
+      kernelDepthCourseIds.has(req.id) ||
+      req.id === courseId ||
+      topRequirementOptionIds.has(req.id)
     ) {
       requirementsMet.push(req);
       requirementsMetCount++;
@@ -491,41 +483,101 @@ const countPrereqCoreqMet = (
 const calculateEasyToEnrollScore = (
   course,
   timetableCourses,
-  kernelDepthCourses
+  kernelDepthCourses,
+  isRecursiveCall,
+  topRequirementOptionIds
 ) => {
-  let easyToEnrollScore = 0;
   let prerequisitesMetCount = 0;
   let prerequisitesMet = [];
   let prerequisitesNotMet = [];
   let corequisitesMetCount = 0;
   let corequisitesMet = [];
   let corequisitesNotMet = [];
+  let prerequisitesRemaining = 0;
+  let corequisitesRemaining = 0;
+  let timetableCourseIds = new Set(createIdListFromObjectList(timetableCourses));
+  let kernelDepthCourseIds = new Set(kernelDepthCourses);
+  prerequisitesMetCount = countPrereqCoreqMet(course.prerequisites, prerequisitesMet, prerequisitesNotMet, timetableCourseIds, kernelDepthCourseIds, topRequirementOptionIds, course.id);
+  corequisitesMetCount = countPrereqCoreqMet( course.corequisites, corequisitesMet, corequisitesNotMet, timetableCourseIds, kernelDepthCourseIds, topRequirementOptionIds, course.id);
 
-  prerequisitesMetCount = countPrereqCoreqMet(
-    course.prerequisites,
-    prerequisitesMet,
-    prerequisitesNotMet,
-    timetableCourses,
-    kernelDepthCourses
-  );
-  corequisitesMetCount = countPrereqCoreqMet(
-    course.corequisites,
-    corequisitesMet,
-    corequisitesNotMet,
-    timetableCourses,
-    kernelDepthCourses
-  );
+  prerequisitesRemaining += prerequisitesMetCount >= course.prerequisiteAmount ? 0 : course.prerequisiteAmount - prerequisitesMetCount;
+  corequisitesRemaining += corequisitesMetCount >= course.corequisiteAmount ? 0 : course.corequisiteAmount - corequisitesMetCount;
 
-  easyToEnrollScore +=
-    prerequisitesMetCount > course.prerequisiteAmount
-      ? 0
-      : course.prerequisiteAmount - prerequisitesMetCount;
-  easyToEnrollScore +=
-    corequisitesMetCount > course.corequisiteAmount
-      ? 0
-      : course.corequisiteAmount - corequisitesMetCount;
+  let remainingPrereqCoreqScores = 0;
+  // Determine how many additional courses need to be added to meet missing prereqs/coreqs, choosing the top prereqs/coreqs with minimal additional requirements
+  if (!isRecursiveCall && prerequisitesMetCount < course.prerequisiteAmount) {
+    let currentIndex = 0;
+    let topPrereqOptions = [];
+    while (currentIndex < prerequisitesNotMet.length) {
+      let notMetPrereq = prerequisitesNotMet[currentIndex];
 
-  return easyToEnrollScore;
+      let { _, __, totalScore } = calculateEasyToEnrollScore(
+        notMetPrereq,
+        timetableCourses,
+        kernelDepthCourses,
+        true,
+        new Set(createIdListFromObjectList(topPrereqOptions))
+      );
+
+      let newTopPrereqOptions = structuredClone(topPrereqOptions);
+
+      if (
+        newTopPrereqOptions.some(
+          (prereqOption) =>
+            prereqOption.id === notMetPrereq.id &&
+            prereqOption.score === totalScore
+        )
+      ) {
+        currentIndex++;
+        continue;
+      } else if (
+        newTopPrereqOptions.some(
+          (prereqOption) => prereqOption.id === notMetPrereq.id
+        )
+      ) {
+        optionIndex = newTopPrereqOptions.findIndex(
+          (prereqOption) => prereqOption.id === notMetPrereq.id
+        );
+        newTopPrereqOptions[optionIndex].score = totalScore;
+      } else {
+        newTopPrereqOptions.push({
+          id: notMetPrereq.id,
+          score: totalScore,
+        });
+      }
+      newTopPrereqOptions
+        .sort(
+          (prereqOptionA, prereqOptionB) =>
+            prereqOptionA.score - prereqOptionB.score
+        )
+        .splice(
+          prerequisitesRemaining,
+          Math.max(topPrereqOptions.length - prerequisitesRemaining, 0)
+        );
+
+      if (
+        newTopPrereqOptions.some(
+          (prereqOption, index) =>
+            !topPrereqOptions[index] ||
+            prereqOption.id !== topPrereqOptions[index].id
+        )
+      )
+        currentIndex = 0;
+      else {
+        currentIndex++;
+      }
+      topPrereqOptions = structuredClone(newTopPrereqOptions);
+    }
+    topPrereqOptions.forEach(
+      (option) => (remainingPrereqCoreqScores += option.score)
+    );
+  } else if (
+    !isRecursiveCall &&
+    corequisitesMetCount < course.corequisiteAmount
+  ) {
+  }
+
+  return {prerequisitesRemaining, corequisitesRemaining, totalScore: prerequisitesRemaining + corequisitesRemaining,};
 };
 
 // Given a course ID, place it in timetable along with all of its prerequisites/corequisites, and its prerequisites/corequisites, and so on
@@ -539,27 +591,24 @@ const placeCourseAndRequirementsInTimetable = (
     (course) => course.id === kernelDepthCourseId
   );
 
+  let placeholderSet = new Set([]);
   const orderedPrereq = kernelDepthCourse.prerequisites.toSorted(
     (prereqA, prereqB) =>
       calculateEasyToEnrollScore(
         prereqA,
         timetableCourses,
-        kernelDepthCourses
+        kernelDepthCourses,
+        false,
+        placeholderSet
       ) -
-      calculateEasyToEnrollScore(prereqB, timetableCourses, kernelDepthCourses)
+      calculateEasyToEnrollScore(
+        prereqB,
+        timetableCourses,
+        kernelDepthCourses,
+        false,
+        placeholderSet
+      )
   );
-  const orderedCoreq = kernelDepthCourse.corequisites.toSorted(
-    (coreqA, coreqB) =>
-      calculateEasyToEnrollScore(coreqA) - calculateEasyToEnrollScore(coreqB)
-  );
-
-  // After identifying/filtering for easiest-to-fulfill prerequisites/corequisites, reverse ordering to focus on hardest requirements that must be addressed first
-  orderedPrereq
-    .filter((_, index) => index < kernelDepthCourse.prerequisiteAmount)
-    .reverse();
-  orderedCoreq
-    .filter((_, index) => index < kernelDepthCourse.corequisiteAmount)
-    .reverse();
 };
 
 const updateOffsets = (
@@ -842,10 +891,11 @@ export const generateTimetable = async (userId, timetableId) => {
     minorPermutationsFailedAttempts = 0;
     kernelDepthCrsCombinations.push(kernelDepthCourses);
 
-    topCombinationIndex = 0; // placeholder; adjusted after finding valid timetable
-    // placeholder - assuming first combination leads to the top combination, keep its offsets for minor permutations
+    // placeholder - assuming first combination leads to the top combination, keep its offsets for minor permutations;  adjusted after finding valid timetable
     if (kernelDepthCrsCombinations.length === 1) {
+      topCombinationIndex = 0;
       topOffsets = [...currentCombinationOffsets];
+      removeLimitsOnOffsetRandomization = false;
     }
 
     kernelDepthCourses.sort((courseIdA, courseIdB) =>
@@ -853,6 +903,7 @@ export const generateTimetable = async (userId, timetableId) => {
     );
 
     kernelDepthCourses.forEach((kernelDepthCourseId) => {
+      // Format of timetableCourses: { id, term, position }
       placeCourseAndRequirementsInTimetable(
         kernelDepthCourseId,
         refinedShoppingCart,
