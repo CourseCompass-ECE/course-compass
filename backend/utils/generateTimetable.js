@@ -20,6 +20,8 @@ const AREA1_INDEX = 0;
 const AREA2_INDEX = 1;
 const AREA3_INDEX = 2;
 const AREA4_INDEX = 3;
+const EXCLUSION_INFLUENCE_MULTIPLIER = 0.25;
+const INVALID_COURSE = -1;
 
 const NOT_ENOUGH_COURSES_ERROR =
   "A minimum of 20 courses are required in the shopping cart to generate a timetable";
@@ -31,21 +33,54 @@ const NO_TIMETABLE_POSSIBLE =
   "With the given shopping cart courses, no conflict-free combination is possible";
 
 // Given a corequisite or prerequisite course list, determine if the number of courses from this list that is also found in the shopping cart
-// meets or exceeds the minimum prerequisites/corequisites met amount
+// meets or exceeds the minimum prerequisites/corequisites met amount + remove any prereq/coreq not in the cart
 const isPrereqOrCoreqMet = (
   prereqOrCoreqList,
   prereqOrCoreqAmount,
   shoppingCartIdList
 ) => {
   if (prereqOrCoreqAmount === 0) return true;
+  else if (prereqOrCoreqList.length < prereqOrCoreqAmount) return false;
+
   let requirementsMet = 0;
-  for (const requirementCourse of prereqOrCoreqList) {
+  prereqOrCoreqList.forEach((requirementCourse, index) => {
     if (shoppingCartIdList.has(requirementCourse.id)) {
       requirementsMet++;
-      if (requirementsMet === prereqOrCoreqAmount) return true;
+    } else {
+      prereqOrCoreqList.splice(index, 1);
+    }
+  });
+  if (requirementsMet >= prereqOrCoreqAmount) return true;
+  return false;
+};
+
+// Filter out courses without enough prereq/coreq in the cart, then restart review in case previously checked courses have course requirements that were just removed from cart
+const filterOutCoursesNotMeetingRequirements = (shoppingCartCourses) => {
+  let endIndex = shoppingCartCourses.length;
+  let refinedShoppingCart = structuredClone(shoppingCartCourses);
+  let currentIndex = 0;
+  let refinedShoppingCartIdList;
+
+  while (currentIndex < endIndex) {
+    refinedShoppingCartIdList = new Set(
+      createIdListFromObjectList(refinedShoppingCart)
+    );
+    let cartCourse = refinedShoppingCart[currentIndex];
+    const areMinReqMet = areMinimumRequirementsMet(
+      cartCourse,
+      refinedShoppingCartIdList
+    );
+
+    if (areMinReqMet) {
+      currentIndex++;
+    } else {
+      refinedShoppingCart.splice(currentIndex, 1);
+      currentIndex = 0;
+      endIndex = refinedShoppingCart.length;
     }
   }
-  return false;
+
+  return refinedShoppingCart;
 };
 
 const areMinimumRequirementsMet = (course, shoppingCartIdList) => {
@@ -62,7 +97,6 @@ const areMinimumRequirementsMet = (course, shoppingCartIdList) => {
     )
   )
     return false;
-
   return true;
 };
 
@@ -431,21 +465,118 @@ const sortByNumberOfReq = (courseIdA, courseIdB, refinedShoppingCart) => {
   return 0;
 };
 
+// Recursively call easy to enroll logic to determine which prereqs/coreqs the highest level prereq/coreq should choose such that the amount of total courses needing
+// to be enrolled in to meet all requirements are minimized
+const findEnrollScoreIncreaseForRemainingReq = (
+  requirementsNotMet,
+  timetableCourses,
+  kernelDepthCourses,
+  requirementsRemaining,
+  refinedShoppingCart,
+  initialCourseId
+) => {
+  let currentIndex = 0;
+  let topReqOptions = [];
+  // Out of all of the prereqs/coreqs for the highest level prereq/coreq that have not been used, find the top one(s)
+  while (currentIndex < requirementsNotMet.length) {
+    let notMetReq = requirementsNotMet[currentIndex];
+
+    let { _, __, totalScore } = calculateEasyToEnrollScore(
+      notMetReq,
+      timetableCourses,
+      kernelDepthCourses,
+      true,
+      new Set(createIdListFromObjectList(topReqOptions)),
+      refinedShoppingCart,
+      initialCourseId
+    );
+
+    let newTopReqOptions = structuredClone(topReqOptions);
+
+    if (totalScore === INVALID_COURSE)
+      newTopReqOptions = newTopReqOptions.filter(
+        (option) => option.id !== notMetReq.id
+      );
+    else if (
+      newTopReqOptions.some(
+        (ReqOption) =>
+          ReqOption.id === notMetReq.id && ReqOption.score === totalScore
+      )
+    ) {
+      currentIndex++;
+      continue;
+    } else if (
+      newTopReqOptions.some((ReqOption) => ReqOption.id === notMetReq.id)
+    ) {
+      optionIndex = newTopReqOptions.findIndex(
+        (ReqOption) => ReqOption.id === notMetReq.id
+      );
+      newTopReqOptions[optionIndex].score = totalScore;
+    } else {
+      newTopReqOptions.push({
+        id: notMetReq.id,
+        score: totalScore,
+      });
+    }
+    newTopReqOptions
+      .sort((ReqOptionA, ReqOptionB) => ReqOptionA.score - ReqOptionB.score)
+      .splice(
+        requirementsRemaining,
+        Math.max(topReqOptions.length - requirementsRemaining, 0)
+      );
+
+    if (
+      newTopReqOptions.some(
+        (ReqOption, index) =>
+          !topReqOptions[index] || ReqOption.id !== topReqOptions[index].id
+      )
+    )
+      currentIndex = 0;
+    else {
+      currentIndex++;
+    }
+    topReqOptions = structuredClone(newTopReqOptions);
+  }
+
+  let remainingReqScore = 0;
+  topReqOptions.forEach((option) => (remainingReqScore += option.score));
+  return remainingReqScore;
+};
+
+// Count current number of requirements out of the requirement list that is met, based on it being found in current courses added to - or planned to be added to - timetable
+// Similarly, do not count requirements where it will face an exclusion conflict with another course currently added to - or planned to be added to - timetable
 const countPrereqCoreqMet = (
   requirementList,
   requirementsMet,
   requirementsNotMet,
-  timetableCourses,
-  kernelDepthCourses
+  timetableCourseIds,
+  kernelDepthCourseIds,
+  topRequirementOptionIds,
+  courseId,
+  refinedShoppingCart,
+  initialCourseId
 ) => {
   let requirementsMetCount = 0;
   requirementList.forEach((req) => {
+    let exclusionIdList = new Set(createIdListFromObjectList(req.exclusions));
     if (
-      timetableCourses.some(
-        (timetableCourse) => timetableCourse.id === req.id
-      ) ||
-      kernelDepthCourses.some(
-        (kernelDepthCourseId) => kernelDepthCourseId === req.id
+      (timetableCourseIds.has(req.id) ||
+        kernelDepthCourseIds.has(req.id) ||
+        req.id === courseId ||
+        req.id === initialCourseId ||
+        topRequirementOptionIds.has(req.id) ||
+        req.id === initialCourseId) &&
+      ![
+        ...Array.from(kernelDepthCourseIds),
+        ...Array.from(timetableCourseIds),
+        ...Array.from(topRequirementOptionIds),
+        ...(initialCourseId ? [initialCourseId] : []),
+      ].some(
+        (timetableCourseId) =>
+          refinedShoppingCart
+            .find((crs) => crs.id === timetableCourseId)
+            ?.exclusions?.some((exclusion) => exclusion.id === req.id) ||
+          exclusionIdList.has(timetableCourseId)
       )
     ) {
       requirementsMet.push(req);
@@ -455,79 +586,191 @@ const countPrereqCoreqMet = (
   return requirementsMetCount;
 };
 
-// Consider number of requirements left to meet for a course, 2 layers deep (its prerequisites/corequisites, then the minimum requirements from those prereq/coreq)
+// Consider number of requirements left to meet for a course, 2 layers deep (its own prereq/coreq & including the prereq/coreq requirements for the course's prerequisites/corequisites)
+// ignoring any courses where an exclusion conflict occurs & worsening the score based on the frequency of exclusion conflicts with itself & shopping cart courses
 const calculateEasyToEnrollScore = (
   course,
   timetableCourses,
-  kernelDepthCourses
+  kernelDepthCourses,
+  isRecursiveCall,
+  topRequirementOptionIds,
+  refinedShoppingCart,
+  initialCourseId
 ) => {
-  let easyToEnrollScore = 0;
   let prerequisitesMetCount = 0;
   let prerequisitesMet = [];
   let prerequisitesNotMet = [];
   let corequisitesMetCount = 0;
   let corequisitesMet = [];
   let corequisitesNotMet = [];
+  let prerequisitesRemaining = 0;
+  let corequisitesRemaining = 0;
 
+  let timetableCourseIds = new Set(
+    createIdListFromObjectList(timetableCourses)
+  );
+  let kernelDepthCourseIds = new Set(kernelDepthCourses);
   prerequisitesMetCount = countPrereqCoreqMet(
     course.prerequisites,
     prerequisitesMet,
     prerequisitesNotMet,
-    timetableCourses,
-    kernelDepthCourses
+    timetableCourseIds,
+    kernelDepthCourseIds,
+    topRequirementOptionIds,
+    course.id,
+    refinedShoppingCart,
+    initialCourseId
   );
   corequisitesMetCount = countPrereqCoreqMet(
     course.corequisites,
     corequisitesMet,
     corequisitesNotMet,
-    timetableCourses,
-    kernelDepthCourses
+    timetableCourseIds,
+    kernelDepthCourseIds,
+    topRequirementOptionIds,
+    course.id,
+    refinedShoppingCart,
+    initialCourseId
   );
 
-  easyToEnrollScore +=
-    prerequisitesMetCount > course.prerequisiteAmount
+  prerequisitesRemaining +=
+    prerequisitesMetCount >= course.prerequisiteAmount
       ? 0
       : course.prerequisiteAmount - prerequisitesMetCount;
-  easyToEnrollScore +=
-    corequisitesMetCount > course.corequisiteAmount
+  corequisitesRemaining +=
+    corequisitesMetCount >= course.corequisiteAmount
       ? 0
       : course.corequisiteAmount - corequisitesMetCount;
 
-  return easyToEnrollScore;
+  let remainingPrereqCoreqScores = 0;
+  // Determine minimum number of additional courses needed to be added to meet requirements for currently missing prereqs/coreqs, choosing the top prereqs/coreqs with minimal additional requirements
+  if (!isRecursiveCall && prerequisitesMetCount < course.prerequisiteAmount) {
+    remainingPrereqCoreqScores += findEnrollScoreIncreaseForRemainingReq(
+      prerequisitesNotMet,
+      timetableCourses,
+      kernelDepthCourses,
+      prerequisitesRemaining,
+      refinedShoppingCart,
+      course.id
+    );
+  } else if (
+    !isRecursiveCall &&
+    corequisitesMetCount < course.corequisiteAmount
+  ) {
+    remainingPrereqCoreqScores += findEnrollScoreIncreaseForRemainingReq(
+      corequisitesNotMet,
+      timetableCourses,
+      kernelDepthCourses,
+      corequisitesRemaining,
+      refinedShoppingCart,
+      course.id
+    );
+  }
+
+  let exclusionIdList = new Set(createIdListFromObjectList(course.exclusions));
+  let exclusionOccurrenceCount = refinedShoppingCart.filter((cartCourse) => {
+    let cartCourseExclusionList = new Set(
+      createIdListFromObjectList(cartCourse.exclusions)
+    );
+    return (
+      exclusionIdList.has(cartCourse.id) ||
+      cartCourseExclusionList.has(course.id)
+    );
+  }).length;
+
+  let exclusionFactor =
+    exclusionOccurrenceCount * EXCLUSION_INFLUENCE_MULTIPLIER;
+  let exclusionWithTimetableCourse = [
+    ...kernelDepthCourses,
+    ...timetableCourses.map((timetableCourse) => timetableCourse.id),
+    ...Array.from(topRequirementOptionIds).filter((id) => id !== course.id),
+  ].some(
+    (timetableCourseId) =>
+      refinedShoppingCart
+        .find((crs) => crs.id === timetableCourseId)
+        ?.exclusions?.some((exclusion) => exclusion.id === course.id) ||
+      exclusionIdList.has(timetableCourseId)
+  );
+
+  return {
+    prerequisitesRemaining,
+    corequisitesRemaining,
+    totalScore: exclusionWithTimetableCourse
+      ? INVALID_COURSE
+      : prerequisitesRemaining +
+        corequisitesRemaining +
+        remainingPrereqCoreqScores +
+        exclusionFactor,
+  };
+};
+
+const sortByEasyToEnrollScore = (reqA, reqB) => {
+  if (reqA.easyToEnrollScore < reqB.easyToEnrollScore) return -1;
+  else if (reqB.easyToEnrollScore < reqA.easyToEnrollScore) return 1;
+  else if (reqA.prerequisitesRemaining < reqB.prerequisitesRemaining) return -1;
+  else if (reqB.prerequisitesRemaining < reqA.prerequisitesRemaining) return 1;
+  else if (reqA.corequisitesRemaining < reqB.corequisitesRemaining) return -1;
+  else if (reqB.corequisitesRemaining < reqA.corequisitesRemaining) return 1;
+  else return 0;
+};
+
+const getSortedRequirements = (
+  scoredReqList,
+  timetableCourses,
+  kernelDepthCourses,
+  refinedShoppingCart
+) => {
+  let placeholderSet = new Set([]);
+  scoredReqList.forEach((req) => {
+    let { prerequisitesRemaining, corequisitesRemaining, totalScore } =
+      calculateEasyToEnrollScore(
+        req,
+        timetableCourses,
+        kernelDepthCourses,
+        false,
+        placeholderSet,
+        refinedShoppingCart,
+        null
+      );
+    req.prerequisitesRemaining = prerequisitesRemaining;
+    req.corequisitesRemaining = corequisitesRemaining;
+    req.easyToEnrollScore = totalScore;
+  });
+  let newScoredReqList = scoredReqList.filter(
+    (req) => req.easyToEnrollScore !== INVALID_COURSE
+  );
+  newScoredReqList.sort((reqA, reqB) => sortByEasyToEnrollScore(reqA, reqB));
+  return newScoredReqList;
 };
 
 // Given a course ID, place it in timetable along with all of its prerequisites/corequisites, and its prerequisites/corequisites, and so on
 const placeCourseAndRequirementsInTimetable = (
-  kernelDepthCourseId,
+  courseToPlaceId,
   refinedShoppingCart,
   timetableCourses,
   kernelDepthCourses
 ) => {
-  const kernelDepthCourse = refinedShoppingCart.find(
-    (course) => course.id === kernelDepthCourseId
+  const courseToPlace = refinedShoppingCart.find(
+    (course) => course.id === courseToPlaceId
   );
 
-  const orderedPrereq = kernelDepthCourse.prerequisites.toSorted(
-    (prereqA, prereqB) =>
-      calculateEasyToEnrollScore(
-        prereqA,
-        timetableCourses,
-        kernelDepthCourses
-      ) -
-      calculateEasyToEnrollScore(prereqB, timetableCourses, kernelDepthCourses)
+  let scoredPrereq = structuredClone(courseToPlace.prerequisites);
+  scoredPrereq = getSortedRequirements(
+    scoredPrereq,
+    timetableCourses,
+    kernelDepthCourses,
+    refinedShoppingCart
   );
-  const orderedCoreq = kernelDepthCourse.corequisites.toSorted(
-    (coreqA, coreqB) =>
-      calculateEasyToEnrollScore(coreqA) - calculateEasyToEnrollScore(coreqB)
+  let scoredCoreq = structuredClone(courseToPlace.corequisites);
+  scoredCoreq = getSortedRequirements(
+    scoredCoreq,
+    timetableCourses,
+    kernelDepthCourses,
+    refinedShoppingCart
   );
 
-  // After identifying/filtering for easiest-to-fulfill prerequisites/corequisites, reverse ordering to focus on hardest requirements that must be addressed first
-  orderedPrereq
-    .filter((_, index) => index < kernelDepthCourse.prerequisiteAmount)
-    .reverse();
-  orderedCoreq
-    .filter((_, index) => index < kernelDepthCourse.corequisiteAmount)
-    .reverse();
+  if (scoredPrereq.length < courseToPlace.prerequisiteAmount || scoredCoreq.length < courseToPlace.corequisiteAmount) return false;
+  return true;
 };
 
 const updateOffsets = (
@@ -664,13 +907,8 @@ export const generateTimetable = async (userId, timetableId) => {
   const shoppingCartCourses = await Course.findCoursesInCart(userId);
   if (shoppingCartCourses.length < MINIMUM_COURSES)
     throw new Error(NOT_ENOUGH_COURSES_ERROR);
-
-  const shoppingCartIdList = new Set(
-    createIdListFromObjectList(shoppingCartCourses)
-  );
-  const refinedShoppingCart = shoppingCartCourses.filter((cartCourse) =>
-    areMinimumRequirementsMet(cartCourse, shoppingCartIdList)
-  );
+  const refinedShoppingCart =
+    filterOutCoursesNotMeetingRequirements(shoppingCartCourses);
   if (refinedShoppingCart.length < MINIMUM_COURSES)
     throw new Error(NOT_ENOUGH_COURSES_AFTER_REFINING_ERROR);
 
@@ -815,24 +1053,33 @@ export const generateTimetable = async (userId, timetableId) => {
     minorPermutationsFailedAttempts = 0;
     kernelDepthCrsCombinations.push(kernelDepthCourses);
 
-    topCombinationIndex = 0; // placeholder; adjusted after finding valid timetable
-    // placeholder - assuming first combination leads to the top combination, keep its offsets for minor permutations
+    // placeholder - assuming first combination leads to the top combination, keep its offsets for minor permutations;  adjusted after finding valid timetable
     if (kernelDepthCrsCombinations.length === 1) {
+      topCombinationIndex = 0;
       topOffsets = [...currentCombinationOffsets];
+      removeLimitsOnOffsetRandomization = false;
     }
 
     kernelDepthCourses.sort((courseIdA, courseIdB) =>
       sortByNumberOfReq(courseIdA, courseIdB, refinedShoppingCart)
     );
 
-    kernelDepthCourses.forEach((kernelDepthCourseId) => {
-      placeCourseAndRequirementsInTimetable(
+    let kernelDepthCoursesAddedSuccessfully = true;
+    for (const kernelDepthCourseId of kernelDepthCourses) {
+      // Format of timetableCourses: { id, term, position }
+      let isCoursePossibleToInclude = placeCourseAndRequirementsInTimetable(
         kernelDepthCourseId,
         refinedShoppingCart,
         timetableCourses,
         kernelDepthCourses
       );
-    });
+
+      if (!isCoursePossibleToInclude) {
+        kernelDepthCoursesAddedSuccessfully = false;
+        break;
+      };
+    }
+    if (!kernelDepthCoursesAddedSuccessfully) continue;
   }
 
   throw new Error(NO_TIMETABLE_POSSIBLE);
