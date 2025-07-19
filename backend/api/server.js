@@ -531,7 +531,7 @@ server.post(Path.TIMETABLE, async (req, res, next) => {
       throw new Error(INVALID_TIMETABLE_COURSE_DETAILS_ERROR);
     }
 
-    await User.addTimetableCourse(
+    await Timetable.addTimetableCourse(
       timetableCourseData?.term,
       timetableCourseData?.position,
       timetableCourseData?.courseId,

@@ -1,5 +1,6 @@
 import Course from "../api/course-model.js";
 import User from "../api/user-model.js";
+import Timetable from "../api/timetable-model.js";
 import { createIdListFromObjectList } from "./findRecommendedCourses.js";
 import {
   initializeAreaCoursesList,
@@ -1433,5 +1434,35 @@ export const generateTimetable = async (userId, timetableId) => {
       timetableToRecommend = topTimetable.courses;
     }
   }
+
+  if (timetableToRecommend) {
+    await addTimetable(timetableToRecommend, timetable, userId);
+    return;
+  }
   throw new Error(NO_TIMETABLE_POSSIBLE);
+};
+
+// Remove all existing timetable courses & replace them with the new valid timetable courses in the proper term & position locations
+const addTimetable = async (timetableToRecommend, timetable, userId) => {
+  await Promise.all(
+    timetable.courses.map(async (course) => {
+      await Timetable.deleteTimetableCourse(
+        course.courseId,
+        timetable.id,
+        userId
+      );
+    })
+  );
+
+  await Promise.all(
+    timetableToRecommend.map(async (timetableCourse) => {
+      await Timetable.addTimetableCourse(
+        Number(timetableCourse.term),
+        timetableCourse.position,
+        timetableCourse.id,
+        timetable.id,
+        userId
+      );
+    })
+  );
 };
