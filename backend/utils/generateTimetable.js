@@ -21,7 +21,10 @@ const AREA2_INDEX = 1;
 const AREA3_INDEX = 2;
 const AREA4_INDEX = 3;
 const EXCLUSION_INFLUENCE_MULTIPLIER = 0.25;
-const INVALID_COURSE = -1;
+const INVALID = -1;
+const MAX_COURSES_PER_TERM = 5;
+const AVAILABLE_POSIITONS = [1, 2, 3, 4, 5];
+const INITIAL_TERM_COURSE_COUNTS = { 1: 0, 2: 0, 3: 0, 4: 0 };
 
 const NOT_ENOUGH_COURSES_ERROR =
   "A minimum of 20 courses are required in the shopping cart to generate a timetable";
@@ -493,7 +496,7 @@ const findEnrollScoreIncreaseForRemainingReq = (
 
     let newTopReqOptions = structuredClone(topReqOptions);
 
-    if (totalScore === INVALID_COURSE)
+    if (totalScore === INVALID)
       newTopReqOptions = newTopReqOptions.filter(
         (option) => option.id !== notMetReq.id
       );
@@ -696,7 +699,7 @@ const calculateEasyToEnrollScore = (
     prerequisitesRemaining,
     corequisitesRemaining,
     totalScore: exclusionWithTimetableCourse
-      ? INVALID_COURSE
+      ? INVALID
       : prerequisitesRemaining +
         corequisitesRemaining +
         remainingPrereqCoreqScores +
@@ -737,40 +740,290 @@ const getSortedRequirements = (
     req.easyToEnrollScore = totalScore;
   });
   let newScoredReqList = scoredReqList.filter(
-    (req) => req.easyToEnrollScore !== INVALID_COURSE
+    (req) => req.easyToEnrollScore !== INVALID
   );
   newScoredReqList.sort((reqA, reqB) => sortByEasyToEnrollScore(reqA, reqB));
   return newScoredReqList;
 };
 
+const findIdSetOfCoursesInTimetable = (
+  kernelDepthCourses,
+  timetableCourses
+) => {
+  return new Set([
+    ...kernelDepthCourses,
+    ...timetableCourses.map((course) => course.id),
+  ]);
+};
+
+// Identify the index of the next requirement to fulfill, choosing the hardest neccessary requirement out of the most easiest to enroll requirements
+const calculateIndexOfNextReqToAdd = (
+  reqList,
+  kernelDepthCourses,
+  timetableCourses,
+  totalReqNeeded
+) => {
+  let currentTimetableCourseIds = findIdSetOfCoursesInTimetable(
+    kernelDepthCourses,
+    timetableCourses
+  );
+  let reqLeftToFulfill =
+    totalReqNeeded -
+    reqList.filter((req) => currentTimetableCourseIds.has(req.id)).length;
+
+  return reqLeftToFulfill - 1;
+};
+
+const findLatestTermWithRequirements = (reqList, timetableCourses) => {
+  let latestTerm = null;
+  reqList.forEach((req) => {
+    let reqTimetableCourse = timetableCourses.find(
+      (timetableCourse) => timetableCourse.id === req.id
+    );
+    if (
+      reqTimetableCourse &&
+      (!latestTerm || reqTimetableCourse.term > latestTerm)
+    )
+      latestTerm = reqTimetableCourse.term;
+  });
+  return latestTerm;
+};
+
+// Add all courses & their requirements into the timetable (from the lowest level of requirements to the initial course itself),
+// removing them from coursesToAdd as they are added in the earliest available term; if any course cannot be added, recall all added courses
+const isPlacedInTimetable = (
+  coursesToAdd,
+  timetableCourses,
+  coursesAddedToTimetableToRecall
+) => {
+  let course = coursesToAdd[coursesToAdd.length - 1];
+  let latestTermOfPrereq = findLatestTermWithRequirements(
+    course.prerequisites,
+    timetableCourses
+  );
+  let latestTermOfCoreq = findLatestTermWithRequirements(
+    course.corequisites,
+    timetableCourses
+  );
+  let courseCorequisite =
+    course.corequisiteAmount !== 0 &&
+    coursesToAdd.length > 1 &&
+    !latestTermOfCoreq
+      ? coursesToAdd[coursesToAdd.length - 2]
+      : null;
+
+  let numCoursesPerTerm = timetableCourses.reduce(
+    (total, course) => {
+      total[course.term] = (total[course.term] || 0) + 1;
+      return total;
+    },
+    { ...INITIAL_TERM_COURSE_COUNTS }
+  );
+  let orderedTerms = Object.entries(numCoursesPerTerm).sort(
+    ([termA], [termB]) => Number(termA) - Number(termB)
+  );
+
+  let earliestTerm;
+  if (latestTermOfCoreq && latestTermOfPrereq) {
+    earliestTerm =
+      latestTermOfCoreq > latestTermOfPrereq ? latestTermOfCoreq : null;
+  } else if (latestTermOfCoreq) {
+    earliestTerm = latestTermOfCoreq;
+  } else {
+    earliestTerm = orderedTerms.find(
+      ([termNumber, numCourses]) =>
+        Number(termNumber) > (latestTermOfPrereq ? latestTermOfPrereq : 0) &&
+        numCourses < MAX_COURSES_PER_TERM - (courseCorequisite ? 1 : 0)
+    );
+  }
+
+  let availablePositions = AVAILABLE_POSIITONS.filter(
+    (position) =>
+      !timetableCourses.some(
+        (course) =>
+          course.term === (earliestTerm ? earliestTerm[0] : null) &&
+          course.position === position
+      )
+  );
+
+  if (availablePositions.length > (courseCorequisite ? 1 : 0) && earliestTerm) {
+    timetableCourses.push({
+      id: course.id,
+      term: earliestTerm[0],
+      position: availablePositions[0],
+    });
+    coursesAddedToTimetableToRecall.push(course.id);
+
+    if (courseCorequisite) {
+      timetableCourses.push({
+        id: courseCorequisite.id,
+        term: earliestTerm[0],
+        position: availablePositions[1],
+      });
+      coursesAddedToTimetableToRecall.push(courseCorequisite.id);
+    }
+
+    let indexDeduction = courseCorequisite ? 2 : 1;
+    coursesToAdd.splice(coursesToAdd.length - indexDeduction, indexDeduction);
+    return true;
+  } else {
+    return false;
+  }
+};
+
+// Loop through all requirements for a given course & add them before the course itself
+const isRequirementsPlacedInTimetable = (
+  scoredReqList,
+  originalReqList,
+  totalReqAmount,
+  kernelDepthCourses,
+  timetableCourses,
+  refinedShoppingCart,
+  coursesToAdd,
+  coursesAddedToTimetableToRecall,
+  isCoreqList
+) => {
+  if (
+    isCoreqList &&
+    scoredReqList[0] &&
+    coursesToAdd.some((course) => course.id === scoredReqList[0].id)
+  )
+    return true;
+
+  let currentReqIndex = calculateIndexOfNextReqToAdd(
+    scoredReqList,
+    kernelDepthCourses,
+    timetableCourses,
+    totalReqAmount
+  );
+
+  // Filter for the top easiest-to-fulfill prerequisites/corequisites needed, then given these requirements, fulfill the hardest neccessary requirement first,
+  // working towards the easiest to enroll requirement
+  while (currentReqIndex >= 0) {
+    let currentTimetableCourseIds = findIdSetOfCoursesInTimetable(
+      kernelDepthCourses,
+      timetableCourses
+    );
+    let remainingScoredReq = scoredReqList.filter(
+      (req) => !currentTimetableCourseIds.has(req.id)
+    );
+    if (currentReqIndex >= remainingScoredReq.length) return false;
+
+    let currentScoredReq = remainingScoredReq[currentReqIndex];
+    if (
+      !isCoursePlacedInTimetable(
+        currentScoredReq.id,
+        refinedShoppingCart,
+        timetableCourses,
+        kernelDepthCourses,
+        coursesToAdd,
+        coursesAddedToTimetableToRecall
+      )
+    )
+      return false;
+
+    currentReqIndex = calculateIndexOfNextReqToAdd(
+      scoredReqList,
+      kernelDepthCourses,
+      timetableCourses,
+      totalReqAmount
+    );
+  }
+
+  if (
+    calculateIndexOfNextReqToAdd(
+      originalReqList,
+      kernelDepthCourses,
+      timetableCourses,
+      totalReqAmount
+    ) >= 0
+  )
+    return false;
+
+  return true;
+};
+
+const checkIfCourseAlreadyInTimetable = (timetableCourses, courseId) => {
+  return timetableCourses.some(
+    (timetableCourse) => timetableCourse.id === courseId
+  );
+};
+
 // Given a course ID, place it in timetable along with all of its prerequisites/corequisites, and its prerequisites/corequisites, and so on
-const placeCourseAndRequirementsInTimetable = (
+const isCoursePlacedInTimetable = (
   courseToPlaceId,
   refinedShoppingCart,
   timetableCourses,
-  kernelDepthCourses
+  kernelDepthCourses,
+  coursesToAdd,
+  coursesAddedToTimetableToRecall
 ) => {
+  if (checkIfCourseAlreadyInTimetable(timetableCourses, courseToPlaceId))
+    return true;
   const courseToPlace = refinedShoppingCart.find(
     (course) => course.id === courseToPlaceId
   );
+  coursesToAdd.push(courseToPlace);
 
-  let scoredPrereq = structuredClone(courseToPlace.prerequisites);
-  scoredPrereq = getSortedRequirements(
-    scoredPrereq,
+  let scoredPrereqList = structuredClone(courseToPlace.prerequisites);
+  scoredPrereqList = getSortedRequirements(
+    scoredPrereqList,
     timetableCourses,
     kernelDepthCourses,
     refinedShoppingCart
   );
-  let scoredCoreq = structuredClone(courseToPlace.corequisites);
-  scoredCoreq = getSortedRequirements(
-    scoredCoreq,
+  let scoredCoreqList = structuredClone(courseToPlace.corequisites);
+  scoredCoreqList = getSortedRequirements(
+    scoredCoreqList,
     timetableCourses,
     kernelDepthCourses,
     refinedShoppingCart
   );
 
-  if (scoredPrereq.length < courseToPlace.prerequisiteAmount || scoredCoreq.length < courseToPlace.corequisiteAmount) return false;
-  return true;
+  if (
+    scoredPrereqList.length < courseToPlace.prerequisiteAmount ||
+    scoredCoreqList.length < courseToPlace.corequisiteAmount
+  )
+    return false;
+
+  // After retrieving a valid set of ranked prerequisites & corequisites, place those courses & its requirements in the timetable first, then the course itself
+  if (
+    !isRequirementsPlacedInTimetable(
+      scoredPrereqList,
+      courseToPlace.prerequisites,
+      courseToPlace.prerequisiteAmount,
+      kernelDepthCourses,
+      timetableCourses,
+      refinedShoppingCart,
+      coursesToAdd,
+      coursesAddedToTimetableToRecall,
+      false
+    )
+  )
+    return false;
+
+  if (
+    !isRequirementsPlacedInTimetable(
+      scoredCoreqList,
+      courseToPlace.corequisites,
+      courseToPlace.corequisiteAmount,
+      kernelDepthCourses,
+      timetableCourses,
+      refinedShoppingCart,
+      coursesToAdd,
+      coursesAddedToTimetableToRecall,
+      true
+    )
+  )
+    return false;
+
+  if (checkIfCourseAlreadyInTimetable(timetableCourses, courseToPlaceId))
+    return true;
+  return isPlacedInTimetable(
+    coursesToAdd,
+    timetableCourses,
+    coursesAddedToTimetableToRecall
+  );
 };
 
 const updateOffsets = (
@@ -865,7 +1118,7 @@ const prepareCourseListsAndConstants = (
   });
 };
 
-const findCourseCombination = (
+const isCourseCombinationFound = (
   areaCourseLists,
   areaOffsets,
   timetable,
@@ -893,10 +1146,118 @@ const findCourseCombination = (
     );
 
     if (courseCount < minimumCoursesNeeded) {
-      return true;
+      return false;
     }
   }
-  return false;
+  return true;
+};
+
+const recallCoursesAdded = (
+  coursesAddedToTimetableToRecall,
+  timetableCourses
+) => {
+  let coursesToRecallIdSet = new Set(coursesAddedToTimetableToRecall);
+  timetableCourses = timetableCourses.filter(
+    (timetableCourse) => !coursesToRecallIdSet.has(timetableCourse.id)
+  );
+};
+
+// Given timetable with 8 kernel/depth courses added & all of its requirements, brainstorm various timetables for the remaining courses & return the top option, if it exists
+const experimentWithTimetables = (
+  timetableCourses,
+  refinedShoppingCart,
+  kernelDepthCourses
+) => {
+  let initialTimetableWithKernelDepthCrs = structuredClone(timetableCourses);
+  let remainingCoursesNeeded = MINIMUM_COURSES - timetableCourses.length;
+  let timetableCourseIds = new Set(
+    createIdListFromObjectList(timetableCourses)
+  );
+  let topTimetable = null; // Currently set to the latest valid course, rather than using TC 1 algorithm
+
+  // Phase 1: enroll in order based on easy to enroll score, and if no valid timetable can be generated, increment the offset index until reaching the end
+  let remainingCartCourses = refinedShoppingCart.filter(
+    (cartCourse) => !timetableCourseIds.has(cartCourse.id)
+  );
+  let offsetIndex = 0;
+  let maxOffsetIndex = remainingCartCourses.length - remainingCoursesNeeded;
+  remainingCartCourses = getSortedRequirements(
+    remainingCartCourses,
+    timetableCourses,
+    kernelDepthCourses,
+    refinedShoppingCart
+  );
+
+  // Starting from the highest recommended course, attempt to add it & the fewest number of next highest recommended courses after it into timetable; repeat, now starting
+  // at second highest recommended course (repeat until reach last course where courses after it will be just enough to fill timetable)
+  while (offsetIndex <= maxOffsetIndex) {
+    timetableCourses = structuredClone(initialTimetableWithKernelDepthCrs);
+    let currentCourseIndex = offsetIndex;
+
+    while (
+      timetableCourses.length < MINIMUM_COURSES &&
+      currentCourseIndex < remainingCartCourses.length - 1
+    ) {
+      let currentCourse = remainingCartCourses[currentCourseIndex];
+      let coursesAddedToTimetableToRecall = [];
+      let isCoursePossibleToInclude = isCoursePlacedInTimetable(
+        currentCourse.id,
+        refinedShoppingCart,
+        timetableCourses,
+        kernelDepthCourses,
+        [],
+        coursesAddedToTimetableToRecall
+      );
+
+      if (!isCoursePossibleToInclude) {
+        recallCoursesAdded(coursesAddedToTimetableToRecall, timetableCourses);
+      }
+      currentCourseIndex++;
+    }
+
+    if (timetableCourses.length === MINIMUM_COURSES)
+      topTimetable = { courses: timetableCourses, score: 1 };
+    offsetIndex++;
+  }
+
+  return topTimetable;
+};
+
+// Given a valid set of kernel/depth courses, attempt to add them (and their requirements) to the timetable, then experimenting with various options to fill the remaining course slots
+const generateValidTimetable = (
+  kernelDepthCourses,
+  refinedShoppingCart,
+  timetableCourses
+) => {
+  kernelDepthCourses.sort((courseIdA, courseIdB) =>
+    sortByNumberOfReq(courseIdA, courseIdB, refinedShoppingCart)
+  );
+
+  let areKernelDepthCoursesAddedSuccessfully = true;
+  let coursesAddedToTimetableToRecall = [];
+  for (const kernelDepthCourseId of kernelDepthCourses) {
+    let isCoursePossibleToInclude = isCoursePlacedInTimetable(
+      kernelDepthCourseId,
+      refinedShoppingCart,
+      timetableCourses,
+      kernelDepthCourses,
+      [],
+      coursesAddedToTimetableToRecall
+    );
+
+    if (!isCoursePossibleToInclude) {
+      recallCoursesAdded(coursesAddedToTimetableToRecall, timetableCourses);
+      areKernelDepthCoursesAddedSuccessfully = false;
+      break;
+    }
+  }
+  if (!areKernelDepthCoursesAddedSuccessfully) return null;
+
+  return experimentWithTimetables(
+    timetableCourses,
+    refinedShoppingCart,
+    kernelDepthCourses
+  );
 };
 
 // Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
@@ -965,11 +1326,13 @@ export const generateTimetable = async (userId, timetableId) => {
   let removeLimitsOnOffsetRandomization = false;
   let minorPermutationsFailedAttempts = 0;
   let maximumFailedMinorPermutationAttempts;
-  let timetableCourses = [];
+  let timetableToRecommend;
+  let topTimetableScore = -1;
 
   // Try different timetable combinations until reach 5-second time limit, proceeding with the highest ranked option or none if all attempts were invalid. Choose 8 kernel/depth courses
   // from each area, incrementing offset index in each area list in order of area with the most extra courses to that with the least (& randomized if insufficient course combos found)
   while ((new Date() - computationStartTime) / 1000 < 5) {
+    let timetableCourses = [];
     if (topCombinationIndex !== null) {
       maximumFailedMinorPermutationAttempts = calculateMaxFailedAttempts(
         topOffsets,
@@ -980,9 +1343,9 @@ export const generateTimetable = async (userId, timetableId) => {
     usedCourseIds.forEach((areaObject) => {
       areaObject.courses = new Set([]);
     });
-    let courseCombinationNotFound = false;
+    let courseCombinationFound = true;
 
-    courseCombinationNotFound = findCourseCombination(
+    courseCombinationFound = isCourseCombinationFound(
       areaCourseLists,
       areaOffsets,
       timetable,
@@ -997,7 +1360,7 @@ export const generateTimetable = async (userId, timetableId) => {
     // Check if discovered kernel/depth course combination is not a duplicate & with major (3+ different courses) or minor (2 or less different courses)
     // differences; flag randomizing to begin if reach end of incremental offset change strategy
     if (
-      courseCombinationNotFound ||
+      !courseCombinationFound ||
       !isCombinationValid(
         kernelDepthCourses,
         kernelDepthCrsCombinations,
@@ -1053,34 +1416,22 @@ export const generateTimetable = async (userId, timetableId) => {
     minorPermutationsFailedAttempts = 0;
     kernelDepthCrsCombinations.push(kernelDepthCourses);
 
-    // placeholder - assuming first combination leads to the top combination, keep its offsets for minor permutations;  adjusted after finding valid timetable
-    if (kernelDepthCrsCombinations.length === 1) {
-      topCombinationIndex = 0;
-      topOffsets = [...currentCombinationOffsets];
-      removeLimitsOnOffsetRandomization = false;
-    }
-
-    kernelDepthCourses.sort((courseIdA, courseIdB) =>
-      sortByNumberOfReq(courseIdA, courseIdB, refinedShoppingCart)
+    let topTimetable = generateValidTimetable(
+      kernelDepthCourses,
+      refinedShoppingCart,
+      timetableCourses
     );
 
-    let kernelDepthCoursesAddedSuccessfully = true;
-    for (const kernelDepthCourseId of kernelDepthCourses) {
-      // Format of timetableCourses: { id, term, position }
-      let isCoursePossibleToInclude = placeCourseAndRequirementsInTimetable(
-        kernelDepthCourseId,
-        refinedShoppingCart,
-        timetableCourses,
-        kernelDepthCourses
-      );
-
-      if (!isCoursePossibleToInclude) {
-        kernelDepthCoursesAddedSuccessfully = false;
-        break;
-      };
+    if (
+      topTimetable &&
+      (topTimetableScore === INVALID || topTimetable.score > topTimetableScore)
+    ) {
+      topCombinationIndex = kernelDepthCrsCombinations.length - 1;
+      topOffsets = [...currentCombinationOffsets];
+      removeLimitsOnOffsetRandomization = false;
+      topTimetableScore = topTimetable.score;
+      timetableToRecommend = topTimetable.courses;
     }
-    if (!kernelDepthCoursesAddedSuccessfully) continue;
   }
-
   throw new Error(NO_TIMETABLE_POSSIBLE);
 };
