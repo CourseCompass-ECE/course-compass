@@ -685,7 +685,6 @@ export const COURSE_DATA = [
       "ECE231H1",
       "ECE360H1",
       "ECE320H1",
-      "ECE357H1",
     ],
     corequisites: [],
     exclusions: [],

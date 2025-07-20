@@ -452,3 +452,5 @@ export const initialErrors = [
     errors: [],
   },
 ];
+
+export const ECE472_CODE = "ECE472H1";

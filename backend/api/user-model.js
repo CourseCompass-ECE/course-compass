@@ -444,41 +444,4 @@ module.exports = {
       },
     });
   },
-
-  async addTimetableCourse(term, position, courseId, timetableId, userId) {
-    await prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        timetables: {
-          update: {
-            where: {
-              id: timetableId,
-            },
-            data: {
-              courses: {
-                upsert: {
-                  where: {
-                    courseId_timetableId: { courseId, timetableId },
-                  },
-                  create: {
-                    term,
-                    position,
-                    course: {
-                      connect: { id: courseId },
-                    },
-                  },
-                  update: {
-                    term,
-                    position,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-  },
 };

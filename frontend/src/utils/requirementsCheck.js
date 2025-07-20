@@ -1,10 +1,10 @@
 import {
   COMPUTER_AREAS,
   COMPUTER,
-  ELECTRICAL
+  ELECTRICAL,
+  ECE472_CODE
 } from "./constants.js";
 
-const ECE472_CODE = "ECE472H1";
 const PREREQ_INDEX = 0;
 const COREQ_INDEX = 1;
 const EXCLUSIONS_INDEX = 2;
