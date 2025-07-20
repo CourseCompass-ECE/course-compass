@@ -56,7 +56,9 @@ test("the recommendation function returns list of course objects with a valid co
   const recommendedCourses = await findRecommendedCourses(
     courses,
     userId,
-    true
+    true,
+    false,
+    []
   );
   expect(recommendedCourses).toEqual(
     courses.length === cartCourses.length
@@ -76,7 +78,9 @@ test("the recommendation function returns list with length of at least the rolli
   const recommendedCourses = await findRecommendedCourses(
     courses,
     userId,
-    true
+    true,
+    false,
+    []
   );
   expect(recommendedCourses.length).toBeGreaterThanOrEqual(
     coursesNotInCart.length >= NUM_COURSES_ROLLING_AVERAGE * 2

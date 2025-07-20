@@ -323,8 +323,11 @@ server.patch(`${Path.EXPLORE}${CART_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
-    const updatedCourse = await User.toggleCourseInShoppingCart(userId, Number(courseId));
-    res.status(200).json({course: updatedCourse});
+    const updatedCourse = await User.toggleCourseInShoppingCart(
+      userId,
+      Number(courseId)
+    );
+    res.status(200).json({ course: updatedCourse });
   } catch (err) {
     next(err);
   }
@@ -337,8 +340,11 @@ server.patch(`${Path.EXPLORE}${FAVORITES_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
-    const updatedCourse = await User.toggleCourseInFavorites(userId, Number(courseId));
-    res.status(200).json({course: updatedCourse});
+    const updatedCourse = await User.toggleCourseInFavorites(
+      userId,
+      Number(courseId)
+    );
+    res.status(200).json({ course: updatedCourse });
   } catch (err) {
     next(err);
   }
@@ -351,8 +357,11 @@ server.patch(`${Path.EXPLORE}${REJECT_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_COURSE_ID);
 
     const userId = Number(req.session?.user?.id);
-    const updatedCourse = await User.rejectRecommendation(userId, Number(courseId));
-    res.status(200).json({course: updatedCourse});
+    const updatedCourse = await User.rejectRecommendation(
+      userId,
+      Number(courseId)
+    );
+    res.status(200).json({ course: updatedCourse });
   } catch (err) {
     next(err);
   }
@@ -573,7 +582,13 @@ server.get(`${Path.EXPLORE}${RECOMMENDATIONS_PATH}`, async (req, res, next) => {
   try {
     const userId = Number(req.session?.user?.id);
     const courses = await Course.findCourses(userId);
-    const recommendedCourses = await findRecommendedCourses(courses, userId, true);
+    const recommendedCourses = await findRecommendedCourses(
+      courses,
+      userId,
+      true,
+      false,
+      []
+    );
     res.status(200).json({ recommendedCourses });
   } catch (err) {
     next(err);

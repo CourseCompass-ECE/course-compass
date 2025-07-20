@@ -41,6 +41,7 @@ export const CART_PREREQ_COREQ_PREP_FROM_CART = 4;
 export const CART_PREREQ_COREQ_PREP_FROM_COURSE = 3.5;
 
 // Multipliers applied to scores used in matching to cart courses
+const SHOPPING_CART_MULTIPLIER = 1;
 const UNFAVORITED_MULTIPLER = -0.02; // 2%
 const REMOVED_FROM_CART_MULTIPLER = -0.04; // 4%
 const REJECTED_RECOMMENDATION_MULTIPLER = -0.12; // 12%
@@ -156,9 +157,11 @@ export const calculateScoreFromSimilarity = (
   scoreMultiplier,
   exactMatchBasePenaltyPercentage
 ) => {
-  // Only possible for courses in removed from cart/favorites & rejected recommendation fields
+  // Only possible for courses in removed from cart/favorites & rejected recommendation fields, or (when ranking timetables) for courses in shopping cart
   if (course.id === otherCourse.id) {
-    return exactMatchBasePenaltyPercentage * scoreMultiplier * course.score;
+    return scoreMultiplier === SHOPPING_CART_MULTIPLIER
+      ? 0
+      : exactMatchBasePenaltyPercentage * scoreMultiplier * course.score;
   }
 
   let score = 0;
@@ -398,7 +401,9 @@ export const findMatchesToRelatedUsersCourses = async (
       const otherUserRecommendedCourses = await findRecommendedCourses(
         courses,
         otherUser.id,
-        false
+        false,
+        false,
+        []
       );
       otherUsersRecommendedCourses.push(...otherUserRecommendedCourses);
     })
@@ -552,7 +557,7 @@ const modifyScoresUsingUserActivity = (userActivityData, coursesWithScores) => {
 
       switch (userActivityItem.title) {
         case SHOPPING_CART:
-          multiplier = 1;
+          multiplier = SHOPPING_CART_MULTIPLIER;
           break;
         case REMOVED_FROM_CART:
           multiplier = REMOVED_FROM_CART_MULTIPLER;
@@ -564,7 +569,7 @@ const modifyScoresUsingUserActivity = (userActivityData, coursesWithScores) => {
           multiplier = REJECTED_RECOMMENDATION_MULTIPLER;
           break;
         default:
-          multiplier = 1;
+          multiplier = SHOPPING_CART_MULTIPLIER;
       }
 
       coursesWithScores.forEach((course) => {
@@ -602,7 +607,9 @@ const modifyScoresUsingUserActivity = (userActivityData, coursesWithScores) => {
 export const findRecommendedCourses = async (
   courses,
   userId,
-  checkOtherUsersCourses
+  checkOtherUsersCourses,
+  isRankingTimetableCourses,
+  refinedShoppingCart
 ) => {
   const user = await User.findUserById(userId);
   const shoppingCartCourses = await Course.findCoursesInCart(userId);
@@ -610,9 +617,11 @@ export const findRecommendedCourses = async (
   const shoppingCartCourseIds = new Set(
     createIdListFromObjectList(shoppingCartCourses)
   );
-  let coursesWithScores = structuredClone(courses).filter(
-    (course) => !shoppingCartCourseIds.has(course.id)
-  );
+  let coursesWithScores = isRankingTimetableCourses
+    ? refinedShoppingCart
+    : structuredClone(courses).filter(
+        (course) => !shoppingCartCourseIds.has(course.id)
+      );
   if (coursesWithScores.length === 0) return [];
   const userActivityData = [
     {
@@ -635,8 +644,11 @@ export const findRecommendedCourses = async (
 
   scoreCoursesAgainstUser(coursesWithScores, user);
 
-  // If more than two times the rolling average worth of courses are present, filter them down
-  if (coursesWithScores.length >= NUM_COURSES_ROLLING_AVERAGE * 2) {
+  // If more than two times the rolling average worth of courses are present (and not scoring courses for the purpose of timetable ranking), filter them down
+  if (
+    coursesWithScores.length >= NUM_COURSES_ROLLING_AVERAGE * 2 &&
+    !isRankingTimetableCourses
+  ) {
     let scoreJumpRollingSum = 0;
     let cutOffIndex;
 
