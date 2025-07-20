@@ -28,9 +28,6 @@ import { areRequirementsMet } from "../utils/requirementsCheck";
 import { updateCoursesInCart } from "../utils/updateCourses";
 
 const Timetable = () => {
-  const PREREQ_ERRORS = "Prerequisite Errors";
-  const COREQ_ERRORS = "Corequisite Errors";
-  const EXCLUSION_ERRORS = "Exclusion Errors";
   const initialTerms = [
     {
       title: "3rd Year, Fall",
@@ -339,11 +336,12 @@ const Timetable = () => {
           setErrors,
           setDesignation
         );
+        return data?.timetable?.id;
       } else {
-        navigate(Path.EXPLORE);
+        navigate(Path.TIMETABLES);
       }
     } catch (error) {
-      navigate(Path.EXPLORE);
+      navigate(Path.TIMETABLES);
     }
   };
 
@@ -399,13 +397,13 @@ const Timetable = () => {
     );
   };
 
-  const generateTimetable = async () => {
+  const generateTimetable = async (timetableId) => {
     try {
       setIsTimetableGenerating(true);
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${
           Path.TIMETABLE
-        }${GENERATE_PATH}${ID_QUERY_PARAM}${timetable?.id}`,
+        }${GENERATE_PATH}${ID_QUERY_PARAM}${timetableId}`,
         {
           method: "POST",
           credentials: "include",
@@ -414,7 +412,7 @@ const Timetable = () => {
       setIsTimetableGenerating(false);
 
       if (response.ok) {
-        fetchTimetableData(timetable?.id);
+        fetchTimetableData(timetableId);
       } else {
         const error = await response.json();
         setGenerateTimetableError(
@@ -428,14 +426,22 @@ const Timetable = () => {
   };
 
   useEffect(() => {
-    const callFetchTimetableData = async (id) => {
-      await fetchTimetableData(id);
+    const callFetchTimetableData = async (
+      id,
+      doesUserWantTimetableGenerated
+    ) => {
+      let timetableId = await fetchTimetableData(id);
+      await fetchCoursesInCart(setFetchCartCoursesError, setCoursesInCart);
+      if (doesUserWantTimetableGenerated == true && timetableId) {
+        await generateTimetable(timetableId);
+      }
     };
 
     const timetableId = searchParams.get("id");
+    const doesUserWantTimetableGenerated =
+      searchParams.get("generateTimetable");
     if (!ONLY_NUMBERS.test(timetableId)) navigate(Path.TIMETABLES);
-    callFetchTimetableData(timetableId);
-    fetchCoursesInCart(setFetchCartCoursesError, setCoursesInCart);
+    else callFetchTimetableData(timetableId, doesUserWantTimetableGenerated);
   }, []);
 
   useEffect(() => {
@@ -611,7 +617,7 @@ const Timetable = () => {
               <button
                 className="create-btn generate-background"
                 style={{ width: "250px" }}
-                onClick={generateTimetable}
+                onClick={() => generateTimetable(timetable?.id)}
               >
                 <span className="material-symbols-outlined">wand_stars</span>
                 {BUTTON_TEXT}

@@ -13,7 +13,7 @@ import {
   AMOUNT_OF_DEPTH_AREAS,
   AMOUNT_OF_KERNEL_AREAS,
   DEPTH_TEXT,
-  KERNEL_TEXT
+  KERNEL_TEXT,
 } from "../utils/constants";
 import RenderDropdownMenu from "../utils/renderDropdown";
 
@@ -40,6 +40,7 @@ const CreateTimetable = () => {
   const DEPTH_ERROR = "Please select 2 depth areas";
   const KERNEL_TITLE = "Choose 4 Kernel Areas";
   const DEPTH_TITLE = "Choose 2 Depth Areas";
+  const GENERATE_TIMETABLE_PARAM = "&generateTimetable=";
 
   const handleRemoveKernel = (eceAreaKey) => {
     setKernelAreas(kernelAreas.filter((area) => area !== eceAreaKey));
@@ -92,7 +93,11 @@ const CreateTimetable = () => {
 
       if (response.ok) {
         const data = await response.json();
-        navigate(`${Path.TIMETABLE}${ID_QUERY_PARAM}${data?.id}`);
+        navigate(
+          `${Path.TIMETABLE}${ID_QUERY_PARAM}${
+            data?.id
+          }${GENERATE_TIMETABLE_PARAM}${isRecommendationWanted ? 1 : 0}`
+        );
       } else {
         setSubmissionError(GENERIC_ERROR);
       }
