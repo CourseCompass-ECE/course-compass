@@ -35,7 +35,6 @@ const INITIAL_TERM_COURSE_COUNTS = { 1: 0, 2: 0, 3: 0, 4: 0 };
 // given the exponential growth in options as the number of extra courses increases
 const EXTRA_COURSES_EXPONENT = 1.5;
 const TIMETABLES_TO_RECOMMEND_INDICES = [0, 1, 2];
-const MAX_COMPUTATION_TIME = 1;
 
 const NOT_ENOUGH_COURSES_ERROR =
   "A minimum of 20 courses are required in the shopping cart to generate a timetable";
@@ -1501,7 +1500,7 @@ const formatTimetablesBeforeReturn = (timetablesToRecommend, allCourses) => {
 
 // Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
 // 7,168,066,508,321,614 (~7.17 quadrillion) possible 20-course timetable combinations
-export const generateTimetable = async (userId, timetableId) => {
+export const generateTimetable = async (userId, timetableId, duration) => {
   const computationStartTime = new Date();
   const allCourses = await Course.findCourses();
   const ece472Id = allCourses?.find(
@@ -1579,9 +1578,9 @@ export const generateTimetable = async (userId, timetableId) => {
   let maximumFailedMinorPermutationAttempts;
   let timetablesToRecommend = [];
 
-  // Try different timetable combinations until reach MAX_COMPUTATION_TIME-second time limit, proceeding with the highest ranked option or none if all attempts were invalid. Choose 8 kernel/depth courses
+  // Try different timetable combinations until reach "duration"-second time limit, proceeding with the highest ranked option or none if all attempts were invalid. Choose 8 kernel/depth courses
   // from each area, incrementing offset index in each area list in order of area with the most extra courses to that with the least (& randomized if insufficient course combos found)
-  while ((new Date() - computationStartTime) / 1000 < MAX_COMPUTATION_TIME) {
+  while ((new Date() - computationStartTime) / 1000 < duration) {
     let timetableCourses = [];
     if (topCombinationIndex !== null) {
       maximumFailedMinorPermutationAttempts = calculateMaxFailedAttempts(

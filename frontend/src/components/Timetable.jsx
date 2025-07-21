@@ -27,6 +27,7 @@ import ExploreCourse from "./exploreCourseList/ExploreCourse";
 import TimetableCourseSummary from "./timetableCourseSummary/TimetableCourseSummary";
 import { areRequirementsMet } from "../utils/requirementsCheck";
 import { updateCoursesInCart } from "../utils/updateCourses";
+import { Slider } from "@mui/material";
 
 const Timetable = () => {
   const initialTerms = [
@@ -38,6 +39,7 @@ const Timetable = () => {
     { title: "4th Year, Fall", courses: Array(5).fill(null) },
     { title: "4th Year, Winter", courses: Array(5).fill(null) },
   ];
+  const DEFAULT_DURATION = 5;
 
   const navigate = useNavigate();
   const infoRef = useRef();
@@ -70,6 +72,8 @@ const Timetable = () => {
   const [otherCoursesAmount, setOtherCoursesAmount] = useState(0);
   const [designation, setDesignation] = useState(null);
   const refList = useRef([]);
+  const [generateTimetableDuration, setGenerateTimetableDuration] =
+    useState(DEFAULT_DURATION);
 
   const TIMETABLE = "Timetable";
   const TIMETABLE_DESCRIPTION = "Timetable Description ";
@@ -99,6 +103,8 @@ const Timetable = () => {
     "/silverOutline.png",
     "/bronzeOutline.png",
   ];
+  const TIMETABLE_GENERATION_DURATION = "Maximum Duration (s):";
+  const DURATION_QUERY_PARAM = "&duration=";
 
   const filteredCoursesInCart = coursesInCart.filter(
     (course) =>
@@ -417,7 +423,7 @@ const Timetable = () => {
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${
           Path.TIMETABLE
-        }${GENERATE_PATH}${ID_QUERY_PARAM}${timetableId}`,
+        }${GENERATE_PATH}${ID_QUERY_PARAM}${timetableId}${DURATION_QUERY_PARAM}${generateTimetableDuration}`,
         {
           method: "GET",
           credentials: "include",
@@ -757,6 +763,20 @@ const Timetable = () => {
                 <span className="material-symbols-outlined">wand_stars</span>
                 {BUTTON_TEXT}
               </button>
+            </div>
+            <div className="generate-timetable-options-container">
+              <span className="timetable-option-text">
+                {TIMETABLE_GENERATION_DURATION}
+              </span>
+              <Slider
+                defaultValue={DEFAULT_DURATION}
+                min={1}
+                max={30}
+                valueLabelDisplay="auto"
+                onChange={(event) =>
+                  setGenerateTimetableDuration(event.target.value)
+                }
+              />
             </div>
             <span className="timetable-change-error">
               {updateTimetableError}
