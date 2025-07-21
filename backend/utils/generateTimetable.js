@@ -1581,135 +1581,153 @@ export const generateTimetable = async (
   let timetablesToRecommend = [];
 
   for (const kernelDepthVariation of kernelDepthVariations) {
-  // Store object array containing area name & set of IDs containing courses belonging to the area (for each kernel area)
-  let areaCourseLists = allAreaCourseLists.filter((areaCourseList) =>
-    kernelDepthVariation.kernel.includes(areaCourseList.area)
-  );
+    // Store object array containing area name & set of IDs containing courses belonging to the area (for each kernel area)
+    let areaCourseLists = allAreaCourseLists.filter((areaCourseList) =>
+      kernelDepthVariation.kernel.includes(areaCourseList.area)
+    );
 
-  // Store IDs of the 1 (non-depth kernel area) or 3 (depth/kernel area) courses being assigned to each kernel area
-  let usedCourseIds = structuredClone(areaCourseLists);
-  usedCourseIds.forEach((areaObject) => {
-    areaObject.courses = new Set([]);
-  });
-  sortCourseLists(areaCourseLists, kernelDepthVariation.depth, false);
-
-  // Check for at least 1 valid combination of 8 courses across the 4 kernel areas before continuing to evaluate timetable combinations
-  checkForValidCombination(areaCourseLists, timetable, usedCourseIds);
-
-  // After complete with initial check, initialize various helper variables to explore timetable combinations
-  let requirementSupportScoreMap = new Map();
-  let areaOffsetMaximums = [];
-  prepareCourseListsAndConstants(
-    refinedShoppingCart,
-    areaCourseLists,
-    timetable,
-    requirementSupportScoreMap,
-    areaOffsetMaximums
-  );
-  let areaOffsets = Array(4).fill(0);
-  let isExploringMajorPermutations = true;
-  let kernelDepthCrsCombinations = [];
-  let kernelAreasSet = new Set(kernelDepthVariation.kernel);
-  let uniqueKernelCourseCount = refinedShoppingCart.filter((cartCourse) =>
-    cartCourse.area.some((area) => kernelAreasSet.has(area))
-  ).length;
-  // Determine the maximum streak of failed attempts using randomizing offsets before moving onto minor permutations; exponential growth for this constant as number of valid courses to be
-  // used as a kernel/depth course increases, due to factorial relationship found in "x choose y", with extra constants to handle edge cases with only 8 or 9 kernel courses
-  let maximumFailedAttemptsWithRandomOffset =
-    Math.pow(
-      uniqueKernelCourseCount - KERNEL_DEPTH_COURSES_NEEDED,
-      MAXIMUM_FAILED_ATTEMPTS_WITH_RANDOM_OFFSETS_EXPONENT
-    ) + KERNEL_DEPTH_COURSES_NEEDED;
-  let currentFailedAttempts = 0;
-  let haveRandomizingOffsetsBegun = false;
-  let topCombinationIndex = null;
-  let topOffsets = [];
-  let removeLimitsOnOffsetRandomization = false;
-  let minorPermutationsFailedAttempts = 0;
-  let maximumFailedMinorPermutationAttempts;
-
-  // Try different timetable combinations until reach "duration"-second time limit, proceeding with the highest ranked option or none if all attempts were invalid. Choose 8 kernel/depth courses
-  // from each area, incrementing offset index in each area list in order of area with the most extra courses to that with the least (& randomized if insufficient course combos found)
-  while (
-    (new Date() - computationStartTime) / 1000 <
-    duration / kernelDepthVariations.length
-  ) {
-    let timetableCourses = [];
-    if (topCombinationIndex !== null) {
-      maximumFailedMinorPermutationAttempts = calculateMaxFailedAttempts(
-        topOffsets,
-        areaOffsetMaximums
-      );
-    }
-
+    // Store IDs of the 1 (non-depth kernel area) or 3 (depth/kernel area) courses being assigned to each kernel area
+    let usedCourseIds = structuredClone(areaCourseLists);
     usedCourseIds.forEach((areaObject) => {
       areaObject.courses = new Set([]);
     });
-    let courseCombinationFound = isCourseCombinationFound(
+    sortCourseLists(areaCourseLists, kernelDepthVariation.depth, false);
+
+    // Check for at least 1 valid combination of 8 courses across the 4 kernel areas before continuing to evaluate timetable combinations
+    checkForValidCombination(areaCourseLists, timetable, usedCourseIds);
+
+    // After complete with initial check, initialize various helper variables to explore timetable combinations
+    let requirementSupportScoreMap = new Map();
+    let areaOffsetMaximums = [];
+    prepareCourseListsAndConstants(
+      refinedShoppingCart,
       areaCourseLists,
-      areaOffsets,
       timetable,
-      usedCourseIds
+      requirementSupportScoreMap,
+      areaOffsetMaximums
     );
-
-    let currentCombinationOffsets = areaOffsets;
-    let kernelDepthCourses = usedCourseIds.flatMap((areaObject) => [
-      ...areaObject.courses,
-    ]);
-
-    let originalTopTimetables = structuredClone(timetablesToRecommend);
-    let validCombinationsCount = kernelDepthCrsCombinations.filter(
-      (combination) => combination.valid
+    let areaOffsets = Array(4).fill(0);
+    let isExploringMajorPermutations = true;
+    let kernelDepthCrsCombinations = [];
+    let kernelAreasSet = new Set(kernelDepthVariation.kernel);
+    let uniqueKernelCourseCount = refinedShoppingCart.filter((cartCourse) =>
+      cartCourse.area.some((area) => kernelAreasSet.has(area))
     ).length;
+    // Determine the maximum streak of failed attempts using randomizing offsets before moving onto minor permutations; exponential growth for this constant as number of valid courses to be
+    // used as a kernel/depth course increases, due to factorial relationship found in "x choose y", with extra constants to handle edge cases with only 8 or 9 kernel courses
+    let maximumFailedAttemptsWithRandomOffset =
+      Math.pow(
+        uniqueKernelCourseCount - KERNEL_DEPTH_COURSES_NEEDED,
+        MAXIMUM_FAILED_ATTEMPTS_WITH_RANDOM_OFFSETS_EXPONENT
+      ) + KERNEL_DEPTH_COURSES_NEEDED;
+    let currentFailedAttempts = 0;
+    let haveRandomizingOffsetsBegun = false;
+    let topCombinationIndex = null;
+    let topOffsets = [];
+    let removeLimitsOnOffsetRandomization = false;
+    let minorPermutationsFailedAttempts = 0;
+    let maximumFailedMinorPermutationAttempts;
 
-    // Check if discovered kernel/depth combination is not duplicate & with major (3+ different courses) or minor (<= 2 different courses) differences & can successfully be
-    // placed in timetable; ensure the randomizing strategy begins if reach end of incremental strategy (for major permutations) or end of limited randomization strategy (minor permutations)
-    if (
-      !courseCombinationFound ||
-      !isCombinationValid(
-        kernelDepthCourses,
-        kernelDepthCrsCombinations,
-        isExploringMajorPermutations,
-        topCombinationIndex,
-        currentFailedAttempts,
-        maximumFailedAttemptsWithRandomOffset
-      ) ||
-      !findTopTimetable(
-        kernelDepthCourses,
-        refinedShoppingCart,
-        timetableCourses,
-        ece472Id,
-        coursesWithScores,
-        timetablesToRecommend,
-        kernelDepthCrsCombinations,
-        uniqueKernelCourseCount
-      )
+    // Try different timetable combinations until reach "duration"-second time limit, proceeding with the highest ranked option or none if all attempts were invalid. Choose 8 kernel/depth courses
+    // from each area, incrementing offset index in each area list in order of area with the most extra courses to that with the least (& randomized if insufficient course combos found)
+    while (
+      (new Date() - computationStartTime) / 1000 <
+      duration / kernelDepthVariations.length
     ) {
-      if (isExploringMajorPermutations && haveRandomizingOffsetsBegun) {
-        currentFailedAttempts++;
-        if (
-          currentFailedAttempts >= maximumFailedAttemptsWithRandomOffset &&
-          validCombinationsCount > 0
-        )
-          isExploringMajorPermutations = false;
-      } else if (isExploringMajorPermutations)
-        haveRandomizingOffsetsBegun = !areaOffsets.some(
-          (offset, index) => offset !== areaOffsetMaximums[index]
+      let timetableCourses = [];
+      if (topCombinationIndex !== null) {
+        maximumFailedMinorPermutationAttempts = calculateMaxFailedAttempts(
+          topOffsets,
+          areaOffsetMaximums
         );
-      else {
-        minorPermutationsFailedAttempts++;
-        if (
-          minorPermutationsFailedAttempts ===
-          maximumFailedMinorPermutationAttempts
-        )
-          removeLimitsOnOffsetRandomization = true;
       }
 
-      if (!isExploringMajorPermutations && topCombinationIndex === null) 
-        break;
+      usedCourseIds.forEach((areaObject) => {
+        areaObject.courses = new Set([]);
+      });
+      let courseCombinationFound = isCourseCombinationFound(
+        areaCourseLists,
+        areaOffsets,
+        timetable,
+        usedCourseIds
+      );
 
-      // Determine next set of offsets, either incremental/randomized for major permutations or randomized within a limited range/fully randomized
-      // for minor permutations
+      let currentCombinationOffsets = areaOffsets;
+      let kernelDepthCourses = usedCourseIds.flatMap((areaObject) => [
+        ...areaObject.courses,
+      ]);
+
+      let originalTopTimetables = structuredClone(timetablesToRecommend);
+      let validCombinationsCount = kernelDepthCrsCombinations.filter(
+        (combination) => combination.valid
+      ).length;
+
+      // Check if discovered kernel/depth combination is not duplicate & with major (3+ different courses) or minor (<= 2 different courses) differences & can successfully be
+      // placed in timetable; ensure the randomizing strategy begins if reach end of incremental strategy (for major permutations) or end of limited randomization strategy (minor permutations)
+      if (
+        !courseCombinationFound ||
+        !isCombinationValid(
+          kernelDepthCourses,
+          kernelDepthCrsCombinations,
+          isExploringMajorPermutations,
+          topCombinationIndex,
+          currentFailedAttempts,
+          maximumFailedAttemptsWithRandomOffset
+        ) ||
+        !findTopTimetable(
+          kernelDepthCourses,
+          refinedShoppingCart,
+          timetableCourses,
+          ece472Id,
+          coursesWithScores,
+          timetablesToRecommend,
+          kernelDepthCrsCombinations,
+          uniqueKernelCourseCount
+        )
+      ) {
+        if (isExploringMajorPermutations && haveRandomizingOffsetsBegun) {
+          currentFailedAttempts++;
+          if (
+            currentFailedAttempts >= maximumFailedAttemptsWithRandomOffset &&
+            validCombinationsCount > 0
+          )
+            isExploringMajorPermutations = false;
+        } else if (isExploringMajorPermutations)
+          haveRandomizingOffsetsBegun = !areaOffsets.some(
+            (offset, index) => offset !== areaOffsetMaximums[index]
+          );
+        else {
+          minorPermutationsFailedAttempts++;
+          if (
+            minorPermutationsFailedAttempts ===
+            maximumFailedMinorPermutationAttempts
+          )
+            removeLimitsOnOffsetRandomization = true;
+        }
+
+        if (!isExploringMajorPermutations && topCombinationIndex === null)
+          break;
+
+        // Determine next set of offsets, either incremental/randomized for major permutations or randomized within a limited range/fully randomized
+        // for minor permutations
+        isExploringMajorPermutations = updateOffsets(
+          isExploringMajorPermutations,
+          uniqueKernelCourseCount,
+          areaOffsets,
+          areaOffsetMaximums,
+          haveRandomizingOffsetsBegun,
+          topOffsets,
+          removeLimitsOnOffsetRandomization,
+          validCombinationsCount
+        );
+        continue;
+      }
+
+      if (currentFailedAttempts >= maximumFailedAttemptsWithRandomOffset)
+        isExploringMajorPermutations = false;
+      currentFailedAttempts = 0;
+      minorPermutationsFailedAttempts = 0;
+
       isExploringMajorPermutations = updateOffsets(
         isExploringMajorPermutations,
         uniqueKernelCourseCount,
@@ -1718,35 +1736,17 @@ export const generateTimetable = async (
         haveRandomizingOffsetsBegun,
         topOffsets,
         removeLimitsOnOffsetRandomization,
-        validCombinationsCount
+        validCombinationsCount + 1
       );
-      continue;
+
+      if (
+        isTopTimetableDifferent(originalTopTimetables, timetablesToRecommend)
+      ) {
+        topCombinationIndex = kernelDepthCrsCombinations.length - 1;
+        topOffsets = [...currentCombinationOffsets];
+        removeLimitsOnOffsetRandomization = false;
+      }
     }
-
-    if (currentFailedAttempts >= maximumFailedAttemptsWithRandomOffset)
-      isExploringMajorPermutations = false;
-    currentFailedAttempts = 0;
-    minorPermutationsFailedAttempts = 0;
-
-    isExploringMajorPermutations = updateOffsets(
-      isExploringMajorPermutations,
-      uniqueKernelCourseCount,
-      areaOffsets,
-      areaOffsetMaximums,
-      haveRandomizingOffsetsBegun,
-      topOffsets,
-      removeLimitsOnOffsetRandomization,
-      validCombinationsCount + 1
-    );
-
-    if (
-      isTopTimetableDifferent(originalTopTimetables, timetablesToRecommend)
-    ) {
-      topCombinationIndex = kernelDepthCrsCombinations.length - 1;
-      topOffsets = [...currentCombinationOffsets];
-      removeLimitsOnOffsetRandomization = false;
-    }
-  }
   }
 
   switch (timetablesToRecommend.length) {
