@@ -20,6 +20,7 @@ import {
   initialErrors,
   CONFLICT_STATUS_PATH,
   GENERATE_PATH,
+  SELECT_PATH,
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -58,6 +59,7 @@ const Timetable = () => {
   const [generatedTimetables, setGeneratedTimetables] = useState(null);
   const [currentTimetableOption, setCurrentTimetableOption] = useState(null);
   const [originalTerms, setOriginalTerms] = useState(null);
+  const [selectTimetableError, setSelectTimetableError] = useState("");
   const [isRequirementsMenuOpen, setIsRequirementsMenuOpen] = useState(false);
   const [terms, setTerms] = useState(initialTerms);
   const [errors, setErrors] = useState(initialErrors);
@@ -92,7 +94,11 @@ const Timetable = () => {
   const OPTION = "Option: ";
   const TIMETABLE_SCORE_OUTLINE_ALT =
     "Gold leaf circular outline to encase timetable score";
-  const TIMETABLE_SCORE_OUTLINE = "/goldOutline.png";
+  const TIMETABLE_SCORE_OUTLINE = [
+    "/goldOutline.png",
+    "/silverOutline.png",
+    "/bronzeOutline.png",
+  ];
 
   const filteredCoursesInCart = coursesInCart.filter(
     (course) =>
@@ -447,8 +453,44 @@ const Timetable = () => {
       newTimetableOption > 0 &&
       newTimetableOption <= generatedTimetables.length
     ) {
+      setSelectTimetableError("");
       setCurrentTimetableOption(newTimetableOption);
       organizeCourses(generatedTimetables[newTimetableOption - 1].courses);
+    }
+  };
+
+  const exitTimetableOptions = () => {
+    setOriginalTerms(null);
+    setGeneratedTimetables(null);
+    setCurrentTimetableOption(null);
+  };
+
+  const selectTimetableOption = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${SELECT_PATH}${ID_QUERY_PARAM}${timetable.id}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            courses: generatedTimetables[currentTimetableOption - 1].courses,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        exitTimetableOptions();
+        fetchTimetableData(timetable.id);
+      } else {
+        setSelectTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setSelectTimetableError(GENERIC_ERROR);
     }
   };
 
@@ -644,13 +686,53 @@ const Timetable = () => {
               <span
                 className="material-symbols-outlined timetable-selection-arrow"
                 onClick={() => updateTimetableOption(-1)}
-              >arrow_left</span>
+              >
+                arrow_left
+              </span>
               {`${OPTION}${currentTimetableOption} of ${generatedTimetables?.length}`}
-              <img className="timetable-score-outline" alt={TIMETABLE_SCORE_OUTLINE_ALT} src={TIMETABLE_SCORE_OUTLINE}/>
+              <img
+                className="timetable-score-outline"
+                alt={TIMETABLE_SCORE_OUTLINE_ALT}
+                src={
+                  TIMETABLE_SCORE_OUTLINE[
+                    currentTimetableOption ? currentTimetableOption - 1 : 0
+                  ]
+                }
+              />
+              <span className="timetable-option-score">
+                {currentTimetableOption
+                  ? generatedTimetables[currentTimetableOption - 1]?.score
+                  : ""}
+                %
+              </span>
               <span
                 className="material-symbols-outlined timetable-selection-arrow timetable-selection-right-arrow"
                 onClick={() => updateTimetableOption(1)}
-              >arrow_right</span>
+              >
+                arrow_right
+              </span>
+              <div className="timetable-options-select-container">
+                <span
+                  className="material-symbols-outlined timetable-edit-icon timetable-yes"
+                  onClick={selectTimetableOption}
+                >
+                  check_circle
+                </span>
+                <span
+                  className="material-symbols-outlined timetable-edit-icon timetable-no"
+                  onClick={() => {
+                    setTerms(originalTerms);
+                    exitTimetableOptions();
+                  }}
+                >
+                  cancel
+                </span>
+              </div>
+              <div>
+                <span className="text-input-error timetable-select-error">
+                  {selectTimetableError}
+                </span>
+              </div>
             </div>
 
             {TIMETABLE}

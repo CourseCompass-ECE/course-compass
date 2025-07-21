@@ -1432,7 +1432,6 @@ const formatTimetablesBeforeReturn = (timetablesToRecommend, allCourses) => {
       let courseData = allCourses.find(
         (course) => course.id === courseObject.id
       );
-      delete courseObject.id;
       courseObject.course = {
         id: courseData.id,
         code: courseData.code,
@@ -1648,7 +1647,7 @@ export const generateTimetable = async (userId, timetableId) => {
 };
 
 // Remove all existing timetable courses & replace them with the new valid timetable courses in the proper term & position locations
-const addTimetable = async (timetableToRecommend, timetable, userId) => {
+export const addTimetable = async (timetableToRecommend, timetable, userId) => {
   await Promise.all(
     timetable.courses.map(async (course) => {
       await Timetable.deleteTimetableCourse(
