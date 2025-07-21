@@ -9,7 +9,7 @@ import {
   initializeAreaCoursesList,
   updateAreaCoursesList,
 } from "../../frontend/src/utils/requirementsCheck.js";
-import { ECE472_CODE } from "../../frontend/src/utils/constants.js";
+import { ECE472_CODE, ECE_AREAS } from "../../frontend/src/utils/constants.js";
 
 const MINIMUM_COURSES = 20;
 const MINIMUM_COURSES_BEFORE_472 = 19;
@@ -1498,9 +1498,52 @@ const formatTimetablesBeforeReturn = (timetablesToRecommend, allCourses) => {
   return timetablesToRecommend;
 };
 
+const sortCourseLists = (
+  areaCourseLists,
+  timetableDepth,
+  sortByGreatestNumberOfCourses
+) => {
+  areaCourseLists.sort((areaA, areaB) => {
+    let extraCoursesDifference =
+      numberExtraCourses(areaA, timetableDepth) -
+      numberExtraCourses(areaB, timetableDepth);
+
+    return (sortByGreatestNumberOfCourses ? -1 : 1) * extraCoursesDifference;
+  });
+};
+
+const generateKernelDepthVariations = (
+  anyKernelDepth,
+  timetable,
+  areaCourseLists
+) => {
+  let kernelDepthVariations = [];
+  if (anyKernelDepth) {
+    // Temporary logic - to continue in next PR
+    sortCourseLists(areaCourseLists, [], true);
+    kernelDepthVariations.push({
+      kernel: timetable.kernel,
+      depth: timetable.depth,
+    });
+  } else {
+    kernelDepthVariations.push({
+      kernel: timetable.kernel,
+      depth: timetable.depth,
+    });
+  }
+
+  return kernelDepthVariations;
+};
+
 // Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
 // 7,168,066,508,321,614 (~7.17 quadrillion) possible 20-course timetable combinations
-export const generateTimetable = async (userId, timetableId, duration) => {
+export const generateTimetable = async (
+  userId,
+  timetableId,
+  duration,
+  anyKernelDepth,
+  anyDepth
+) => {
   const computationStartTime = new Date();
   const allCourses = await Course.findCourses();
   const ece472Id = allCourses?.find(
@@ -1524,24 +1567,32 @@ export const generateTimetable = async (userId, timetableId, duration) => {
   );
   if (!coursesWithScores) throw new Error(COURSE_RECOMMENDATION_SCORE_ERROR);
 
-  // Store object array containing area name & set of IDs containing courses belonging to the area (for each kernel area)
   const timetable = await User.findUserTimetableByIds(timetableId, userId);
-  let areaCourseLists = [];
-  initializeAreaCoursesList(areaCourseLists, timetable.kernel);
+  let allAreaCourseLists = [];
+  initializeAreaCoursesList(allAreaCourseLists, Object.keys(ECE_AREAS));
   refinedShoppingCart.forEach((course) => {
-    updateAreaCoursesList({ course }, areaCourseLists);
+    updateAreaCoursesList({ course }, allAreaCourseLists);
   });
+  const kernelDepthVariations = generateKernelDepthVariations(
+    anyKernelDepth,
+    timetable,
+    allAreaCourseLists
+  );
+  let timetablesToRecommend = [];
+
+  for (const kernelDepthVariation of kernelDepthVariations) {
+  // Store object array containing area name & set of IDs containing courses belonging to the area (for each kernel area)
+  let areaCourseLists = allAreaCourseLists.filter((areaCourseList) =>
+    kernelDepthVariation.kernel.includes(areaCourseList.area)
+  );
 
   // Store IDs of the 1 (non-depth kernel area) or 3 (depth/kernel area) courses being assigned to each kernel area
   let usedCourseIds = structuredClone(areaCourseLists);
   usedCourseIds.forEach((areaObject) => {
     areaObject.courses = new Set([]);
   });
-  areaCourseLists.sort(
-    (areaA, areaB) =>
-      numberExtraCourses(areaA, timetable.depth) -
-      numberExtraCourses(areaB, timetable.depth)
-  );
+  sortCourseLists(areaCourseLists, kernelDepthVariation.depth, false);
+
   // Check for at least 1 valid combination of 8 courses across the 4 kernel areas before continuing to evaluate timetable combinations
   checkForValidCombination(areaCourseLists, timetable, usedCourseIds);
 
@@ -1558,7 +1609,7 @@ export const generateTimetable = async (userId, timetableId, duration) => {
   let areaOffsets = Array(4).fill(0);
   let isExploringMajorPermutations = true;
   let kernelDepthCrsCombinations = [];
-  let kernelAreasSet = new Set(timetable.kernel);
+  let kernelAreasSet = new Set(kernelDepthVariation.kernel);
   let uniqueKernelCourseCount = refinedShoppingCart.filter((cartCourse) =>
     cartCourse.area.some((area) => kernelAreasSet.has(area))
   ).length;
@@ -1576,11 +1627,13 @@ export const generateTimetable = async (userId, timetableId, duration) => {
   let removeLimitsOnOffsetRandomization = false;
   let minorPermutationsFailedAttempts = 0;
   let maximumFailedMinorPermutationAttempts;
-  let timetablesToRecommend = [];
 
   // Try different timetable combinations until reach "duration"-second time limit, proceeding with the highest ranked option or none if all attempts were invalid. Choose 8 kernel/depth courses
   // from each area, incrementing offset index in each area list in order of area with the most extra courses to that with the least (& randomized if insufficient course combos found)
-  while ((new Date() - computationStartTime) / 1000 < duration) {
+  while (
+    (new Date() - computationStartTime) / 1000 <
+    duration / kernelDepthVariations.length
+  ) {
     let timetableCourses = [];
     if (topCombinationIndex !== null) {
       maximumFailedMinorPermutationAttempts = calculateMaxFailedAttempts(
@@ -1652,7 +1705,8 @@ export const generateTimetable = async (userId, timetableId, duration) => {
           removeLimitsOnOffsetRandomization = true;
       }
 
-      if (!isExploringMajorPermutations && topCombinationIndex === null) break;
+      if (!isExploringMajorPermutations && topCombinationIndex === null) 
+        break;
 
       // Determine next set of offsets, either incremental/randomized for major permutations or randomized within a limited range/fully randomized
       // for minor permutations
@@ -1685,11 +1739,14 @@ export const generateTimetable = async (userId, timetableId, duration) => {
       validCombinationsCount + 1
     );
 
-    if (isTopTimetableDifferent(originalTopTimetables, timetablesToRecommend)) {
+    if (
+      isTopTimetableDifferent(originalTopTimetables, timetablesToRecommend)
+    ) {
       topCombinationIndex = kernelDepthCrsCombinations.length - 1;
       topOffsets = [...currentCombinationOffsets];
       removeLimitsOnOffsetRandomization = false;
     }
+  }
   }
 
   switch (timetablesToRecommend.length) {

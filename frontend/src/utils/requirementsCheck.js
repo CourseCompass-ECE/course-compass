@@ -21,6 +21,7 @@ export const initializeAreaCoursesList = (areaCourseList, kernelAreas) => {
   kernelAreas.forEach((area) => {
     areaCourseList.push({ area, courses: [] });
   });
+  return areaCourseList
 };
 
 const generateCourseString = (course) => {

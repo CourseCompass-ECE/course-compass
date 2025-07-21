@@ -1565,5 +1565,14 @@ footer {
 .timetable-option-text {
   font-size: var(--subheader-size);
   font-family: var(--header-font);
-  padding-bottom: 10px;
+  padding: 10px 0 10px 0;
+}
+
+.timetable-checkbox-option-text {
+  padding-bottom: 0;
+}
+
+.timetable-checkbox {
+  width: 45px;
+  align-self: center;
 }

@@ -27,7 +27,7 @@ import ExploreCourse from "./exploreCourseList/ExploreCourse";
 import TimetableCourseSummary from "./timetableCourseSummary/TimetableCourseSummary";
 import { areRequirementsMet } from "../utils/requirementsCheck";
 import { updateCoursesInCart } from "../utils/updateCourses";
-import { Slider } from "@mui/material";
+import { Slider, Checkbox } from "@mui/material";
 
 const Timetable = () => {
   const initialTerms = [
@@ -74,6 +74,8 @@ const Timetable = () => {
   const refList = useRef([]);
   const [generateTimetableDuration, setGenerateTimetableDuration] =
     useState(DEFAULT_DURATION);
+  const [anyKernelDepth, setAnyKernelDepth] = useState(false);
+  const [anyDepth, setAnyDepth] = useState(false);
 
   const TIMETABLE = "Timetable";
   const TIMETABLE_DESCRIPTION = "Timetable Description ";
@@ -105,6 +107,10 @@ const Timetable = () => {
   ];
   const TIMETABLE_GENERATION_DURATION = "Maximum Duration (s):";
   const DURATION_QUERY_PARAM = "&duration=";
+  const ANY_KERNEL_DEPTH_QUERY_PARAM = "&anyKernelDepth=";
+  const ANY_DEPTH_QUERY_PARAM = "&anyDepth=";
+  const CHOOSE_ANY_KERNEL_AND_DEPTH_AREAS = "Choose any kernel & depth areas:";
+  const CHOOSE_ANY_DEPTH_AREAS = "Choose any depth areas:";
 
   const filteredCoursesInCart = coursesInCart.filter(
     (course) =>
@@ -423,7 +429,9 @@ const Timetable = () => {
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${
           Path.TIMETABLE
-        }${GENERATE_PATH}${ID_QUERY_PARAM}${timetableId}${DURATION_QUERY_PARAM}${generateTimetableDuration}`,
+        }${GENERATE_PATH}${ID_QUERY_PARAM}${timetableId}${DURATION_QUERY_PARAM}${generateTimetableDuration}${ANY_KERNEL_DEPTH_QUERY_PARAM}${
+          anyKernelDepth ? 1 : 0
+        }${ANY_DEPTH_QUERY_PARAM}${anyDepth ? 1 : 0}`,
         {
           method: "GET",
           credentials: "include",
@@ -498,6 +506,16 @@ const Timetable = () => {
     } catch (error) {
       setSelectTimetableError(GENERIC_ERROR);
     }
+  };
+
+  const kernelDepthToggled = () => {
+    if (!anyKernelDepth) setAnyDepth(true);
+    setAnyKernelDepth(!anyKernelDepth);
+  };
+
+  const depthToggled = () => {
+    if (anyDepth) setAnyKernelDepth(false);
+    setAnyDepth(!anyDepth);
   };
 
   useEffect(() => {
@@ -765,6 +783,24 @@ const Timetable = () => {
               </button>
             </div>
             <div className="generate-timetable-options-container">
+              <span className="timetable-option-text timetable-checkbox-option-text">
+                {CHOOSE_ANY_KERNEL_AND_DEPTH_AREAS}
+              </span>
+              <Checkbox
+                className="timetable-checkbox"
+                checked={anyKernelDepth}
+                onChange={kernelDepthToggled}
+              />
+
+              <span className="timetable-option-text timetable-checkbox-option-text">
+                {CHOOSE_ANY_DEPTH_AREAS}
+              </span>
+              <Checkbox
+                className="timetable-checkbox"
+                checked={anyDepth}
+                onChange={depthToggled}
+              />
+
               <span className="timetable-option-text">
                 {TIMETABLE_GENERATION_DURATION}
               </span>
