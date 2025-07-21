@@ -35,6 +35,7 @@ const INITIAL_TERM_COURSE_COUNTS = { 1: 0, 2: 0, 3: 0, 4: 0 };
 // given the exponential growth in options as the number of extra courses increases
 const EXTRA_COURSES_EXPONENT = 1.5;
 const TIMETABLES_TO_RECOMMEND_INDICES = [0, 1, 2];
+const MAX_COMPUTATION_TIME = 1;
 
 const NOT_ENOUGH_COURSES_ERROR =
   "A minimum of 20 courses are required in the shopping cart to generate a timetable";
@@ -312,14 +313,16 @@ const determineValidCoursesForArea = (
   for (const course of currentAreaCourseList) {
     if (
       numberOfKernelAreaMatches(course.area, kernelAreas) === 1 ||
-      (!course.area.some((area) =>
-        checkIfOtherAreaNeedsCourse(
-          course.id,
-          area,
-          areaCourseLists,
-          depthAreas
-        )
-      ) &&
+      (!course.area
+        .filter((area) => area !== currentArea)
+        .some((area) =>
+          checkIfOtherAreaNeedsCourse(
+            course.id,
+            area,
+            areaCourseLists,
+            depthAreas
+          )
+        ) &&
         checkActionIsLegal(
           course.id,
           currentArea,
@@ -1231,6 +1234,20 @@ const attemptToAddCourse = (
   }
 };
 
+const storeTopTimetables = (newTimetable, timetablesToRecommend) => {
+  if (newTimetable.score) {
+    let indexToAddTimetable = TIMETABLES_TO_RECOMMEND_INDICES.find(
+      (timetableIndex) =>
+        !timetablesToRecommend[timetableIndex] ||
+        newTimetable.score > timetablesToRecommend[timetableIndex].score
+    );
+    if (typeof indexToAddTimetable === "number") {
+      timetablesToRecommend.splice(indexToAddTimetable, 0, newTimetable);
+      timetablesToRecommend.splice(3, 1);
+    }
+  }
+};
+
 const findOneTimetable = (
   currentCourseIndex,
   remainingCartCourses,
@@ -1239,7 +1256,8 @@ const findOneTimetable = (
   kernelDepthCourses,
   ece472Id,
   coursesWithScores,
-  timetablesToRecommend
+  topTimetableFound,
+  uniqueKernelCourseCount
 ) => {
   while (
     timetableCourses.length < MINIMUM_COURSES_BEFORE_472 &&
@@ -1271,20 +1289,24 @@ const findOneTimetable = (
         timetableCourses
       );
 
-      let indexToAddTimetable = TIMETABLES_TO_RECOMMEND_INDICES.find(
-        (timetableIndex) =>
-          !timetablesToRecommend[timetableIndex] ||
-          timetableScore > timetablesToRecommend[timetableIndex].score
-      );
-      if (typeof indexToAddTimetable === "number") {
-        let newTimetable = {
-          courses: timetableCourses.map((course) => {
-            return { ...course, term: Number(course.term) };
-          }),
-          score: timetableScore,
-        };
-        timetablesToRecommend.splice(indexToAddTimetable, 0, newTimetable);
-        timetablesToRecommend.splice(3, 1);
+      const courses = timetableCourses.map((course) => {
+        return { ...course, term: Number(course.term) };
+      });
+
+      if (uniqueKernelCourseCount === KERNEL_DEPTH_COURSES_NEEDED)
+        storeTopTimetables(
+          {
+            courses: courses,
+            score: timetableScore,
+          },
+          timetablesToRecommend
+        );
+      if (
+        !topTimetableFound.score ||
+        timetableScore > topTimetableFound.score
+      ) {
+        topTimetableFound.courses = courses;
+        topTimetableFound.score = timetableScore;
       }
     }
   }
@@ -1297,7 +1319,8 @@ const experimentWithTimetables = (
   kernelDepthCourses,
   ece472Id,
   coursesWithScores,
-  timetablesToRecommend
+  timetablesToRecommend,
+  uniqueKernelCourseCount
 ) => {
   let initialTimetableWithKernelDepthCrs = structuredClone(timetableCourses);
   let remainingCoursesNeeded =
@@ -1305,6 +1328,7 @@ const experimentWithTimetables = (
   let timetableCourseIds = new Set(
     createIdListFromObjectList(timetableCourses)
   );
+  let topTimetableFound = {};
 
   // Enroll in order based on easy to enroll score
   let remainingCartCourses = refinedShoppingCart.filter(
@@ -1334,7 +1358,9 @@ const experimentWithTimetables = (
       kernelDepthCourses,
       ece472Id,
       coursesWithScores,
-      timetablesToRecommend
+      topTimetableFound,
+      timetablesToRecommend,
+      uniqueKernelCourseCount
     );
     offsetIndex++;
   }
@@ -1354,10 +1380,17 @@ const experimentWithTimetables = (
       kernelDepthCourses,
       ece472Id,
       coursesWithScores,
-      timetablesToRecommend
+      topTimetableFound,
+      timetablesToRecommend,
+      uniqueKernelCourseCount
     );
     attempts++;
   }
+
+  if (uniqueKernelCourseCount > KERNEL_DEPTH_COURSES_NEEDED) {
+    storeTopTimetables(topTimetableFound, timetablesToRecommend);
+  }
+  return topTimetableFound.score ? true : false;
 };
 
 // Given a valid set of kernel/depth courses, attempt to add them (and their requirements) to the timetable, then experimenting with various options to fill the remaining course slots
@@ -1368,7 +1401,8 @@ const findTopTimetable = (
   ece472Id,
   coursesWithScores,
   timetablesToRecommend,
-  kernelDepthCrsCombinations
+  kernelDepthCrsCombinations,
+  uniqueKernelCourseCount
 ) => {
   kernelDepthCourses.sort((courseIdA, courseIdB) =>
     sortByNumberOfReq(courseIdA, courseIdB, refinedShoppingCart)
@@ -1399,15 +1433,18 @@ const findTopTimetable = (
   });
   if (!areKernelDepthCoursesAddedSuccessfully) return false;
 
-  experimentWithTimetables(
+  const isTimetableFound = experimentWithTimetables(
     timetableCourses,
     refinedShoppingCart,
     kernelDepthCourses,
     ece472Id,
     coursesWithScores,
-    timetablesToRecommend
+    timetablesToRecommend,
+    uniqueKernelCourseCount
   );
-  return true;
+  kernelDepthCrsCombinations[kernelDepthCrsCombinations.length - 1].valid =
+    isTimetableFound;
+  return isTimetableFound;
 };
 
 const generateCoursesWithScores = async (
@@ -1542,9 +1579,9 @@ export const generateTimetable = async (userId, timetableId) => {
   let maximumFailedMinorPermutationAttempts;
   let timetablesToRecommend = [];
 
-  // Try different timetable combinations until reach 5-second time limit, proceeding with the highest ranked option or none if all attempts were invalid. Choose 8 kernel/depth courses
+  // Try different timetable combinations until reach MAX_COMPUTATION_TIME-second time limit, proceeding with the highest ranked option or none if all attempts were invalid. Choose 8 kernel/depth courses
   // from each area, incrementing offset index in each area list in order of area with the most extra courses to that with the least (& randomized if insufficient course combos found)
-  while ((new Date() - computationStartTime) / 1000 < 5) {
+  while ((new Date() - computationStartTime) / 1000 < MAX_COMPUTATION_TIME) {
     let timetableCourses = [];
     if (topCombinationIndex !== null) {
       maximumFailedMinorPermutationAttempts = calculateMaxFailedAttempts(
@@ -1592,7 +1629,8 @@ export const generateTimetable = async (userId, timetableId) => {
         ece472Id,
         coursesWithScores,
         timetablesToRecommend,
-        kernelDepthCrsCombinations
+        kernelDepthCrsCombinations,
+        uniqueKernelCourseCount
       )
     ) {
       if (isExploringMajorPermutations && haveRandomizingOffsetsBegun) {
