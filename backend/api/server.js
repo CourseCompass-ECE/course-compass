@@ -58,6 +58,8 @@ const INVALID_TIMETABLE_COURSE_DETAILS_ERROR =
   "Invalid timetable course details provided";
 const INVALID_COURSE_ID = "Invalid course id provided";
 const INVALID_TIMETABLE_ID = "Invalid timetable id provided";
+const INVALID_DURATION = "Invalid timetable duration provided";
+const INVALID_KERNEL_DEPTH = "Invalid checkbox values provided";
 const INVALID_COURSES_PROVIDED = "Invalid timetable courses provided";
 const SESSION_COOKIE_NAME = "sessionId";
 const NO_USER_FOUND = "No user found";
@@ -66,6 +68,7 @@ const MINORS_CERTIFICATES_MIN_LENGTH = 1;
 const ECE_AREAS_MIN_LENGTH = 2;
 const LEARNING_GOAL_MIN_LENGTH = 3;
 const COURSECOMPASS_EMAIL_SERVICE = "CourseCompass Email Service";
+const validKernelDepthValues = new Set([0, 1]);
 
 const fullNameValid = (fullName) => {
   return (
@@ -96,10 +99,6 @@ const isEceAreaArrayValid = (array, desiredLength) => {
     array?.length === desiredLength &&
     !array.some((area) => !Object.keys(ECE_AREAS).includes(area))
   );
-};
-
-const isTimetableIdValid = (timetableId) => {
-  return timetableId && ONLY_NUMBERS.test(timetableId);
 };
 
 const server = express();
@@ -432,7 +431,7 @@ server.get(Path.TIMETABLE, async (req, res, next) => {
   const timetableId = req.query?.id;
 
   try {
-    if (!isTimetableIdValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    if (!numberValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
 
     const userId = Number(req.session?.user?.id);
     const timetable = await User.findUserTimetableByIds(
@@ -469,7 +468,7 @@ server.patch(`${Path.TIMETABLE}${DESCRIPTION_PATH}`, async (req, res, next) => {
   const timetableId = req.query?.id;
   const description = req.body?.description;
   try {
-    if (!isTimetableIdValid(timetableId))
+    if (!numberValid(timetableId))
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
 
     const userId = Number(req.session?.user?.id);
@@ -605,14 +604,26 @@ server.get(`${Path.EXPLORE}${RECOMMENDATIONS_PATH}`, async (req, res, next) => {
 
 server.get(`${Path.TIMETABLE}${GENERATE_PATH}`, async (req, res, next) => {
   const timetableId = req.query?.id;
+  const duration = req.query?.duration;
+  const anyKernelDepth = Number(req.query?.anyKernelDepth);
+  const anyDepth = Number(req.query?.anyDepth);
 
   try {
-    if (!isTimetableIdValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    if (!numberValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    else if (!numberValid(duration)) throw new Error(INVALID_DURATION);
+    else if (
+      !validKernelDepthValues.has(anyKernelDepth) ||
+      !validKernelDepthValues.has(anyDepth)
+    )
+      throw new Error(INVALID_KERNEL_DEPTH);
 
     const userId = Number(req.session?.user?.id);
     const timetableOptions = await generateTimetable(
       userId,
-      Number(timetableId)
+      Number(timetableId),
+      Number(duration),
+      anyKernelDepth ? true : false,
+      anyDepth ? true : false
     );
     res.status(200).json({ timetableOptions });
   } catch (err) {
@@ -625,7 +636,7 @@ server.post(`${Path.TIMETABLE}${SELECT_PATH}`, async (req, res, next) => {
   const courses = req.body?.courses;
 
   try {
-    if (!isTimetableIdValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    if (!numberValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
     else if (
       courses.some(
         (course) =>
@@ -637,7 +648,10 @@ server.post(`${Path.TIMETABLE}${SELECT_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_COURSES_PROVIDED);
 
     const userId = Number(req.session?.user?.id);
-    const timetable = await User.findUserTimetableByIds(Number(timetableId), userId);
+    const timetable = await User.findUserTimetableByIds(
+      Number(timetableId),
+      userId
+    );
     await addTimetable(courses, timetable, userId);
     res.status(201).end();
   } catch (err) {
