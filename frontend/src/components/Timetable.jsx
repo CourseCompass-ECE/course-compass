@@ -55,6 +55,7 @@ const Timetable = () => {
   const [updateTimetableError, setUpdateTimetableError] = useState("");
   const [generateTimetableError, setGenerateTimetableError] = useState("");
   const [isTimetableGenerating, setIsTimetableGenerating] = useState(false);
+  const [generatedTimetables, setGeneratedTimetables] = useState([]);
   const [isRequirementsMenuOpen, setIsRequirementsMenuOpen] = useState(false);
   const [terms, setTerms] = useState(initialTerms);
   const [errors, setErrors] = useState(initialErrors);
@@ -405,13 +406,15 @@ const Timetable = () => {
           Path.TIMETABLE
         }${GENERATE_PATH}${ID_QUERY_PARAM}${timetableId}`,
         {
-          method: "POST",
+          method: "GET",
           credentials: "include",
         }
       );
       setIsTimetableGenerating(false);
 
       if (response.ok) {
+        const data = await response.json();
+        setGeneratedTimetables(data?.timetableOptions);
         fetchTimetableData(timetableId);
       } else {
         const error = await response.json();
