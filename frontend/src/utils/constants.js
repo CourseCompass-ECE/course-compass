@@ -416,6 +416,7 @@ export const DESIGNATION_PATH = "/designation";
 export const CONFLICT_STATUS_PATH = "/conflict-status";
 export const RECOMMENDATIONS_PATH = "/recommendations";
 export const GENERATE_PATH = "/generate";
+export const SELECT_PATH = "/select";
 export const ID_QUERY_PARAM = "?id=";
 
 export const YES = "Yes";

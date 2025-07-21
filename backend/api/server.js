@@ -27,6 +27,7 @@ const {
   RECOMMENDATIONS_PATH,
   REJECT_PATH,
   GENERATE_PATH,
+  SELECT_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -45,7 +46,10 @@ const sendGrid = require("@sendgrid/mail");
 sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 //todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
 const { findRecommendedCourses } = require("../utils/findRecommendedCourses");
-const { generateTimetable } = require("../utils/generateTimetable");
+const {
+  generateTimetable,
+  addTimetable,
+} = require("../utils/generateTimetable");
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
@@ -54,6 +58,7 @@ const INVALID_TIMETABLE_COURSE_DETAILS_ERROR =
   "Invalid timetable course details provided";
 const INVALID_COURSE_ID = "Invalid course id provided";
 const INVALID_TIMETABLE_ID = "Invalid timetable id provided";
+const INVALID_COURSES_PROVIDED = "Invalid timetable courses provided";
 const SESSION_COOKIE_NAME = "sessionId";
 const NO_USER_FOUND = "No user found";
 const SKILLS_INTERESTS_MIN_LENGTH = 5;
@@ -91,6 +96,10 @@ const isEceAreaArrayValid = (array, desiredLength) => {
     array?.length === desiredLength &&
     !array.some((area) => !Object.keys(ECE_AREAS).includes(area))
   );
+};
+
+const isTimetableIdValid = (timetableId) => {
+  return timetableId && ONLY_NUMBERS.test(timetableId);
 };
 
 const server = express();
@@ -423,8 +432,7 @@ server.get(Path.TIMETABLE, async (req, res, next) => {
   const timetableId = req.query?.id;
 
   try {
-    if (!timetableId || !ONLY_NUMBERS.test(timetableId))
-      throw new Error(INVALID_TIMETABLE_ID);
+    if (!isTimetableIdValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
 
     const userId = Number(req.session?.user?.id);
     const timetable = await User.findUserTimetableByIds(
@@ -461,7 +469,7 @@ server.patch(`${Path.TIMETABLE}${DESCRIPTION_PATH}`, async (req, res, next) => {
   const timetableId = req.query?.id;
   const description = req.body?.description;
   try {
-    if (!timetableId || !ONLY_NUMBERS.test(timetableId))
+    if (!isTimetableIdValid(timetableId))
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
 
     const userId = Number(req.session?.user?.id);
@@ -595,15 +603,42 @@ server.get(`${Path.EXPLORE}${RECOMMENDATIONS_PATH}`, async (req, res, next) => {
   }
 });
 
-server.post(`${Path.TIMETABLE}${GENERATE_PATH}`, async (req, res, next) => {
+server.get(`${Path.TIMETABLE}${GENERATE_PATH}`, async (req, res, next) => {
   const timetableId = req.query?.id;
 
   try {
-    if (!timetableId || !ONLY_NUMBERS.test(timetableId))
-      throw new Error(INVALID_TIMETABLE_ID);
+    if (!isTimetableIdValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
 
     const userId = Number(req.session?.user?.id);
-    await generateTimetable(userId, Number(timetableId));
+    const timetableOptions = await generateTimetable(
+      userId,
+      Number(timetableId)
+    );
+    res.status(200).json({ timetableOptions });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.post(`${Path.TIMETABLE}${SELECT_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const courses = req.body?.courses;
+
+  try {
+    if (!isTimetableIdValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    else if (
+      courses.some(
+        (course) =>
+          !ONLY_NUMBERS.test(course.id) ||
+          !ONLY_NUMBERS.test(course.term) ||
+          !ONLY_NUMBERS.test(course.position)
+      )
+    )
+      throw new Error(INVALID_COURSES_PROVIDED);
+
+    const userId = Number(req.session?.user?.id);
+    const timetable = await User.findUserTimetableByIds(Number(timetableId), userId);
+    await addTimetable(courses, timetable, userId);
     res.status(201).end();
   } catch (err) {
     next(err);

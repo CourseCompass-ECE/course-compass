@@ -20,6 +20,7 @@ import {
   initialErrors,
   CONFLICT_STATUS_PATH,
   GENERATE_PATH,
+  SELECT_PATH,
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -28,9 +29,6 @@ import { areRequirementsMet } from "../utils/requirementsCheck";
 import { updateCoursesInCart } from "../utils/updateCourses";
 
 const Timetable = () => {
-  const PREREQ_ERRORS = "Prerequisite Errors";
-  const COREQ_ERRORS = "Corequisite Errors";
-  const EXCLUSION_ERRORS = "Exclusion Errors";
   const initialTerms = [
     {
       title: "3rd Year, Fall",
@@ -58,6 +56,10 @@ const Timetable = () => {
   const [updateTimetableError, setUpdateTimetableError] = useState("");
   const [generateTimetableError, setGenerateTimetableError] = useState("");
   const [isTimetableGenerating, setIsTimetableGenerating] = useState(false);
+  const [generatedTimetables, setGeneratedTimetables] = useState(null);
+  const [currentTimetableOption, setCurrentTimetableOption] = useState(null);
+  const [originalTerms, setOriginalTerms] = useState(null);
+  const [selectTimetableError, setSelectTimetableError] = useState("");
   const [isRequirementsMenuOpen, setIsRequirementsMenuOpen] = useState(false);
   const [terms, setTerms] = useState(initialTerms);
   const [errors, setErrors] = useState(initialErrors);
@@ -88,6 +90,15 @@ const Timetable = () => {
   const NO_COURSE = "No course added yet";
   const NO_ERRORS = "Great job - no errors found!";
   const TIMETABLE_ERROR_TITLE = "Unable to Generate Timetable";
+  const REQUIREMENTS_CONTAINER_NEW_BOTTOM = "7vh";
+  const OPTION = "Option: ";
+  const TIMETABLE_SCORE_OUTLINE_ALT =
+    "Gold leaf circular outline to encase timetable score";
+  const TIMETABLE_SCORE_OUTLINE = [
+    "/goldOutline.png",
+    "/silverOutline.png",
+    "/bronzeOutline.png",
+  ];
 
   const filteredCoursesInCart = coursesInCart.filter(
     (course) =>
@@ -339,11 +350,12 @@ const Timetable = () => {
           setErrors,
           setDesignation
         );
+        return data?.timetable?.id;
       } else {
-        navigate(Path.EXPLORE);
+        navigate(Path.TIMETABLES);
       }
     } catch (error) {
-      navigate(Path.EXPLORE);
+      navigate(Path.TIMETABLES);
     }
   };
 
@@ -399,22 +411,24 @@ const Timetable = () => {
     );
   };
 
-  const generateTimetable = async () => {
+  const generateTimetable = async (timetableId) => {
     try {
       setIsTimetableGenerating(true);
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${
           Path.TIMETABLE
-        }${GENERATE_PATH}${ID_QUERY_PARAM}${timetable?.id}`,
+        }${GENERATE_PATH}${ID_QUERY_PARAM}${timetableId}`,
         {
-          method: "POST",
+          method: "GET",
           credentials: "include",
         }
       );
       setIsTimetableGenerating(false);
 
       if (response.ok) {
-        fetchTimetableData(timetable?.id);
+        const data = await response.json();
+        setGeneratedTimetables(data?.timetableOptions);
+        if (!data?.timetableOptions) fetchTimetableData(timetableId);
       } else {
         const error = await response.json();
         setGenerateTimetableError(
@@ -427,15 +441,76 @@ const Timetable = () => {
     }
   };
 
+  const enableTimetableSelection = () => {
+    setOriginalTerms(terms);
+    organizeCourses(generatedTimetables[0].courses);
+    setCurrentTimetableOption(1);
+  };
+
+  const updateTimetableOption = (change) => {
+    const newTimetableOption = currentTimetableOption + change;
+    if (
+      newTimetableOption > 0 &&
+      newTimetableOption <= generatedTimetables.length
+    ) {
+      setSelectTimetableError("");
+      setCurrentTimetableOption(newTimetableOption);
+      organizeCourses(generatedTimetables[newTimetableOption - 1].courses);
+    }
+  };
+
+  const exitTimetableOptions = () => {
+    setOriginalTerms(null);
+    setGeneratedTimetables(null);
+    setCurrentTimetableOption(null);
+  };
+
+  const selectTimetableOption = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${SELECT_PATH}${ID_QUERY_PARAM}${timetable.id}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            courses: generatedTimetables[currentTimetableOption - 1].courses,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        exitTimetableOptions();
+        fetchTimetableData(timetable.id);
+      } else {
+        setSelectTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setSelectTimetableError(GENERIC_ERROR);
+    }
+  };
+
   useEffect(() => {
-    const callFetchTimetableData = async (id) => {
-      await fetchTimetableData(id);
+    const callFetchTimetableData = async (
+      id,
+      doesUserWantTimetableGenerated
+    ) => {
+      let timetableId = await fetchTimetableData(id);
+      await fetchCoursesInCart(setFetchCartCoursesError, setCoursesInCart);
+      if (doesUserWantTimetableGenerated == true && timetableId) {
+        await generateTimetable(timetableId);
+      }
     };
 
     const timetableId = searchParams.get("id");
+    const doesUserWantTimetableGenerated =
+      searchParams.get("generateTimetable");
     if (!ONLY_NUMBERS.test(timetableId)) navigate(Path.TIMETABLES);
-    callFetchTimetableData(timetableId);
-    fetchCoursesInCart(setFetchCartCoursesError, setCoursesInCart);
+    else callFetchTimetableData(timetableId, doesUserWantTimetableGenerated);
   }, []);
 
   useEffect(() => {
@@ -445,6 +520,7 @@ const Timetable = () => {
   }, [designation]);
 
   useEffect(() => {
+    if (originalTerms) return;
     if (
       timetable &&
       errors.some((errorObject) => errorObject.errors.length > 0) ===
@@ -453,6 +529,10 @@ const Timetable = () => {
       toggleConflictStatus();
     }
   }, errors);
+
+  useEffect(() => {
+    if (generatedTimetables) enableTimetableSelection();
+  }, [generatedTimetables]);
 
   return (
     <div className="page-container">
@@ -564,11 +644,14 @@ const Timetable = () => {
                     key={index}
                     onClick={(event) =>
                       event.target.innerText !== FAVORITE_ICON &&
-                      event.target.innerText !== CART_ICON
+                      event.target.innerText !== CART_ICON &&
+                      !originalTerms
                         ? setSelectedCourse(course.id)
                         : null
                     }
-                    style={{ cursor: "pointer" }}
+                    style={{
+                      cursor: originalTerms ? "not-allowed" : "pointer",
+                    }}
                   >
                     <ExploreCourse
                       index={index}
@@ -596,9 +679,65 @@ const Timetable = () => {
             htmlFor="designation"
             className="page-big-header timetable-courses-header"
           >
+            <div
+              className="timetable-options-container"
+              style={{ display: originalTerms ? "block" : "none" }}
+            >
+              <span
+                className="material-symbols-outlined timetable-selection-arrow"
+                onClick={() => updateTimetableOption(-1)}
+              >
+                arrow_left
+              </span>
+              {`${OPTION}${currentTimetableOption} of ${generatedTimetables?.length}`}
+              <img
+                className="timetable-score-outline"
+                alt={TIMETABLE_SCORE_OUTLINE_ALT}
+                src={
+                  TIMETABLE_SCORE_OUTLINE[
+                    currentTimetableOption ? currentTimetableOption - 1 : 0
+                  ]
+                }
+              />
+              <span className="timetable-option-score">
+                {currentTimetableOption
+                  ? generatedTimetables[currentTimetableOption - 1]?.score
+                  : ""}
+                %
+              </span>
+              <span
+                className="material-symbols-outlined timetable-selection-arrow timetable-selection-right-arrow"
+                onClick={() => updateTimetableOption(1)}
+              >
+                arrow_right
+              </span>
+              <div className="timetable-options-select-container">
+                <span
+                  className="material-symbols-outlined timetable-edit-icon timetable-yes"
+                  onClick={selectTimetableOption}
+                >
+                  check_circle
+                </span>
+                <span
+                  className="material-symbols-outlined timetable-edit-icon timetable-no"
+                  onClick={() => {
+                    setTerms(originalTerms);
+                    exitTimetableOptions();
+                  }}
+                >
+                  cancel
+                </span>
+              </div>
+              <div>
+                <span className="text-input-error timetable-select-error">
+                  {selectTimetableError}
+                </span>
+              </div>
+            </div>
+
             {TIMETABLE}
             <span
-              className="material-symbols-outlined info-hover"
+              className="material-symbols-outlined info-hover timetable-info-icon"
               onMouseEnter={() => (infoRef.current.style.display = "block")}
               onMouseLeave={() => (infoRef.current.style.display = "none")}
             >
@@ -609,9 +748,11 @@ const Timetable = () => {
             </div>
             <div className="create-btn-height generate-timetable">
               <button
-                className="create-btn generate-background"
-                style={{ width: "250px" }}
-                onClick={generateTimetable}
+                className="create-btn generate-background generate-timetable"
+                onClick={() =>
+                  originalTerms ? null : generateTimetable(timetable?.id)
+                }
+                style={originalTerms ? { cursor: "not-allowed" } : {}}
               >
                 <span className="material-symbols-outlined">wand_stars</span>
                 {BUTTON_TEXT}
@@ -637,6 +778,7 @@ const Timetable = () => {
                       deleteTimetableCourse={() =>
                         deleteTimetableCourse(course.id)
                       }
+                      isTimetableOption={originalTerms ? true : false}
                     />
                   ) : (
                     <article
@@ -692,11 +834,24 @@ const Timetable = () => {
 
       <section
         className="timetable-requirements-container"
-        onMouseEnter={() => setIsRequirementsMenuOpen(true)}
+        style={
+          originalTerms
+            ? { cursor: "not-allowed" }
+            : {
+                bottom: isRequirementsMenuOpen
+                  ? REQUIREMENTS_CONTAINER_NEW_BOTTOM
+                  : "",
+              }
+        }
+        onMouseEnter={() =>
+          originalTerms ? null : setIsRequirementsMenuOpen(true)
+        }
         onMouseLeave={() => setIsRequirementsMenuOpen(false)}
       >
         <span className="material-symbols-outlined requirements-menu">
-          {isRequirementsMenuOpen ? "keyboard_arrow_down" : "keyboard_arrow_up"}
+          {isRequirementsMenuOpen && !originalTerms
+            ? "keyboard_arrow_down"
+            : "keyboard_arrow_up"}
         </span>
         <div className="all-requirements-container">
           <h2 className="requirements-title">{REQUIREMENTS}</h2>
