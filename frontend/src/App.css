@@ -344,6 +344,14 @@ footer {
   cursor: pointer;
 }
 
+.timetable-score-outline {
+  width: 150px;
+  height: 150px;
+  position: absolute;
+  left: 34%;
+  top: -165px
+}
+
 .create-account-pfp-img {
   width: 18vw;
   height: 18vw;
@@ -1000,6 +1008,8 @@ footer {
 .timetable-courses-header {
   position: relative;
   text-align: center;
+  display: flex;
+  justify-content: center;
 }
 
 .timetable-container {
@@ -1226,6 +1236,7 @@ footer {
   justify-content: center;
   cursor: pointer;
   position: relative;
+  opacity: 1;
 }
 
 .timetable-course-title {
@@ -1266,10 +1277,6 @@ footer {
   z-index: 1;
   display: flex;
   flex-direction: column;
-}
-
-.timetable-requirements-container:hover {
-  bottom: 7vh;
 }
 
 .requirements-menu {
@@ -1464,7 +1471,7 @@ footer {
   cursor: pointer;
 }
 
-.close-modal:hover {
+.close-modal:hover, .timetable-selection-arrow {
   color: var(--dark-gray);
 }
 
@@ -1486,4 +1493,37 @@ footer {
 .dropdown-items-outer-container {
   width: fit-content;
   position: relative;
+}
+
+.timetable-options-container {
+  position: absolute;
+  left: 20px;
+  width: 35%;
+  height: 100%;
+  font-family: var(--header-font);
+  font-size: 24px;
+}
+
+.timetable-selection-arrow {
+  font-size: 50px;
+  top: -10px;
+  margin-left: -50px;
+  cursor: pointer;
+  position: absolute;
+}
+
+.timetable-selection-right-arrow {
+  margin-left: 0;
+}
+
+.timetable-selection-arrow:hover {
+  color: var(--main-color)
+}
+
+.timetable-info-icon {
+  align-self: center;
+}
+
+.generate-timetable {
+  width: 250px;
 }

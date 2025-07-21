@@ -5,14 +5,18 @@ const TimetableCourseSummary = (props) => {
   return (
     <article
       className="course-placeholder timetable-course-details-container"
-      style={{opacity: 1}}
+      style={props.isTimetableOption ? { cursor: "not-allowed" } : {}}
       onClick={(event) =>
-        event.target.innerText !== DELETE
+        event.target.innerText !== DELETE && !props.isTimetableOption
           ? props.setSelectedCourse(props.courseId)
           : null
       }
     >
-      <span className="material-symbols-outlined timetable-course-delete" onClick={props.deleteTimetableCourse}>
+      <span
+        className="material-symbols-outlined timetable-course-delete"
+        onClick={props.deleteTimetableCourse}
+        style={props.isTimetableOption ? { display: "none" } : {}}
+      >
         {DELETE}
       </span>
       <h4 className="explore-course-title timetable-course-title">

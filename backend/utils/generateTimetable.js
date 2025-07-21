@@ -1260,7 +1260,9 @@ const findOneTimetable = (
       );
       if (typeof indexToAddTimetable === "number") {
         let newTimetable = {
-          courses: timetableCourses,
+          courses: timetableCourses.map((course) => {
+            return { ...course, term: Number(course.term) };
+          }),
           score: timetableScore,
         };
         timetablesToRecommend.splice(indexToAddTimetable, 0, newTimetable);
@@ -1424,6 +1426,23 @@ const isTopTimetableDifferent = (
   );
 };
 
+const formatTimetablesBeforeReturn = (timetablesToRecommend, allCourses) => {
+  timetablesToRecommend.forEach((timetable) => {
+    timetable.courses.forEach((courseObject) => {
+      let courseData = allCourses.find(
+        (course) => course.id === courseObject.id
+      );
+      delete courseObject.id;
+      courseObject.course = {
+        id: courseData.id,
+        code: courseData.code,
+        title: courseData.title,
+      };
+    });
+  });
+  return timetablesToRecommend;
+};
+
 // Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
 // 7,168,066,508,321,614 (~7.17 quadrillion) possible 20-course timetable combinations
 export const generateTimetable = async (userId, timetableId) => {
@@ -1535,7 +1554,7 @@ export const generateTimetable = async (userId, timetableId) => {
       (combination) => combination.valid
     ).length;
 
-    // Check if discovered kernel/depth combination is not duplicate & with major (3+ different courses) or minor (<= 2 different courses) differences & can successfully be 
+    // Check if discovered kernel/depth combination is not duplicate & with major (3+ different courses) or minor (<= 2 different courses) differences & can successfully be
     // placed in timetable; ensure the randomizing strategy begins if reach end of incremental strategy (for major permutations) or end of limited randomization strategy (minor permutations)
     if (
       !courseCombinationFound ||
@@ -1624,7 +1643,7 @@ export const generateTimetable = async (userId, timetableId) => {
       await addTimetable(timetablesToRecommend[0]?.courses, timetable, userId);
       return null;
     default:
-      return timetablesToRecommend;
+      return formatTimetablesBeforeReturn(timetablesToRecommend, allCourses);
   }
 };
 
