@@ -729,9 +729,13 @@ const calculateEasyToEnrollScore = (
   };
 };
 
-const sortByEasyToEnrollScore = (reqA, reqB) => {
+const sortByEasyToEnrollScore = (reqA, reqB, coursesWithScores) => {
+  let recommendationScoreDifference =
+    coursesWithScores.get(reqB.id) - coursesWithScores.get(reqA.id);
+
   if (reqA.easyToEnrollScore < reqB.easyToEnrollScore) return -1;
   else if (reqB.easyToEnrollScore < reqA.easyToEnrollScore) return 1;
+  else if (recommendationScoreDifference) return recommendationScoreDifference;
   else if (reqA.prerequisitesRemaining < reqB.prerequisitesRemaining) return -1;
   else if (reqB.prerequisitesRemaining < reqA.prerequisitesRemaining) return 1;
   else if (reqA.corequisitesRemaining < reqB.corequisitesRemaining) return -1;
@@ -743,7 +747,8 @@ const getSortedRequirements = (
   scoredReqList,
   timetableCourses,
   kernelDepthCourses,
-  refinedShoppingCart
+  refinedShoppingCart,
+  coursesWithScores
 ) => {
   let placeholderSet = new Set([]);
   scoredReqList.forEach((req) => {
@@ -764,7 +769,9 @@ const getSortedRequirements = (
   let newScoredReqList = scoredReqList.filter(
     (req) => req.easyToEnrollScore !== INVALID
   );
-  newScoredReqList.sort((reqA, reqB) => sortByEasyToEnrollScore(reqA, reqB));
+  newScoredReqList.sort((reqA, reqB) =>
+    sortByEasyToEnrollScore(reqA, reqB, coursesWithScores)
+  );
   return newScoredReqList;
 };
 
@@ -903,7 +910,8 @@ const isRequirementsPlacedInTimetable = (
   refinedShoppingCart,
   coursesToAdd,
   coursesAddedToTimetableToRecall,
-  isCoreqList
+  isCoreqList,
+  coursesWithScores
 ) => {
   if (
     isCoreqList &&
@@ -939,7 +947,8 @@ const isRequirementsPlacedInTimetable = (
         timetableCourses,
         kernelDepthCourses,
         coursesToAdd,
-        coursesAddedToTimetableToRecall
+        coursesAddedToTimetableToRecall,
+        coursesWithScores
       )
     )
       return false;
@@ -978,7 +987,8 @@ const isCoursePlacedInTimetable = (
   timetableCourses,
   kernelDepthCourses,
   coursesToAdd,
-  coursesAddedToTimetableToRecall
+  coursesAddedToTimetableToRecall,
+  coursesWithScores
 ) => {
   if (checkIfCourseAlreadyInTimetable(timetableCourses, courseToPlaceId))
     return true;
@@ -992,14 +1002,16 @@ const isCoursePlacedInTimetable = (
     scoredPrereqList,
     timetableCourses,
     kernelDepthCourses,
-    refinedShoppingCart
+    refinedShoppingCart,
+    coursesWithScores
   );
   let scoredCoreqList = structuredClone(courseToPlace.corequisites);
   scoredCoreqList = getSortedRequirements(
     scoredCoreqList,
     timetableCourses,
     kernelDepthCourses,
-    refinedShoppingCart
+    refinedShoppingCart,
+    coursesWithScores
   );
 
   if (
@@ -1019,7 +1031,8 @@ const isCoursePlacedInTimetable = (
       refinedShoppingCart,
       coursesToAdd,
       coursesAddedToTimetableToRecall,
-      false
+      false,
+      coursesWithScores
     )
   )
     return false;
@@ -1034,7 +1047,8 @@ const isCoursePlacedInTimetable = (
       refinedShoppingCart,
       coursesToAdd,
       coursesAddedToTimetableToRecall,
-      true
+      true,
+      coursesWithScores
     )
   )
     return false;
@@ -1198,7 +1212,8 @@ const attemptToAddCourse = (
   currentCourseId,
   refinedShoppingCart,
   timetableCourses,
-  kernelDepthCourses
+  kernelDepthCourses,
+  coursesWithScores
 ) => {
   let coursesAddedToTimetableToRecall = [];
   let isCoursePossibleToInclude = isCoursePlacedInTimetable(
@@ -1207,7 +1222,8 @@ const attemptToAddCourse = (
     timetableCourses,
     kernelDepthCourses,
     [],
-    coursesAddedToTimetableToRecall
+    coursesAddedToTimetableToRecall,
+    coursesWithScores
   );
 
   if (!isCoursePossibleToInclude) {
@@ -1234,7 +1250,8 @@ const findOneTimetable = (
       currentCourse.id,
       refinedShoppingCart,
       timetableCourses,
-      kernelDepthCourses
+      kernelDepthCourses,
+      coursesWithScores
     );
     currentCourseIndex++;
   }
@@ -1244,7 +1261,8 @@ const findOneTimetable = (
       ece472Id,
       refinedShoppingCart,
       timetableCourses,
-      kernelDepthCourses
+      kernelDepthCourses,
+      coursesWithScores
     );
 
     if (timetableCourses.length === MINIMUM_COURSES) {
@@ -1296,7 +1314,8 @@ const experimentWithTimetables = (
     remainingCartCourses,
     timetableCourses,
     kernelDepthCourses,
-    refinedShoppingCart
+    refinedShoppingCart,
+    coursesWithScores
   );
   let offsetIndex = 0;
   let extraCoursesInCart = remainingCartCourses.length - remainingCoursesNeeded;
@@ -1364,7 +1383,8 @@ const findTopTimetable = (
       timetableCourses,
       kernelDepthCourses,
       [],
-      coursesAddedToTimetableToRecall
+      coursesAddedToTimetableToRecall,
+      coursesWithScores
     );
 
     if (!isCoursePossibleToInclude) {
