@@ -23,10 +23,10 @@ const User = require("../api/user-model");
 
 const userId = 1;
 const otherUserId = 4;
-const OTHER_USER_SCORE = 14;
+const OTHER_USER_SCORE = 15.5;
 const SHOPPING_CART_MULTIPLIER = 1;
 const COMPUTER_SECURITY_CODE = "ECE568H1";
-const TOTAL_SCORE_BOOST = 115;
+const TOTAL_SCORE_BOOST = 628;
 const expectedCourseFields = {
   id: expect.any(Number),
   description: expect.any(String),

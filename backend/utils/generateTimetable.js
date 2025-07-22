@@ -54,6 +54,8 @@ const RETRIEVING_472_ERROR =
   "Something went wrong adding ECE472H1 to the timetable";
 const COURSE_RECOMMENDATION_SCORE_ERROR =
   "Something went wrong determining how to rank timetables";
+const INVALID_TIMETABLE_ERROR =
+  "Something went wrong retrieving your timetable data";
 
 // Given a corequisite or prerequisite course list, determine if the number of courses from this list that is also found in the shopping cart
 // meets or exceeds the minimum prerequisites/corequisites met amount + remove any prereq/coreq not in the cart
@@ -78,7 +80,7 @@ const isPrereqOrCoreqMet = (
 };
 
 // Filter out courses without enough prereq/coreq in the cart, then restart review in case previously checked courses have course requirements that were just removed from cart
-const filterOutCoursesNotMeetingRequirements = (shoppingCartCourses) => {
+export const filterOutCoursesNotMeetingRequirements = (shoppingCartCourses) => {
   let endIndex = shoppingCartCourses.length;
   let refinedShoppingCart = structuredClone(shoppingCartCourses);
   let currentIndex = 0;
@@ -180,9 +182,10 @@ const checkActionIsLegal = (
 ) => {
   let uniqueCourseIdsUsed = new Set([]);
   usedCourseIds.forEach((areaObject) => {
-    areaObject.courses.forEach((usedCourseId) => {
-      uniqueCourseIdsUsed.add(usedCourseId);
-    });
+    uniqueCourseIdsUsed = new Set([
+      ...uniqueCourseIdsUsed,
+      ...areaObject.courses,
+    ]);
   });
 
   if (uniqueCourseIdsUsed.has(courseId)) return false;
@@ -989,7 +992,7 @@ const checkIfCourseAlreadyInTimetable = (timetableCourses, courseId) => {
 };
 
 // Given a course ID, place it in timetable along with all of its prerequisites/corequisites, and its prerequisites/corequisites, and so on
-const isCoursePlacedInTimetable = (
+export const isCoursePlacedInTimetable = (
   courseToPlaceId,
   refinedShoppingCart,
   timetableCourses,
@@ -1003,6 +1006,7 @@ const isCoursePlacedInTimetable = (
   const courseToPlace = refinedShoppingCart.find(
     (course) => course.id === courseToPlaceId
   );
+  if (!courseToPlace) return false;
   coursesToAdd.push(courseToPlace);
 
   let scoredPrereqList = structuredClone(courseToPlace.prerequisites);
@@ -1459,7 +1463,7 @@ const findTopTimetable = (
   return isTimetableFound;
 };
 
-const generateCoursesWithScores = async (
+export const generateCoursesWithScores = async (
   allCourses,
   userId,
   refinedShoppingCart
@@ -1654,6 +1658,7 @@ export const generateTimetable = async (
 
   // Store courses found across each of the 6 areas, then determine each combination of depth & kernel areas to brainstorm courses around
   const timetable = await User.findUserTimetableByIds(timetableId, userId);
+  if (!timetable) throw new Error(INVALID_TIMETABLE_ERROR);
   let timetablesToRecommend = [];
   let topCombinationIndex = null;
   let topOffsets = [];
