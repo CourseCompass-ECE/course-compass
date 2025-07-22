@@ -21,6 +21,8 @@ import {
   CONFLICT_STATUS_PATH,
   GENERATE_PATH,
   SELECT_PATH,
+  TIMETABLE_AREAS_CHANGE_TITLE,
+  UPDATE_AREAS_PATH,
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -28,6 +30,7 @@ import TimetableCourseSummary from "./timetableCourseSummary/TimetableCourseSumm
 import { areRequirementsMet } from "../utils/requirementsCheck";
 import { updateCoursesInCart } from "../utils/updateCourses";
 import { Slider, Checkbox } from "@mui/material";
+import ErrorModal from "./errorModal/errorModal";
 
 const Timetable = () => {
   const initialTerms = [
@@ -76,6 +79,9 @@ const Timetable = () => {
     useState(DEFAULT_DURATION);
   const [anyKernelDepth, setAnyKernelDepth] = useState(false);
   const [anyDepth, setAnyDepth] = useState(false);
+  const [displayUpdateAreasPopup, setDisplayUpdateAreasPopup] = useState(false);
+  const [kernelAreaChanges, setKernelAreaChanges] = useState(null);
+  const [depthAreaChanges, setDepthAreaChanges] = useState(null);
 
   const TIMETABLE = "Timetable";
   const TIMETABLE_DESCRIPTION = "Timetable Description ";
@@ -111,6 +117,8 @@ const Timetable = () => {
   const ANY_DEPTH_QUERY_PARAM = "&anyDepth=";
   const CHOOSE_ANY_KERNEL_AND_DEPTH_AREAS = "Choose any kernel & depth areas:";
   const CHOOSE_ANY_DEPTH_AREAS = "Choose any depth areas:";
+  const KERNEL_AREA_CHANGES = "Kernel Area Changes:";
+  const DEPTH_AREA_CHANGES = "Depth Area Changes:";
 
   const filteredCoursesInCart = coursesInCart.filter(
     (course) =>
@@ -508,6 +516,125 @@ const Timetable = () => {
     }
   };
 
+  const handleTimetableSelection = () => {
+    let generatedTimetableKernelSet = new Set(
+      generatedTimetables[currentTimetableOption - 1].kernel
+    );
+    let generatedTimetableDepthSet = new Set(
+      generatedTimetables[currentTimetableOption - 1].depth
+    );
+    let existingTimetableKernelSet = new Set(timetable.kernel);
+    let existingTimetableDepthSet = new Set(timetable.depth);
+
+    let commonKernelAreas = generatedTimetableKernelSet.intersection(
+      existingTimetableKernelSet
+    );
+    let commonDepthAreas = generatedTimetableDepthSet.intersection(
+      existingTimetableDepthSet
+    );
+
+    let removedKernelAreas = commonKernelAreas.symmetricDifference(
+      existingTimetableKernelSet
+    );
+    let removedDepthAreas = commonDepthAreas.symmetricDifference(
+      existingTimetableDepthSet
+    );
+    let newKernelAreas = commonKernelAreas.symmetricDifference(
+      generatedTimetableKernelSet
+    );
+    let newDepthAreas = commonDepthAreas.symmetricDifference(
+      generatedTimetableDepthSet
+    );
+
+    if (removedKernelAreas.size !== 0 || removedDepthAreas.size !== 0) {
+      setKernelAreaChanges(
+        removedKernelAreas.size !== 0
+          ? {
+              removed: [...removedKernelAreas],
+              added: [...newKernelAreas],
+            }
+          : null
+      );
+      setDepthAreaChanges(
+        removedDepthAreas.size !== 0
+          ? { removed: [...removedDepthAreas], added: [...newDepthAreas] }
+          : null
+      );
+      setDisplayUpdateAreasPopup(true);
+    } else {
+      selectTimetableOption();
+    }
+  };
+
+  const cancelChangeAreasAttempt = () => {
+    setDisplayUpdateAreasPopup(false);
+    setKernelAreaChanges(null);
+    setDepthAreaChanges(null);
+  };
+
+  const renderAreaChanges = (areaChangesObject, changeText) => {
+    return (
+      <>
+        {areaChangesObject?.removed ? <span>{changeText}</span> : null}
+        <ul
+          style={areaChangesObject ? { display: "block" } : { display: "none" }}
+          className="area-changes-summary"
+        >
+          {areaChangesObject?.removed
+            ? areaChangesObject?.removed?.map((kernelAreaRemoved, index) => {
+                let kernelAreaAdded = areaChangesObject.added[index];
+                return (
+                  <li key={index} className="area-change">{`${ECE_AREAS[kernelAreaRemoved]} -> ${ECE_AREAS[kernelAreaAdded]}`}</li>
+                );
+              })
+            : null}
+        </ul>
+      </>
+    );
+  };
+
+  const generateAreaChangesSummary = () => {
+    return (
+      <>
+        {renderAreaChanges(kernelAreaChanges, KERNEL_AREA_CHANGES)}
+        {renderAreaChanges(depthAreaChanges, DEPTH_AREA_CHANGES)}
+      </>
+    );
+  };
+
+  const updateTimetableAreas = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${UPDATE_AREAS_PATH}${ID_QUERY_PARAM}${timetable.id}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            kernel: generatedTimetables[currentTimetableOption - 1].kernel,
+            depth: generatedTimetables[currentTimetableOption - 1].depth,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        await selectTimetableOption();
+        cancelChangeAreasAttempt();
+        fetchTimetableData(timetable.id);
+      } else {
+        cancelChangeAreasAttempt();
+        setUpdateTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      cancelChangeAreasAttempt();
+      setUpdateTimetableError(GENERIC_ERROR);
+    }
+  };
+
   const kernelDepthToggled = () => {
     if (!anyKernelDepth) setAnyDepth(true);
     setAnyKernelDepth(!anyKernelDepth);
@@ -738,7 +865,7 @@ const Timetable = () => {
               <div className="timetable-options-select-container">
                 <span
                   className="material-symbols-outlined timetable-edit-icon timetable-yes"
-                  onClick={selectTimetableOption}
+                  onClick={handleTimetableSelection}
                 >
                   check_circle
                 </span>
@@ -859,34 +986,22 @@ const Timetable = () => {
         </div>
       </div>
 
-      <div
-        className="error-modal-container"
-        onClick={(event) =>
-          !event.target.className.includes("error-modal-container") &&
-          !event.target.className.includes("close-modal")
-            ? null
-            : setGenerateTimetableError("")
-        }
-        style={
-          generateTimetableError || isTimetableGenerating
-            ? {}
-            : { display: "none" }
-        }
-      >
-        {isTimetableGenerating ? (
-          <div className="loader timetable-loader"></div>
-        ) : (
-          <div className="error-modal">
-            <span className="material-symbols-outlined close-modal">close</span>
-            <h2 className="timetable-generate-error-title">
-              {TIMETABLE_ERROR_TITLE}
-            </h2>
-            <h3 className="timetable-generate-error-message">
-              {generateTimetableError}
-            </h3>
-          </div>
-        )}
-      </div>
+      <ErrorModal
+        title={TIMETABLE_ERROR_TITLE}
+        message={generateTimetableError}
+        closeAction={() => setGenerateTimetableError("")}
+        isModalDisplaying={generateTimetableError || isTimetableGenerating}
+        displayLoader={isTimetableGenerating}
+      />
+
+      <ErrorModal
+        title={TIMETABLE_AREAS_CHANGE_TITLE}
+        message={generateAreaChangesSummary()}
+        closeAction={cancelChangeAreasAttempt}
+        isModalDisplaying={displayUpdateAreasPopup}
+        displayLoader={false}
+        updateTimetableAreas={updateTimetableAreas}
+      />
 
       <section
         className="timetable-requirements-container"

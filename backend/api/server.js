@@ -28,6 +28,7 @@ const {
   REJECT_PATH,
   GENERATE_PATH,
   SELECT_PATH,
+  UPDATE_AREAS_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -653,6 +654,27 @@ server.post(`${Path.TIMETABLE}${SELECT_PATH}`, async (req, res, next) => {
       userId
     );
     await addTimetable(courses, timetable, userId);
+    res.status(201).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.post(`${Path.TIMETABLE}${UPDATE_AREAS_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const kernelAreas = req.body?.kernel;
+  const depthAreas = req.body?.depth;
+
+  try {
+    if (!numberValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    else if (
+      !isEceAreaArrayValid(kernelAreas, AMOUNT_OF_KERNEL_AREAS) ||
+      !isEceAreaArrayValid(depthAreas, AMOUNT_OF_DEPTH_AREAS)
+    )
+      throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
+
+    const userId = Number(req.session?.user?.id);
+    await User.updateTimetableAreas(userId, Number(timetableId), kernelAreas, depthAreas);
     res.status(201).end();
   } catch (err) {
     next(err);

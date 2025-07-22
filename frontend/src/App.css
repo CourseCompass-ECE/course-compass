@@ -1576,3 +1576,22 @@ footer {
   width: 45px;
   align-self: center;
 }
+
+.area-changes-summary {
+  text-align: left;
+  font-size: var(--large-text-size);
+}
+
+.area-change {
+  padding-bottom: 5px;
+}
+
+.confirm-area-change-btn {
+  margin: 0;
+  align-self: center;
+  background-color: var(--background-darker-2);
+}
+
+.confirm-area-change-btn:hover {
+  background-color: var(--background-mixed);
+}
