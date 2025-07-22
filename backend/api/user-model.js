@@ -444,4 +444,25 @@ module.exports = {
       },
     });
   },
+
+  async updateTimetableAreas(userId, timetableId, kernelAreas, depthAreas) {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        timetables: {
+          update: {
+            where: {
+              id: timetableId,
+            },
+            data: {
+              kernel: kernelAreas,
+              depth: depthAreas,
+            },
+          },
+        },
+      },
+    });
+  },
 };

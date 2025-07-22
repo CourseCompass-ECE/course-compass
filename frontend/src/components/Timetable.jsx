@@ -21,7 +21,8 @@ import {
   CONFLICT_STATUS_PATH,
   GENERATE_PATH,
   SELECT_PATH,
-  TIMETABLE_AREAS_CHANGE_TITLE
+  TIMETABLE_AREAS_CHANGE_TITLE,
+  UPDATE_AREAS_PATH,
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -583,7 +584,7 @@ const Timetable = () => {
             ? areaChangesObject?.removed?.map((kernelAreaRemoved, index) => {
                 let kernelAreaAdded = areaChangesObject.added[index];
                 return (
-                  <li className="area-change">{`${ECE_AREAS[kernelAreaRemoved]} -> ${ECE_AREAS[kernelAreaAdded]}`}</li>
+                  <li key={index} className="area-change">{`${ECE_AREAS[kernelAreaRemoved]} -> ${ECE_AREAS[kernelAreaAdded]}`}</li>
                 );
               })
             : null}
@@ -599,6 +600,39 @@ const Timetable = () => {
         {renderAreaChanges(depthAreaChanges, DEPTH_AREA_CHANGES)}
       </>
     );
+  };
+
+  const updateTimetableAreas = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${UPDATE_AREAS_PATH}${ID_QUERY_PARAM}${timetable.id}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            kernel: generatedTimetables[currentTimetableOption - 1].kernel,
+            depth: generatedTimetables[currentTimetableOption - 1].depth,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        await selectTimetableOption();
+        cancelChangeAreasAttempt();
+        fetchTimetableData(timetable.id);
+      } else {
+        cancelChangeAreasAttempt();
+        setUpdateTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      cancelChangeAreasAttempt();
+      setUpdateTimetableError(GENERIC_ERROR);
+    }
   };
 
   const kernelDepthToggled = () => {
@@ -966,6 +1000,7 @@ const Timetable = () => {
         closeAction={cancelChangeAreasAttempt}
         isModalDisplaying={displayUpdateAreasPopup}
         displayLoader={false}
+        updateTimetableAreas={updateTimetableAreas}
       />
 
       <section

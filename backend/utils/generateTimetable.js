@@ -9,7 +9,11 @@ import {
   initializeAreaCoursesList,
   updateAreaCoursesList,
 } from "../../frontend/src/utils/requirementsCheck.js";
-import { ECE472_CODE, ECE_AREAS } from "../../frontend/src/utils/constants.js";
+import {
+  ECE472_CODE,
+  ECE_AREAS,
+  AMOUNT_OF_KERNEL_AREAS,
+} from "../../frontend/src/utils/constants.js";
 
 const MINIMUM_COURSES = 20;
 const MINIMUM_COURSES_BEFORE_472 = 19;
@@ -35,16 +39,17 @@ const INITIAL_TERM_COURSE_COUNTS = { 1: 0, 2: 0, 3: 0, 4: 0 };
 // given the exponential growth in options as the number of extra courses increases
 const EXTRA_COURSES_EXPONENT = 1.5;
 const TIMETABLES_TO_RECOMMEND_INDICES = [0, 1, 2];
-const TOTAL_KERNEL_AREAS = 4;
 
 const NOT_ENOUGH_COURSES_ERROR =
   "A minimum of 20 courses are required in the shopping cart to generate a timetable";
 const NOT_ENOUGH_COURSES_AFTER_REFINING_ERROR =
   "A minimum of 20 courses are required in the shopping cart, with all course requirements met by other shopping cart courses, to generate a timetable";
-const MINIMUM_KERNEL_DEPTH_COURSES_ERROR =
-  "A minimum of 1 unique course is needed per non-depth kernel area & 3 unique courses per depth/kernel area";
+const MINIMUM_KERNEL_DEPTH_COURSES_ERROR = `A minimum of 1 unique course is needed per non-depth kernel area & 3 unique courses per depth/kernel area. 
+  Consider enabling any kernel/depth area or any depth area to generate a timetable`;
 const NO_TIMETABLE_POSSIBLE =
   "With the given shopping cart courses, no conflict-free combination is possible";
+const CONSIDER_ANY_KERNEL_DEPTH_MESSAGE =
+  ". Consider enabling any kernel/depth area to generate a timetable";
 const RETRIEVING_472_ERROR =
   "Something went wrong adding ECE472H1 to the timetable";
 const COURSE_RECOMMENDATION_SCORE_ERROR =
@@ -1541,12 +1546,12 @@ const addAllDepthVariationsGivenKernel = (
 ) => {
   for (
     let firstAreaIndex = 0;
-    firstAreaIndex < TOTAL_KERNEL_AREAS;
+    firstAreaIndex < AMOUNT_OF_KERNEL_AREAS;
     firstAreaIndex++
   ) {
     for (
       let secondAreaIndex = firstAreaIndex + 1;
-      secondAreaIndex < TOTAL_KERNEL_AREAS;
+      secondAreaIndex < AMOUNT_OF_KERNEL_AREAS;
       secondAreaIndex++
     ) {
       kernelDepthVariations.push({
@@ -1577,7 +1582,7 @@ const generateKernelDepthVariations = (
     while (currentOffset <= maximumOffset) {
       let kernelAreas = areasList.slice(
         currentOffset,
-        currentOffset + TOTAL_KERNEL_AREAS
+        currentOffset + AMOUNT_OF_KERNEL_AREAS
       );
       addAllDepthVariationsGivenKernel(kernelDepthVariations, kernelAreas);
       currentOffset++;
@@ -1603,6 +1608,17 @@ const generateKernelDepthVariations = (
     });
 
   return kernelDepthVariations;
+};
+
+const sameAreasAsExistingTimetable = (timetableToRecommend, timetable) => {
+  let newKernelAreaSet = new Set(timetableToRecommend.kernel);
+  let newDepthAreaSet = new Set(timetableToRecommend.depth);
+  let existingKernelAreaSet = new Set(timetable.kernel);
+  let existingDepthAreaSet = new Set(timetable.depth);
+  return (
+    newKernelAreaSet.symmetricDifference(existingKernelAreaSet).size === 0 &&
+    newDepthAreaSet.symmetricDifference(existingDepthAreaSet).size === 0
+  );
 };
 
 // Choosing a valid combinations of 20 courses out of a maximum of 62 courses in the shopping cart, which equates to
@@ -1836,11 +1852,22 @@ export const generateTimetable = async (
 
   switch (timetablesToRecommend.length) {
     case 0:
-      throw new Error(NO_TIMETABLE_POSSIBLE);
-    case 1:
-      await addTimetable(timetablesToRecommend[0]?.courses, timetable, userId);
-      return null;
+      throw new Error(
+        NO_TIMETABLE_POSSIBLE +
+          (anyDepth && !anyKernelDepth ? CONSIDER_ANY_KERNEL_DEPTH_MESSAGE : "")
+      );
     default:
+      if (
+        timetablesToRecommend.length === 1 &&
+        sameAreasAsExistingTimetable(timetablesToRecommend[0], timetable)
+      ) {
+        await addTimetable(
+          timetablesToRecommend[0]?.courses,
+          timetable,
+          userId
+        );
+        return null;
+      }
       return formatTimetablesBeforeReturn(timetablesToRecommend, allCourses);
   }
 };
