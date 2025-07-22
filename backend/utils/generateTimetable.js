@@ -35,6 +35,7 @@ const INITIAL_TERM_COURSE_COUNTS = { 1: 0, 2: 0, 3: 0, 4: 0 };
 // given the exponential growth in options as the number of extra courses increases
 const EXTRA_COURSES_EXPONENT = 1.5;
 const TIMETABLES_TO_RECOMMEND_INDICES = [0, 1, 2];
+const TOTAL_KERNEL_AREAS = 4;
 
 const NOT_ENOUGH_COURSES_ERROR =
   "A minimum of 20 courses are required in the shopping cart to generate a timetable";
@@ -1095,12 +1096,8 @@ const updateOffsets = (
   }
 };
 
-const checkForValidCombination = (
-  areaCourseLists,
-  timetable,
-  usedCourseIds
-) => {
-  areaCourseLists.forEach((areaCourseList) => {
+const isThereValidCombination = (areaCourseLists, timetable, usedCourseIds) => {
+  for (const areaCourseList of areaCourseLists) {
     let sortedCourseList = areaCourseList.courses.toSorted(
       (crsA, crsB) =>
         numberOfKernelAreaMatches(crsA.area, timetable.kernel) -
@@ -1120,9 +1117,9 @@ const checkForValidCombination = (
       timetable.depth
     );
 
-    if (courseCount < minimumCoursesNeeded)
-      throw new Error(MINIMUM_KERNEL_DEPTH_COURSES_ERROR);
-  });
+    if (courseCount < minimumCoursesNeeded) return false;
+  }
+  return true;
 };
 
 const prepareCourseListsAndConstants = (
@@ -1256,7 +1253,9 @@ const findOneTimetable = (
   ece472Id,
   coursesWithScores,
   topTimetableFound,
-  uniqueKernelCourseCount
+  timetablesToRecommend,
+  uniqueKernelCourseCount,
+  kernelDepthVariation
 ) => {
   while (
     timetableCourses.length < MINIMUM_COURSES_BEFORE_472 &&
@@ -1297,6 +1296,8 @@ const findOneTimetable = (
           {
             courses: courses,
             score: timetableScore,
+            kernel: kernelDepthVariation.kernel,
+            depth: kernelDepthVariation.depth,
           },
           timetablesToRecommend
         );
@@ -1306,6 +1307,8 @@ const findOneTimetable = (
       ) {
         topTimetableFound.courses = courses;
         topTimetableFound.score = timetableScore;
+        topTimetableFound.kernel = kernelDepthVariation.kernel;
+        topTimetableFound.depth = kernelDepthVariation.depth;
       }
     }
   }
@@ -1319,7 +1322,8 @@ const experimentWithTimetables = (
   ece472Id,
   coursesWithScores,
   timetablesToRecommend,
-  uniqueKernelCourseCount
+  uniqueKernelCourseCount,
+  kernelDepthVariation
 ) => {
   let initialTimetableWithKernelDepthCrs = structuredClone(timetableCourses);
   let remainingCoursesNeeded =
@@ -1359,7 +1363,8 @@ const experimentWithTimetables = (
       coursesWithScores,
       topTimetableFound,
       timetablesToRecommend,
-      uniqueKernelCourseCount
+      uniqueKernelCourseCount,
+      kernelDepthVariation
     );
     offsetIndex++;
   }
@@ -1381,7 +1386,8 @@ const experimentWithTimetables = (
       coursesWithScores,
       topTimetableFound,
       timetablesToRecommend,
-      uniqueKernelCourseCount
+      uniqueKernelCourseCount,
+      kernelDepthVariation
     );
     attempts++;
   }
@@ -1401,7 +1407,8 @@ const findTopTimetable = (
   coursesWithScores,
   timetablesToRecommend,
   kernelDepthCrsCombinations,
-  uniqueKernelCourseCount
+  uniqueKernelCourseCount,
+  kernelDepthVariation
 ) => {
   kernelDepthCourses.sort((courseIdA, courseIdB) =>
     sortByNumberOfReq(courseIdA, courseIdB, refinedShoppingCart)
@@ -1439,7 +1446,8 @@ const findTopTimetable = (
     ece472Id,
     coursesWithScores,
     timetablesToRecommend,
-    uniqueKernelCourseCount
+    uniqueKernelCourseCount,
+    kernelDepthVariation
   );
   kernelDepthCrsCombinations[kernelDepthCrsCombinations.length - 1].valid =
     isTimetableFound;
@@ -1498,39 +1506,101 @@ const formatTimetablesBeforeReturn = (timetablesToRecommend, allCourses) => {
   return timetablesToRecommend;
 };
 
+const averageRecommendationScore = (courseList, coursesWithScores) => {
+  let scoreSum = 0;
+  courseList.forEach(
+    (course) => (scoreSum += coursesWithScores.get(course.id))
+  );
+  return scoreSum / courseList.length;
+};
+
 const sortCourseLists = (
   areaCourseLists,
   timetableDepth,
-  sortByGreatestNumberOfCourses
+  sortByGreatestNumberOfCourses,
+  coursesWithScores
 ) => {
   areaCourseLists.sort((areaA, areaB) => {
     let extraCoursesDifference =
       numberExtraCourses(areaA, timetableDepth) -
       numberExtraCourses(areaB, timetableDepth);
 
-    return (sortByGreatestNumberOfCourses ? -1 : 1) * extraCoursesDifference;
+    if (extraCoursesDifference !== 0 || areaA.courses.length === 0)
+      return (sortByGreatestNumberOfCourses ? -1 : 1) * extraCoursesDifference;
+    else
+      return (
+        averageRecommendationScore(areaB.courses, coursesWithScores) -
+        averageRecommendationScore(areaA.courses, coursesWithScores)
+      );
   });
+};
+
+const addAllDepthVariationsGivenKernel = (
+  kernelDepthVariations,
+  kernelAreas
+) => {
+  for (
+    let firstAreaIndex = 0;
+    firstAreaIndex < TOTAL_KERNEL_AREAS;
+    firstAreaIndex++
+  ) {
+    for (
+      let secondAreaIndex = firstAreaIndex + 1;
+      secondAreaIndex < TOTAL_KERNEL_AREAS;
+      secondAreaIndex++
+    ) {
+      kernelDepthVariations.push({
+        kernel: kernelAreas,
+        depth: [kernelAreas[firstAreaIndex], kernelAreas[secondAreaIndex]],
+      });
+    }
+  }
 };
 
 const generateKernelDepthVariations = (
   anyKernelDepth,
+  anyDepth,
   timetable,
-  areaCourseLists
+  allAreaCourseLists,
+  coursesWithScores,
+  duration
 ) => {
   let kernelDepthVariations = [];
   if (anyKernelDepth) {
-    // Temporary logic - to continue in next PR
-    sortCourseLists(areaCourseLists, [], true);
-    kernelDepthVariations.push({
-      kernel: timetable.kernel,
-      depth: timetable.depth,
-    });
-  } else {
-    kernelDepthVariations.push({
-      kernel: timetable.kernel,
-      depth: timetable.depth,
-    });
+    sortCourseLists(allAreaCourseLists, [], true, coursesWithScores);
+    let maximumOffset = allAreaCourseLists.length - 4;
+    let currentOffset = 0;
+    let areasList = allAreaCourseLists.map(
+      (areaCourseList) => areaCourseList.area
+    );
+
+    while (currentOffset <= maximumOffset) {
+      let kernelAreas = areasList.slice(
+        currentOffset,
+        currentOffset + TOTAL_KERNEL_AREAS
+      );
+      addAllDepthVariationsGivenKernel(kernelDepthVariations, kernelAreas);
+      currentOffset++;
+      if (kernelDepthVariations.length >= duration) break;
+    }
+  } else if (anyDepth) {
+    addAllDepthVariationsGivenKernel(kernelDepthVariations, timetable.kernel);
   }
+
+  let timetableKernel = new Set(timetable.kernel);
+  let timetableDepth = new Set(timetable.depth);
+  if (
+    !anyDepth ||
+    !kernelDepthVariations.some(
+      (variation) =>
+        !variation.kernel.some((kernel) => !timetableKernel.has(kernel)) &&
+        !variation.depth.some((depth) => !timetableDepth.has(depth))
+    )
+  )
+    kernelDepthVariations.push({
+      kernel: timetable.kernel,
+      depth: timetable.depth,
+    });
 
   return kernelDepthVariations;
 };
@@ -1544,7 +1614,6 @@ export const generateTimetable = async (
   anyKernelDepth,
   anyDepth
 ) => {
-  const computationStartTime = new Date();
   const allCourses = await Course.findCourses();
   const ece472Id = allCourses?.find(
     (course) => course.code === ECE472_CODE
@@ -1567,7 +1636,12 @@ export const generateTimetable = async (
   );
   if (!coursesWithScores) throw new Error(COURSE_RECOMMENDATION_SCORE_ERROR);
 
+  // Store courses found across each of the 6 areas, then determine each combination of depth & kernel areas to brainstorm courses around
   const timetable = await User.findUserTimetableByIds(timetableId, userId);
+  let timetablesToRecommend = [];
+  let topCombinationIndex = null;
+  let topOffsets = [];
+  let kernelDepthCrsCombinations = [];
   let allAreaCourseLists = [];
   initializeAreaCoursesList(allAreaCourseLists, Object.keys(ECE_AREAS));
   refinedShoppingCart.forEach((course) => {
@@ -1575,10 +1649,14 @@ export const generateTimetable = async (
   });
   const kernelDepthVariations = generateKernelDepthVariations(
     anyKernelDepth,
+    anyDepth,
     timetable,
-    allAreaCourseLists
+    allAreaCourseLists.filter(
+      (areaCourseList) => areaCourseList.courses.length !== 0
+    ),
+    coursesWithScores,
+    duration
   );
-  let timetablesToRecommend = [];
 
   for (const kernelDepthVariation of kernelDepthVariations) {
     // Store object array containing area name & set of IDs containing courses belonging to the area (for each kernel area)
@@ -1591,10 +1669,18 @@ export const generateTimetable = async (
     usedCourseIds.forEach((areaObject) => {
       areaObject.courses = new Set([]);
     });
-    sortCourseLists(areaCourseLists, kernelDepthVariation.depth, false);
+    sortCourseLists(
+      areaCourseLists,
+      kernelDepthVariation.depth,
+      false,
+      coursesWithScores
+    );
 
     // Check for at least 1 valid combination of 8 courses across the 4 kernel areas before continuing to evaluate timetable combinations
-    checkForValidCombination(areaCourseLists, timetable, usedCourseIds);
+    if (!isThereValidCombination(areaCourseLists, timetable, usedCourseIds)) {
+      if (!anyDepth) throw new Error(MINIMUM_KERNEL_DEPTH_COURSES_ERROR);
+      else continue;
+    }
 
     // After complete with initial check, initialize various helper variables to explore timetable combinations
     let requirementSupportScoreMap = new Map();
@@ -1608,7 +1694,6 @@ export const generateTimetable = async (
     );
     let areaOffsets = Array(4).fill(0);
     let isExploringMajorPermutations = true;
-    let kernelDepthCrsCombinations = [];
     let kernelAreasSet = new Set(kernelDepthVariation.kernel);
     let uniqueKernelCourseCount = refinedShoppingCart.filter((cartCourse) =>
       cartCourse.area.some((area) => kernelAreasSet.has(area))
@@ -1622,14 +1707,13 @@ export const generateTimetable = async (
       ) + KERNEL_DEPTH_COURSES_NEEDED;
     let currentFailedAttempts = 0;
     let haveRandomizingOffsetsBegun = false;
-    let topCombinationIndex = null;
-    let topOffsets = [];
     let removeLimitsOnOffsetRandomization = false;
     let minorPermutationsFailedAttempts = 0;
     let maximumFailedMinorPermutationAttempts;
 
     // Try different timetable combinations until reach "duration"-second time limit, proceeding with the highest ranked option or none if all attempts were invalid. Choose 8 kernel/depth courses
     // from each area, incrementing offset index in each area list in order of area with the most extra courses to that with the least (& randomized if insufficient course combos found)
+    const computationStartTime = new Date();
     while (
       (new Date() - computationStartTime) / 1000 <
       duration / kernelDepthVariations.length
@@ -1648,7 +1732,7 @@ export const generateTimetable = async (
       let courseCombinationFound = isCourseCombinationFound(
         areaCourseLists,
         areaOffsets,
-        timetable,
+        kernelDepthVariation,
         usedCourseIds
       );
 
@@ -1682,7 +1766,8 @@ export const generateTimetable = async (
           coursesWithScores,
           timetablesToRecommend,
           kernelDepthCrsCombinations,
-          uniqueKernelCourseCount
+          uniqueKernelCourseCount,
+          kernelDepthVariation
         )
       ) {
         if (isExploringMajorPermutations && haveRandomizingOffsetsBegun) {
