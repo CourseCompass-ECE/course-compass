@@ -117,8 +117,8 @@ server.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.PRODUCTION ? true : false,
-      sameSite: process.env.PRODUCTION ? "none" : false,
+      secure: false,
+      sameSite: false,
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 2,
     },
