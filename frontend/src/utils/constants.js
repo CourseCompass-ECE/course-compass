@@ -459,3 +459,5 @@ export const ECE472_CODE = "ECE472H1";
 
 export const TIMETABLE_AREAS_CHANGE_TITLE =
   "To Proceed, Timetable Areas Must Change";
+
+export const MAXIMUM_DURATION = 30;

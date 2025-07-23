@@ -18,6 +18,9 @@ module.exports = {
           select: {
             id: true,
           },
+          orderBy: {
+            id: "asc",
+          },
         },
       },
     });
