@@ -58,31 +58,66 @@ const SECOND_KERNEL = [
 ];
 const SECOND_DEPTH = ["HARDWARE_NETWORKS", "SOFTWARE"];
 
+const generateCourseIdList = (courseIds) => {
+  return courseIds.map((id) => {
+    return {
+      id,
+    };
+  });
+};
+
+const SCORE_78_TIMETABLE = {
+  courses: generateCourseIdList([
+    3, 7, 19, 22, 5, 27, 9, 46, 50, 16, 31, 6, 41, 33, 2, 53, 38, 24, 13, 44,
+  ]),
+  score: 78,
+};
 const SCORE_77_TIMETABLE = {
-  courses: [
+  courses: generateCourseIdList([
     3, 11, 19, 22, 5, 27, 9, 46, 50, 16, 31, 7, 41, 35, 2, 53, 38, 24, 13, 44,
-  ],
+  ]),
   score: 77,
 };
 const SCORE_75_TIMETABLE = {
-  courses: [
+  courses: generateCourseIdList([
     3, 11, 19, 22, 5, 27, 9, 49, 50, 16, 31, 17, 41, 35, 2, 53, 38, 24, 13, 21,
-  ],
+  ]),
   score: 75,
 };
 const SCORE_70_TIMETABLE = {
-  courses: [
+  courses: generateCourseIdList([
     39, 1, 19, 22, 5, 27, 9, 46, 50, 16, 31, 7, 41, 35, 2, 53, 38, 24, 13, 40,
-  ],
+  ]),
   score: 70,
 };
+const SCORE_68_TIMETABLE = {
+  courses: generateCourseIdList([
+    39, 58, 19, 22, 5, 27, 9, 46, 50, 16, 31, 7, 41, 35, 2, 53, 38, 24, 13, 42,
+  ]),
+  score: 68,
+};
+const SCORE_67_TIMETABLE = {
+  courses: generateCourseIdList([
+    39, 51, 19, 22, 5, 27, 9, 46, 50, 16, 31, 7, 41, 35, 2, 53, 38, 24, 13, 36,
+  ]),
+  score: 67,
+};
+
 const ORIGINAL_TIMETABLE = [
   SCORE_77_TIMETABLE,
   SCORE_75_TIMETABLE,
   SCORE_70_TIMETABLE,
 ];
-const NEW_TIMETABLE_WITH_NEW_TOP = [];
-const NEW_TIMETABLE_WITH_NO_NEW_TOP = [];
+const NEW_TIMETABLE_WITH_NEW_TOP = [
+  SCORE_78_TIMETABLE,
+  SCORE_75_TIMETABLE,
+  SCORE_70_TIMETABLE,
+];
+const NEW_TIMETABLE_WITH_NO_NEW_TOP = [
+  SCORE_77_TIMETABLE,
+  SCORE_68_TIMETABLE,
+  SCORE_67_TIMETABLE,
+];
 
 const expectedCourseFields = {
   id: expect.any(Number),
@@ -230,7 +265,7 @@ test("the check for at least 1 valid kernel/depth course combination returns tru
 
 /**
  * Given an original timetable array, test two different timetable arrays against it:
- * 1. A timetable array where the top option changes with different courses & a higher score
+ * 1. A timetable array where the top option changes with different courses & a higher score, but the remaining 2 are the same
  * 2. A timetable array where the second & third timetables change with different scores/courses, but the top remains the same
  */
 test("the check for if two timetable arrays have a different top option correctly identifies when the top timetable remains identical & when it changes", () => {
@@ -239,7 +274,7 @@ test("the check for if two timetable arrays have a different top option correctl
     NEW_TIMETABLE_WITH_NEW_TOP
   );
   const isSecondTopTimetableDifferent = isTopTimetableDifferent(
-    originalTopTimetables,
+    ORIGINAL_TIMETABLE,
     NEW_TIMETABLE_WITH_NO_NEW_TOP
   );
 
