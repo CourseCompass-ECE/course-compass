@@ -13,6 +13,7 @@ import {
   ECE472_CODE,
   ECE_AREAS,
   AMOUNT_OF_KERNEL_AREAS,
+  MAXIMUM_DURATION,
 } from "../../frontend/src/utils/constants.js";
 
 const MINIMUM_COURSES = 20;
@@ -50,10 +51,14 @@ const NO_TIMETABLE_POSSIBLE =
   "With the given shopping cart courses, no conflict-free combination is possible";
 const CONSIDER_ANY_KERNEL_DEPTH_MESSAGE =
   ". Consider enabling any kernel/depth area to generate a timetable";
+const CONSIDER_INCREASING_DURATION =
+  ". Also consider increasing the duration to explore more possibilities";
 const RETRIEVING_472_ERROR =
   "Something went wrong adding ECE472H1 to the timetable";
 const COURSE_RECOMMENDATION_SCORE_ERROR =
   "Something went wrong determining how to rank timetables";
+const INVALID_TIMETABLE_ERROR =
+  "Something went wrong retrieving your timetable data";
 
 // Given a corequisite or prerequisite course list, determine if the number of courses from this list that is also found in the shopping cart
 // meets or exceeds the minimum prerequisites/corequisites met amount + remove any prereq/coreq not in the cart
@@ -78,7 +83,7 @@ const isPrereqOrCoreqMet = (
 };
 
 // Filter out courses without enough prereq/coreq in the cart, then restart review in case previously checked courses have course requirements that were just removed from cart
-const filterOutCoursesNotMeetingRequirements = (shoppingCartCourses) => {
+export const filterOutCoursesNotMeetingRequirements = (shoppingCartCourses) => {
   let endIndex = shoppingCartCourses.length;
   let refinedShoppingCart = structuredClone(shoppingCartCourses);
   let currentIndex = 0;
@@ -180,9 +185,10 @@ const checkActionIsLegal = (
 ) => {
   let uniqueCourseIdsUsed = new Set([]);
   usedCourseIds.forEach((areaObject) => {
-    areaObject.courses.forEach((usedCourseId) => {
-      uniqueCourseIdsUsed.add(usedCourseId);
-    });
+    uniqueCourseIdsUsed = new Set([
+      ...uniqueCourseIdsUsed,
+      ...areaObject.courses,
+    ]);
   });
 
   if (uniqueCourseIdsUsed.has(courseId)) return false;
@@ -346,6 +352,34 @@ const determineValidCoursesForArea = (
   return courseCount;
 };
 
+// Ensure there are enough extra courses such that at least 3 different courses can be swapped out, otherwise do not require minimum of 3 different courses
+// per major kernel/depth area combination; ignores in the count any duplicate courses found across several areas
+const atleastThreeExtraCourses = (areaCourseLists, timetableDepth) => {
+  let differentCoursesPossibleCount = 0;
+  let allCourseIdsList = [];
+  let allCourseIdsSet = new Set([]);
+
+  areaCourseLists.forEach((areaCourseList) => {
+    differentCoursesPossibleCount += numberExtraCourses(
+      areaCourseList,
+      timetableDepth
+    );
+    allCourseIdsList = [
+      ...allCourseIdsList,
+      ...areaCourseList.courses.map((course) => course.id),
+    ];
+    allCourseIdsSet = new Set([
+      ...allCourseIdsSet,
+      ...areaCourseList.courses.map((course) => course.id),
+    ]);
+  });
+
+  differentCoursesPossibleCount -=
+    allCourseIdsList.length - allCourseIdsSet.size;
+
+  return differentCoursesPossibleCount >= 3;
+};
+
 // If there is any existing valid combination such that the difference in courses between it & the new combination is under 3 (for major permutations) or over 2
 // relative to current top combination (for minor permutations) or they are identical, conclude the combination is invalid
 const isCombinationValid = (
@@ -354,7 +388,9 @@ const isCombinationValid = (
   isExploringMajorPermutations,
   topCombinationIndex,
   currentFailedAttempts,
-  maximumFailedAttemptsWithRandomOffset
+  maximumFailedAttemptsWithRandomOffset,
+  areaCourseLists,
+  timetableDepth
 ) => {
   for (const [
     combinationIndex,
@@ -379,7 +415,8 @@ const isCombinationValid = (
       isExploringMajorPermutations &&
       differentCoursesCount < MINIMUM_DIFFERENCES_FOR_MAJOR_PERMUTATIONS &&
       currentFailedAttempts < maximumFailedAttemptsWithRandomOffset &&
-      existingCombination.valid
+      existingCombination.valid &&
+      atleastThreeExtraCourses(areaCourseLists, timetableDepth)
     ) {
       return false;
     }
@@ -783,27 +820,18 @@ const getSortedRequirements = (
   return newScoredReqList;
 };
 
-const findIdSetOfCoursesInTimetable = (
-  kernelDepthCourses,
-  timetableCourses
-) => {
-  return new Set([
-    ...kernelDepthCourses,
-    ...timetableCourses.map((course) => course.id),
-  ]);
+const findIdSetOfCoursesInTimetable = (timetableCourses) => {
+  return new Set(timetableCourses.map((course) => course.id));
 };
 
 // Identify the index of the next requirement to fulfill, choosing the hardest neccessary requirement out of the most easiest to enroll requirements
 const calculateIndexOfNextReqToAdd = (
   reqList,
-  kernelDepthCourses,
   timetableCourses,
   totalReqNeeded
 ) => {
-  let currentTimetableCourseIds = findIdSetOfCoursesInTimetable(
-    kernelDepthCourses,
-    timetableCourses
-  );
+  let currentTimetableCourseIds =
+    findIdSetOfCoursesInTimetable(timetableCourses);
   let reqLeftToFulfill =
     totalReqNeeded -
     reqList.filter((req) => currentTimetableCourseIds.has(req.id)).length;
@@ -930,7 +958,6 @@ const isRequirementsPlacedInTimetable = (
 
   let currentReqIndex = calculateIndexOfNextReqToAdd(
     scoredReqList,
-    kernelDepthCourses,
     timetableCourses,
     totalReqAmount
   );
@@ -938,10 +965,8 @@ const isRequirementsPlacedInTimetable = (
   // Filter for the top easiest-to-fulfill prerequisites/corequisites needed, then given these requirements, fulfill the hardest neccessary requirement first,
   // working towards the easiest to enroll requirement
   while (currentReqIndex >= 0) {
-    let currentTimetableCourseIds = findIdSetOfCoursesInTimetable(
-      kernelDepthCourses,
-      timetableCourses
-    );
+    let currentTimetableCourseIds =
+      findIdSetOfCoursesInTimetable(timetableCourses);
     let remainingScoredReq = scoredReqList.filter(
       (req) => !currentTimetableCourseIds.has(req.id)
     );
@@ -963,7 +988,6 @@ const isRequirementsPlacedInTimetable = (
 
     currentReqIndex = calculateIndexOfNextReqToAdd(
       scoredReqList,
-      kernelDepthCourses,
       timetableCourses,
       totalReqAmount
     );
@@ -972,7 +996,6 @@ const isRequirementsPlacedInTimetable = (
   if (
     calculateIndexOfNextReqToAdd(
       originalReqList,
-      kernelDepthCourses,
       timetableCourses,
       totalReqAmount
     ) >= 0
@@ -989,7 +1012,7 @@ const checkIfCourseAlreadyInTimetable = (timetableCourses, courseId) => {
 };
 
 // Given a course ID, place it in timetable along with all of its prerequisites/corequisites, and its prerequisites/corequisites, and so on
-const isCoursePlacedInTimetable = (
+export const isCoursePlacedInTimetable = (
   courseToPlaceId,
   refinedShoppingCart,
   timetableCourses,
@@ -1003,6 +1026,7 @@ const isCoursePlacedInTimetable = (
   const courseToPlace = refinedShoppingCart.find(
     (course) => course.id === courseToPlaceId
   );
+  if (!courseToPlace) return false;
   coursesToAdd.push(courseToPlace);
 
   let scoredPrereqList = structuredClone(courseToPlace.prerequisites);
@@ -1101,7 +1125,11 @@ const updateOffsets = (
   }
 };
 
-const isThereValidCombination = (areaCourseLists, timetable, usedCourseIds) => {
+export const isThereValidCombination = (
+  areaCourseLists,
+  timetable,
+  usedCourseIds
+) => {
   for (const areaCourseList of areaCourseLists) {
     let sortedCourseList = areaCourseList.courses.toSorted(
       (crsA, crsB) =>
@@ -1459,7 +1487,7 @@ const findTopTimetable = (
   return isTimetableFound;
 };
 
-const generateCoursesWithScores = async (
+export const generateCoursesWithScores = async (
   allCourses,
   userId,
   refinedShoppingCart
@@ -1478,7 +1506,7 @@ const generateCoursesWithScores = async (
 };
 
 // Identify if the top timetable has changed between kernel/depth course combinations to update the top combination index/offsets for the purposes of minor permutations
-const isTopTimetableDifferent = (
+export const isTopTimetableDifferent = (
   originalTopTimetables,
   timetablesToRecommend
 ) => {
@@ -1637,11 +1665,17 @@ export const generateTimetable = async (
   if (!ece472Id) throw new Error(RETRIEVING_472_ERROR);
 
   const shoppingCartCourses = await Course.findCoursesInCart(userId);
-  if (shoppingCartCourses.length < MINIMUM_COURSES)
+  if (
+    !shoppingCartCourses ||
+    shoppingCartCourses.length < MINIMUM_COURSES_BEFORE_472
+  )
     throw new Error(NOT_ENOUGH_COURSES_ERROR);
   const refinedShoppingCart =
     filterOutCoursesNotMeetingRequirements(shoppingCartCourses);
-  if (refinedShoppingCart.length < MINIMUM_COURSES)
+  if (
+    !refinedShoppingCart ||
+    refinedShoppingCart.length < MINIMUM_COURSES_BEFORE_472
+  )
     throw new Error(NOT_ENOUGH_COURSES_AFTER_REFINING_ERROR);
 
   // Store recommendation scores for all courses in refined cart (to be used in timetable ranking logic)
@@ -1654,6 +1688,7 @@ export const generateTimetable = async (
 
   // Store courses found across each of the 6 areas, then determine each combination of depth & kernel areas to brainstorm courses around
   const timetable = await User.findUserTimetableByIds(timetableId, userId);
+  if (!timetable) throw new Error(INVALID_TIMETABLE_ERROR);
   let timetablesToRecommend = [];
   let topCombinationIndex = null;
   let topOffsets = [];
@@ -1772,7 +1807,9 @@ export const generateTimetable = async (
           isExploringMajorPermutations,
           topCombinationIndex,
           currentFailedAttempts,
-          maximumFailedAttemptsWithRandomOffset
+          maximumFailedAttemptsWithRandomOffset,
+          areaCourseLists,
+          timetable.depth
         ) ||
         !findTopTimetable(
           kernelDepthCourses,
@@ -1854,7 +1891,8 @@ export const generateTimetable = async (
     case 0:
       throw new Error(
         NO_TIMETABLE_POSSIBLE +
-          (anyDepth && !anyKernelDepth ? CONSIDER_ANY_KERNEL_DEPTH_MESSAGE : "")
+          (anyDepth && !anyKernelDepth ? CONSIDER_ANY_KERNEL_DEPTH_MESSAGE : "") +
+          (duration < MAXIMUM_DURATION ? CONSIDER_INCREASING_DURATION : "")
       );
     default:
       if (

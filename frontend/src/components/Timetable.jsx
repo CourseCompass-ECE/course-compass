@@ -23,6 +23,7 @@ import {
   SELECT_PATH,
   TIMETABLE_AREAS_CHANGE_TITLE,
   UPDATE_AREAS_PATH,
+  MAXIMUM_DURATION,
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -43,6 +44,7 @@ const Timetable = () => {
     { title: "4th Year, Winter", courses: Array(5).fill(null) },
   ];
   const DEFAULT_DURATION = 5;
+  const MINIMUM_DURATION = 1;
 
   const navigate = useNavigate();
   const infoRef = useRef();
@@ -933,8 +935,8 @@ const Timetable = () => {
               </span>
               <Slider
                 defaultValue={DEFAULT_DURATION}
-                min={1}
-                max={30}
+                min={MINIMUM_DURATION}
+                max={MAXIMUM_DURATION}
                 valueLabelDisplay="auto"
                 onChange={(event) =>
                   setGenerateTimetableDuration(event.target.value)
