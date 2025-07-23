@@ -251,6 +251,7 @@ const ExploreCourse = (props) => {
                 block
               </span>
             ) : null}
+            
             <span
               className="material-symbols-outlined explore-course-icon cart-icon"
               onClick={() => toggleCourseInCart(props.course.id)}
@@ -259,7 +260,6 @@ const ExploreCourse = (props) => {
                 ? "add_shopping_cart"
                 : "remove_shopping_cart"}
             </span>
-            {/* TODO: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
             <span
               className={`material-symbols-outlined explore-course-icon favorite-icon ${
                 props.course.inUserFavorites ? "favorited" : ""

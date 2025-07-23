@@ -45,7 +45,6 @@ const User = require("./user-model");
 const Email = require("./email-model");
 const sendGrid = require("@sendgrid/mail");
 sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
-//todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
 const { findRecommendedCourses } = require("../utils/findRecommendedCourses");
 const {
   generateTimetable,
@@ -105,13 +104,13 @@ const isEceAreaArrayValid = (array, desiredLength) => {
 const server = express();
 server.use(helmet());
 server.use(express.json());
-//todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
 const corsOptions = {
   origin: process.env.FRONTEND_URL,
   credentials: true,
 };
 server.use(cors(corsOptions));
-//todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?usp=sharing
+server.options("/", cors(corsOptions));
+if (process.env.PRODUCTION) server.set("trust proxy", 1);
 server.use(
   session({
     name: SESSION_COOKIE_NAME,
@@ -674,7 +673,12 @@ server.post(`${Path.TIMETABLE}${UPDATE_AREAS_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
 
     const userId = Number(req.session?.user?.id);
-    await User.updateTimetableAreas(userId, Number(timetableId), kernelAreas, depthAreas);
+    await User.updateTimetableAreas(
+      userId,
+      Number(timetableId),
+      kernelAreas,
+      depthAreas
+    );
     res.status(201).end();
   } catch (err) {
     next(err);

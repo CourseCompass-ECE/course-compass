@@ -113,13 +113,11 @@ const RootLayout = (props) => {
             </ul>
           </nav>
         </div>
-        {/* Todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
       </header>
       <main>
         <Outlet />
       </main>
       <footer>
-        {/* Todo: https://docs.google.com/document/d/1RS1UnB0mB0aRISJQ50sOUNsElgAoAFGHbdJiBJf_I90/edit?tab=t.0 */}
         <div className="footer-text footer-tagline">{TAGLINE}</div>
         <div className="footer-text">&copy; 2025 CourseCompass</div>
       </footer>
