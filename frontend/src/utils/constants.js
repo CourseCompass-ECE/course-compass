@@ -461,3 +461,6 @@ export const TIMETABLE_AREAS_CHANGE_TITLE =
   "To Proceed, Timetable Areas Must Change";
 
 export const MAXIMUM_DURATION = 30;
+
+export const CREATE_ACCOUNT = "Create Account";
+export const CONTINUE = "Continue";

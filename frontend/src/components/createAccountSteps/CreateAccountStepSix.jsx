@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Path } from "../../utils/enums";
-import {useNavigate} from "react-router-dom"
+import { useNavigate } from "react-router-dom";
 import {
   GENERIC_ERROR,
   DUPLICATE_EMAIL_ERROR,
   DESIGNATIONS,
+  CREATE_ACCOUNT,
 } from "../../utils/constants";
 import { initializeApp } from "firebase/app";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import CreateAccountButton from "./CreateAccountButton";
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -32,7 +34,7 @@ const CreateAccountStepSix = (props) => {
   const LEARNING_GOAL_ERROR =
     "Please list 3 or more concepts, separated by commas";
 
-  const submitStepFive = async (event) => {
+  const submitStepSix = async (event) => {
     event.preventDefault();
     setLearningGoalError("");
 
@@ -101,9 +103,9 @@ const CreateAccountStepSix = (props) => {
   return (
     <form
       className="create-account-form"
-      onSubmit={(event) => submitStepFive(event)}
+      onSubmit={(event) => submitStepSix(event)}
     >
-      <h1 className="create-account-form-title create-account-step-five-title">
+      <h1 className="create-account-form-title create-account-step-six-title">
         {STEP_TITLE}
       </h1>
       <h2 className="create-account-form-subtitle">{STEP_DESCRIPTION}</h2>
@@ -119,14 +121,10 @@ const CreateAccountStepSix = (props) => {
         <span className="text-input-error">{learningGoalError}</span>
       </div>
 
-      <div className="text-input-container create-account-btn">
-        <button type="submit" className="form-btn">
-          Create Account
-        </button>
-        <span className="text-input-error submission-error create-account-submission-error">
-          {submissionError}
-        </span>
-      </div>
+      <CreateAccountButton
+        buttonText={CREATE_ACCOUNT}
+        submissionError={submissionError}
+      />
     </form>
   );
 };

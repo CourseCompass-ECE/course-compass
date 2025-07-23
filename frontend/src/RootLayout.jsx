@@ -1,7 +1,7 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Path } from "./utils/enums";
-import { TAGLINE } from "./utils/constants";
+import { TAGLINE, CREATE_ACCOUNT } from "./utils/constants";
 import { useNavigate } from "react-router-dom";
 import { checkUserLoggedIn } from "./utils/authFunctions";
 
@@ -14,7 +14,6 @@ const RootLayout = (props) => {
   const EXPLORE = "Explore";
   const LOGIN = "Login";
   const TIMETABLES = "Timetables";
-  const CREATE_ACCOUNT = "Create Account";
   const LOGOUT_ERROR = "Error logging out";
 
   const logout = async () => {

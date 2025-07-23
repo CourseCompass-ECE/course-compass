@@ -56,7 +56,12 @@ const CreateAccount = () => {
           />
         );
       case 3:
-        return <CreateAccountStepThree />;
+        return (
+          <CreateAccountStepThree
+            setCurrentStep={setCurrentStep}
+            currentStep={currentStep}
+          />
+        );
       case 4:
         return (
           <CreateAccountStepFour

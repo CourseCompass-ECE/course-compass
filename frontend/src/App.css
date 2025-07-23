@@ -144,7 +144,7 @@ footer {
   margin: 10vh 0 2vh 0;
 }
 
-.create-account-step-five-title {
+.create-account-step-six-title {
   margin-bottom: 0vh;
 }
 
@@ -353,7 +353,7 @@ footer {
   height: 150px;
   position: absolute;
   left: 34%;
-  top: -165px
+  top: -165px;
 }
 
 .create-account-pfp-img {
@@ -1475,7 +1475,8 @@ footer {
   cursor: pointer;
 }
 
-.close-modal:hover, .timetable-selection-arrow {
+.close-modal:hover,
+.timetable-selection-arrow {
   color: var(--dark-gray);
 }
 
@@ -1521,7 +1522,7 @@ footer {
 }
 
 .timetable-selection-arrow:hover {
-  color: var(--main-color)
+  color: var(--main-color);
 }
 
 .timetable-info-icon {

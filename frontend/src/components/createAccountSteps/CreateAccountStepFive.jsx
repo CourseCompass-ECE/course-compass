@@ -3,9 +3,10 @@ import {
   DESIGNATIONS,
   MINORS,
   CERTIFICATES,
-  ERROR_MESSAGE_MARGIN_TOP,
+  CONTINUE
 } from "../../utils/constants";
 import RenderDropdownMenu from "../../utils/renderDropdown";
+import CreateAccountButton from "./CreateAccountButton";
 
 const CreateAccountStepFive = (props) => {
   const [desiredDesignationError, setDesiredDesignationError] = useState("");
@@ -34,7 +35,7 @@ const CreateAccountStepFive = (props) => {
     );
   };
 
-  const submitStepFour = (event) => {
+  const submitStepFive = (event) => {
     event.preventDefault();
     setDesiredDesignationError("");
     setDesiredMinorsError("");
@@ -57,7 +58,7 @@ const CreateAccountStepFive = (props) => {
   return (
     <form
       className="create-account-form"
-      onSubmit={(event) => submitStepFour(event)}
+      onSubmit={(event) => submitStepFive(event)}
     >
       <h1 className="create-account-form-title">{STEP_TITLE}</h1>
       <div className="text-input-container">
@@ -97,11 +98,7 @@ const CreateAccountStepFive = (props) => {
         errorMessage={desiredCertificatesError}
       />
 
-      <div className="text-input-container create-account-btn">
-        <button type="submit" className="form-btn">
-          Continue
-        </button>
-      </div>
+      <CreateAccountButton buttonText={CONTINUE} />
     </form>
   );
 };

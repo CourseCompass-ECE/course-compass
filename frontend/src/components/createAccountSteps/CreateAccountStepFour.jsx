@@ -1,6 +1,7 @@
-import { ECE_AREAS, SKILLS, INTERESTS } from "../../utils/constants";
+import { ECE_AREAS, SKILLS, INTERESTS, CONTINUE } from "../../utils/constants";
 import { useState } from "react";
 import RenderDropdownMenu from "../../utils/renderDropdown";
+import CreateAccountButton from "./CreateAccountButton";
 
 const CreateAccountStepFour = (props) => {
   const [eceAreasError, setEceAreasError] = useState("");
@@ -29,7 +30,7 @@ const CreateAccountStepFour = (props) => {
     props.setSkills(props.skills.filter((skill) => skill !== skillToRemove));
   };
 
-  const submitStepThree = (event) => {
+  const submitStepFour = (event) => {
     event.preventDefault();
     setEceAreasError("");
     setInterestsError("");
@@ -52,7 +53,7 @@ const CreateAccountStepFour = (props) => {
   return (
     <form
       className="create-account-form"
-      onSubmit={(event) => submitStepThree(event)}
+      onSubmit={(event) => submitStepFour(event)}
     >
       <h1 className="create-account-form-title">{STEP_TITLE}</h1>
       <RenderDropdownMenu
@@ -82,11 +83,7 @@ const CreateAccountStepFour = (props) => {
         errorMessage={skillsError}
       />
 
-      <div className="text-input-container create-account-btn">
-        <button type="submit" className="form-btn">
-          Continue
-        </button>
-      </div>
+      <CreateAccountButton buttonText={CONTINUE} />
     </form>
   );
 };

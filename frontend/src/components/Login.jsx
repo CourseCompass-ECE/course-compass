@@ -4,6 +4,7 @@ import {
   GENERIC_ERROR,
   INVALID_LOGIN_ERROR,
   EMAIL_ERROR,
+  CONTINUE,
 } from "../utils/constants";
 import { EMAIL_REGEX } from "../utils/regex";
 import { useNavigate } from "react-router-dom";
@@ -107,7 +108,7 @@ const Login = () => {
 
       <div className="text-input-container">
         <button type="submit" className="form-btn">
-          Continue
+          {CONTINUE}
         </button>
         <span className="text-input-error submission-error">
           {submissionError}
