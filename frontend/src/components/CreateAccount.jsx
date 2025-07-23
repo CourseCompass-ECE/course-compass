@@ -4,6 +4,7 @@ import CreateAccountStepTwo from "./createAccountSteps/CreateAccountStepTwo";
 import CreateAccountStepThree from "./createAccountSteps/CreateAccountStepThree";
 import CreateAccountStepFour from "./createAccountSteps/CreateAccountStepFour";
 import CreateAccountStepFive from "./createAccountSteps/CreateAccountStepFive";
+import CreateAccountStepSix from "./createAccountSteps/CreateAccountStepSix";
 
 const CreateAccount = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -11,7 +12,7 @@ const CreateAccount = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pfp, setPfp] = useState(null);
-  const [pfpPreview, setPfpPreview] = useState("")
+  const [pfpPreview, setPfpPreview] = useState("");
   const [eceAreas, setEceAreas] = useState([]);
   const [interests, setInterests] = useState([]);
   const [skills, setSkills] = useState([]);
@@ -22,6 +23,7 @@ const CreateAccount = () => {
   const progressBarItems = [
     "Personal",
     "Profile Picture",
+    "Résumé",
     "Interests + Skills",
     "Degree",
     "Learning Goal",
@@ -54,8 +56,10 @@ const CreateAccount = () => {
           />
         );
       case 3:
+        return <CreateAccountStepThree />;
+      case 4:
         return (
-          <CreateAccountStepThree
+          <CreateAccountStepFour
             setCurrentStep={setCurrentStep}
             currentStep={currentStep}
             eceAreas={eceAreas}
@@ -66,9 +70,9 @@ const CreateAccount = () => {
             setSkills={setSkills}
           />
         );
-      case 4:
+      case 5:
         return (
-          <CreateAccountStepFour
+          <CreateAccountStepFive
             setCurrentStep={setCurrentStep}
             currentStep={currentStep}
             desiredDesignation={desiredDesignation}
@@ -79,9 +83,9 @@ const CreateAccount = () => {
             setDesiredCertificates={setDesiredCertificates}
           />
         );
-      case 5:
+      case 6:
         return (
-          <CreateAccountStepFive
+          <CreateAccountStepSix
             fullName={fullName}
             email={email}
             password={password}

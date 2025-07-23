@@ -1,53 +1,48 @@
+import { ECE_AREAS, SKILLS, INTERESTS } from "../../utils/constants";
 import { useState } from "react";
-import {
-  DESIGNATIONS,
-  MINORS,
-  CERTIFICATES,
-  ERROR_MESSAGE_MARGIN_TOP,
-} from "../../utils/constants";
 import RenderDropdownMenu from "../../utils/renderDropdown";
 
 const CreateAccountStepFour = (props) => {
-  const [desiredDesignationError, setDesiredDesignationError] = useState("");
-  const [desiredMinorsError, setDesiredMinorsError] = useState("");
-  const [desiredCertificatesError, setDesiredCertificatesError] = useState("");
+  const [eceAreasError, setEceAreasError] = useState("");
+  const [interestsError, setInterestsError] = useState("");
+  const [skillsError, setSkillsError] = useState("");
 
-  const STEP_TITLE = "What Do You Want on Your Degree?";
-  const DESIGNATION_TEXT = "Designation (choose 1)";
-  const MINORS_TEXT = "Minors (minimum of 1)";
-  const CERTIFICATES_TEXT = "Certificates (minimum of 1)";
-  const DESIGNATION_ERROR_MESSAGE = "Please select a designation";
-  const MINORS_ERROR_MESSAGE = "Please select at least 1 minor";
-  const CERTIFICATES_ERROR_MESSAGE = "Please select at least 1 certificate";
+  const STEP_TITLE = "Share Your Interests + Current Skills";
+  const ECE_AREAS_TEXT = "ECE Areas (minimum of 2)";
+  const INTERESTS_TEXT = "Interests (minimum of 5)";
+  const SKILLS_TEXT = "Skills (minimum of 5)";
+  const ECE_AREAS_ERROR_MESSAGE = "Please add a minimum of 2 ECE areas";
+  const INTERESTS_ERROR_MESSAGE = "Please add a minimum of 5 interests";
+  const SKILLS_ERROR_MESSAGE = "Please add a minimum of 5 skills";
 
-  const handleRemoveMinor = (minorToRemove) => {
-    props.setDesiredMinors(
-      props.desiredMinors.filter((minor) => minor !== minorToRemove)
+  const handleRemoveEceArea = (eceAreaKey) => {
+    props.setEceAreas(props.eceAreas.filter((area) => area !== eceAreaKey));
+  };
+
+  const handleRemoveInterest = (interestToRemove) => {
+    props.setInterests(
+      props.interests.filter((interest) => interest !== interestToRemove)
     );
   };
 
-  const handleRemoveCertificate = (certificateToRemove) => {
-    props.setDesiredCertificates(
-      props.desiredCertificates.filter(
-        (certificate) => certificate !== certificateToRemove
-      )
-    );
+  const handleRemoveSkill = (skillToRemove) => {
+    props.setSkills(props.skills.filter((skill) => skill !== skillToRemove));
   };
 
-  const submitStepFour = (event) => {
+  const submitStepThree = (event) => {
     event.preventDefault();
-    setDesiredDesignationError("");
-    setDesiredMinorsError("");
-    setDesiredCertificatesError("");
+    setEceAreasError("");
+    setInterestsError("");
+    setSkillsError("");
 
-    if (!props.desiredDesignation) {
-      setDesiredDesignationError(DESIGNATION_ERROR_MESSAGE);
+    if (props.eceAreas.length < 2) {
+      setEceAreasError(ECE_AREAS_ERROR_MESSAGE);
       return;
-    } else if (props.desiredMinors.length < 1) {
-      setDesiredMinorsError(MINORS_ERROR_MESSAGE);
+    } else if (props.interests.length < 5) {
+      setInterestsError(INTERESTS_ERROR_MESSAGE);
       return;
-    } else if (props.desiredCertificates.length < 1) {
-      setDesiredCertificatesError(CERTIFICATES_ERROR_MESSAGE);
+    } else if (props.skills.length < 5) {
+      setSkillsError(SKILLS_ERROR_MESSAGE);
       return;
     }
 
@@ -57,44 +52,34 @@ const CreateAccountStepFour = (props) => {
   return (
     <form
       className="create-account-form"
-      onSubmit={(event) => submitStepFour(event)}
+      onSubmit={(event) => submitStepThree(event)}
     >
       <h1 className="create-account-form-title">{STEP_TITLE}</h1>
-      <div className="text-input-container">
-        <select
-          value={props.desiredDesignation}
-          className="text-input dropdown-without-items-list"
-          onChange={(event) => props.setDesiredDesignation(event.target.value)}
-        >
-          <option value="" disabled>
-            {DESIGNATION_TEXT}
-          </option>
-          {Object.entries(DESIGNATIONS).map(([key, value], index) => (
-            <option key={index} value={key}>
-              {value}
-            </option>
-          ))}
-        </select>
-
-        <span className="text-input-error">{desiredDesignationError}</span>
-      </div>
-
       <RenderDropdownMenu
-        setItems={props.setDesiredMinors}
-        currentItems={props.desiredMinors}
-        placeholderText={MINORS_TEXT}
-        menuItems={MINORS}
-        removeItem={handleRemoveMinor}
-        errorMessage={desiredMinorsError}
+        setItems={props.setEceAreas}
+        currentItems={props.eceAreas}
+        placeholderText={ECE_AREAS_TEXT}
+        menuItems={ECE_AREAS}
+        removeItem={handleRemoveEceArea}
+        errorMessage={eceAreasError}
       />
 
       <RenderDropdownMenu
-        setItems={props.setDesiredCertificates}
-        currentItems={props.desiredCertificates}
-        placeholderText={CERTIFICATES_TEXT}
-        menuItems={CERTIFICATES}
-        removeItem={handleRemoveCertificate}
-        errorMessage={desiredCertificatesError}
+        setItems={props.setInterests}
+        currentItems={props.interests}
+        placeholderText={INTERESTS_TEXT}
+        menuItems={INTERESTS}
+        removeItem={handleRemoveInterest}
+        errorMessage={interestsError}
+      />
+
+      <RenderDropdownMenu
+        setItems={props.setSkills}
+        currentItems={props.skills}
+        placeholderText={SKILLS_TEXT}
+        menuItems={SKILLS}
+        removeItem={handleRemoveSkill}
+        errorMessage={skillsError}
       />
 
       <div className="text-input-container create-account-btn">

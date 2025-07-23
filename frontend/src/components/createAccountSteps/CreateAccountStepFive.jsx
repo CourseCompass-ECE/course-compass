@@ -1,131 +1,106 @@
 import { useState } from "react";
-import { Path } from "../../utils/enums";
-import {useNavigate} from "react-router-dom"
 import {
-  GENERIC_ERROR,
-  DUPLICATE_EMAIL_ERROR,
   DESIGNATIONS,
+  MINORS,
+  CERTIFICATES,
+  ERROR_MESSAGE_MARGIN_TOP,
 } from "../../utils/constants";
-import { initializeApp } from "firebase/app";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-const app = initializeApp(firebaseConfig);
-const storage = getStorage(app);
+import RenderDropdownMenu from "../../utils/renderDropdown";
 
 const CreateAccountStepFive = (props) => {
-  const navigate = useNavigate();
-  const [learningGoalError, setLearningGoalError] = useState("");
-  const [submissionError, setSubmissionError] = useState("");
+  const [desiredDesignationError, setDesiredDesignationError] = useState("");
+  const [desiredMinorsError, setDesiredMinorsError] = useState("");
+  const [desiredCertificatesError, setDesiredCertificatesError] = useState("");
 
-  const STEP_TITLE = "What’s Your Ultimate Learning Goal?";
-  const STEP_DESCRIPTION = `Share the top 3+ specific ${
-    DESIGNATIONS[props.desiredDesignation]
-  } concepts you aim to learn before graduating, using a comma-separated list`;
-  const LEARNING_GOAL = "Learning Goal (concept 1, concept 2, ...)";
-  const LEARNING_GOAL_ERROR =
-    "Please list 3 or more concepts, separated by commas";
+  const STEP_TITLE = "What Do You Want on Your Degree?";
+  const DESIGNATION_TEXT = "Designation (choose 1)";
+  const MINORS_TEXT = "Minors (minimum of 1)";
+  const CERTIFICATES_TEXT = "Certificates (minimum of 1)";
+  const DESIGNATION_ERROR_MESSAGE = "Please select a designation";
+  const MINORS_ERROR_MESSAGE = "Please select at least 1 minor";
+  const CERTIFICATES_ERROR_MESSAGE = "Please select at least 1 certificate";
 
-  const submitStepFive = async (event) => {
-    event.preventDefault();
-    setLearningGoalError("");
-
-    let learningGoal = props.learningGoalText
-      .split(",")
-      .filter((concept) => concept.trim() !== "");
-    learningGoal.forEach(
-      (concept, index) => (learningGoal[index] = concept.trim())
+  const handleRemoveMinor = (minorToRemove) => {
+    props.setDesiredMinors(
+      props.desiredMinors.filter((minor) => minor !== minorToRemove)
     );
+  };
 
-    if (learningGoal.length < 3) {
-      setLearningGoalError(LEARNING_GOAL_ERROR);
+  const handleRemoveCertificate = (certificateToRemove) => {
+    props.setDesiredCertificates(
+      props.desiredCertificates.filter(
+        (certificate) => certificate !== certificateToRemove
+      )
+    );
+  };
+
+  const submitStepFour = (event) => {
+    event.preventDefault();
+    setDesiredDesignationError("");
+    setDesiredMinorsError("");
+    setDesiredCertificatesError("");
+
+    if (!props.desiredDesignation) {
+      setDesiredDesignationError(DESIGNATION_ERROR_MESSAGE);
+      return;
+    } else if (props.desiredMinors.length < 1) {
+      setDesiredMinorsError(MINORS_ERROR_MESSAGE);
+      return;
+    } else if (props.desiredCertificates.length < 1) {
+      setDesiredCertificatesError(CERTIFICATES_ERROR_MESSAGE);
       return;
     }
 
-    try {
-      const storageRef = ref(storage, "images/" + props.pfp.name);
-      let pfpUrl;
-      await uploadBytes(storageRef, props.pfp).then(async (snapshot) => {
-        await getDownloadURL(snapshot.ref).then((downloadURL) => {
-          pfpUrl = downloadURL;
-        });
-      });
-
-      const newUser = {
-        fullName: props.fullName,
-        email: props.email,
-        password: props.password,
-        pfpUrl: pfpUrl,
-        interests: props.interests,
-        skills: props.skills,
-        eceAreas: props.eceAreas,
-        desiredDesignation: props.desiredDesignation,
-        desiredMinors: props.desiredMinors,
-        desiredCertificates: props.desiredCertificates,
-        learningGoal: learningGoal,
-      };
-
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_URL}${Path.CREATE_ACCOUNT}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(newUser),
-          credentials: "include",
-        }
-      );
-
-      if (response.ok) {
-        navigate(Path.EXPLORE);
-      } else {
-        const data = await response.json();
-        setSubmissionError(
-          data.message === DUPLICATE_EMAIL_ERROR
-            ? DUPLICATE_EMAIL_ERROR
-            : GENERIC_ERROR
-        );
-      }
-    } catch (error) {
-      setSubmissionError(GENERIC_ERROR);
-    }
+    props.setCurrentStep(props.currentStep + 1);
   };
 
   return (
     <form
       className="create-account-form"
-      onSubmit={(event) => submitStepFive(event)}
+      onSubmit={(event) => submitStepFour(event)}
     >
-      <h1 className="create-account-form-title create-account-step-five-title">
-        {STEP_TITLE}
-      </h1>
-      <h2 className="create-account-form-subtitle">{STEP_DESCRIPTION}</h2>
+      <h1 className="create-account-form-title">{STEP_TITLE}</h1>
       <div className="text-input-container">
-        <input
-          type="text"
-          className="text-input"
-          placeholder={LEARNING_GOAL}
-          value={props.learningGoalText}
-          maxLength={150}
-          onChange={(event) => props.setLearningGoalText(event.target.value)}
-        />
-        <span className="text-input-error">{learningGoalError}</span>
+        <select
+          value={props.desiredDesignation}
+          className="text-input dropdown-without-items-list"
+          onChange={(event) => props.setDesiredDesignation(event.target.value)}
+        >
+          <option value="" disabled>
+            {DESIGNATION_TEXT}
+          </option>
+          {Object.entries(DESIGNATIONS).map(([key, value], index) => (
+            <option key={index} value={key}>
+              {value}
+            </option>
+          ))}
+        </select>
+
+        <span className="text-input-error">{desiredDesignationError}</span>
       </div>
+
+      <RenderDropdownMenu
+        setItems={props.setDesiredMinors}
+        currentItems={props.desiredMinors}
+        placeholderText={MINORS_TEXT}
+        menuItems={MINORS}
+        removeItem={handleRemoveMinor}
+        errorMessage={desiredMinorsError}
+      />
+
+      <RenderDropdownMenu
+        setItems={props.setDesiredCertificates}
+        currentItems={props.desiredCertificates}
+        placeholderText={CERTIFICATES_TEXT}
+        menuItems={CERTIFICATES}
+        removeItem={handleRemoveCertificate}
+        errorMessage={desiredCertificatesError}
+      />
 
       <div className="text-input-container create-account-btn">
         <button type="submit" className="form-btn">
-          Create Account
+          Continue
         </button>
-        <span className="text-input-error submission-error create-account-submission-error">
-          {submissionError}
-        </span>
       </div>
     </form>
   );
