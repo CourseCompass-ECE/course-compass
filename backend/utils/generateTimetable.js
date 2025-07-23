@@ -1105,7 +1105,7 @@ const updateOffsets = (
   }
 };
 
-const isThereValidCombination = (areaCourseLists, timetable, usedCourseIds) => {
+export const isThereValidCombination = (areaCourseLists, timetable, usedCourseIds) => {
   for (const areaCourseList of areaCourseLists) {
     let sortedCourseList = areaCourseList.courses.toSorted(
       (crsA, crsB) =>
@@ -1482,7 +1482,7 @@ export const generateCoursesWithScores = async (
 };
 
 // Identify if the top timetable has changed between kernel/depth course combinations to update the top combination index/offsets for the purposes of minor permutations
-const isTopTimetableDifferent = (
+export const isTopTimetableDifferent = (
   originalTopTimetables,
   timetablesToRecommend
 ) => {
