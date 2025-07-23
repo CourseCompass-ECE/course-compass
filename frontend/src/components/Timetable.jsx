@@ -31,7 +31,7 @@ import TimetableCourseSummary from "./timetableCourseSummary/TimetableCourseSumm
 import { areRequirementsMet } from "../utils/requirementsCheck";
 import { updateCoursesInCart } from "../utils/updateCourses";
 import { Slider, Checkbox } from "@mui/material";
-import ErrorModal from "./errorModal/errorModal";
+import ErrorModal from "./errorModal/ErrorModal";
 
 const Timetable = () => {
   const initialTerms = [
