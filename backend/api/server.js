@@ -109,7 +109,8 @@ const corsOptions = {
   credentials: true,
 };
 server.use(cors(corsOptions));
-server.options('/', cors(corsOptions));
+server.options("/", cors(corsOptions));
+if (process.env.PRODUCTION) server.set("trust proxy", 1);
 server.use(
   session({
     name: SESSION_COOKIE_NAME,
@@ -117,8 +118,8 @@ server.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
-      sameSite: false,
+      secure: process.env.PRODUCTION ? true : false,
+      sameSite: process.env.PRODUCTION ? "none" : false,
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 2,
     },
@@ -672,7 +673,12 @@ server.post(`${Path.TIMETABLE}${UPDATE_AREAS_PATH}`, async (req, res, next) => {
       throw new Error(INVALID_TIMETABLE_DETAILS_ERROR);
 
     const userId = Number(req.session?.user?.id);
-    await User.updateTimetableAreas(userId, Number(timetableId), kernelAreas, depthAreas);
+    await User.updateTimetableAreas(
+      userId,
+      Number(timetableId),
+      kernelAreas,
+      depthAreas
+    );
     res.status(201).end();
   } catch (err) {
     next(err);
