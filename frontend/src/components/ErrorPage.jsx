@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { checkUserLoggedIn } from "../utils/authFunctions";
 import { Link } from "react-router-dom";
 import { Path } from "../utils/enums";
@@ -6,10 +6,11 @@ import { Path } from "../utils/enums";
 const ErrorPage = (props) => {
   const LOGGED_IN_PAGE = "Explore Page";
   const LOGGED_OUT_PAGE = "Login Page";
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const setLoggedInStatus = async () => {
-      props.setIsUserLoggedIn(await checkUserLoggedIn());
+      setIsLoggedIn(await checkUserLoggedIn(props.setIsUserLoggedIn));
     };
 
     setLoggedInStatus();
@@ -29,9 +30,9 @@ const ErrorPage = (props) => {
         Page Not Found | Return to{" "}
         <Link
           className="error-page-link"
-          to={props.isUserLoggedIn ? Path.EXPLORE : Path.LOGIN}
+          to={isLoggedIn ? Path.EXPLORE : Path.LOGIN}
         >
-          {props.isUserLoggedIn ? LOGGED_IN_PAGE : LOGGED_OUT_PAGE}
+          {isLoggedIn ? LOGGED_IN_PAGE : LOGGED_OUT_PAGE}
         </Link>
       </h2>
     </div>
