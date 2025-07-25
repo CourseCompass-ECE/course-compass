@@ -13,6 +13,7 @@ const CreateAccount = () => {
   const [password, setPassword] = useState("");
   const [pfp, setPfp] = useState(null);
   const [pfpPreview, setPfpPreview] = useState("");
+  const [resume, setResume] = useState(null);
   const [eceAreas, setEceAreas] = useState([]);
   const [interests, setInterests] = useState([]);
   const [skills, setSkills] = useState([]);
@@ -60,6 +61,8 @@ const CreateAccount = () => {
           <CreateAccountStepThree
             setCurrentStep={setCurrentStep}
             currentStep={currentStep}
+            setResume={setResume}
+            resume={resume}
           />
         );
       case 4:
@@ -103,6 +106,7 @@ const CreateAccount = () => {
             desiredCertificates={desiredCertificates}
             learningGoalText={learningGoalText}
             setLearningGoalText={setLearningGoalText}
+            resume={resume}
           />
         );
       default:

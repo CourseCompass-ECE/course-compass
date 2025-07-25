@@ -1,25 +1,41 @@
 import CreateAccountButton from "./CreateAccountButton";
 import { CONTINUE } from "../../utils/constants";
-import React, { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
-const CreateAccountStepThree = () => {
+const CreateAccountStepThree = (props) => {
+  const [resumeError, setResumeError] = useState("");
+
   const STEP_TITLE = "Add Your Résumé";
   const BEFORE_DRAG_INSTRUCTIONS =
-    "Drag & drop your résumé or click here to select it";
+    "Drag & drop your résumé or click here to select it (pdf, doc, docx)";
   const AFTER_DRAG_INSTRUCTIONS = "Drop your résumé here!";
+  const FILE_TYPES_TO_ACCEPT =
+    ".doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf";
+  const INVALID_FILE_TYPE = "Please provide a valid file type: pdf, doc, docx";
+  const MISSING_RESUME =
+    "Please upload a résumé with one of the following file types: pdf, doc, docx";
 
   const submitStepThree = (event) => {
     event.preventDefault();
-    if (props.pfp) {
+    if (props.resume) {
       props.setCurrentStep(props.currentStep + 1);
     } else {
-      setPfpError(PFP_ERROR);
+      setResumeError(MISSING_RESUME);
     }
   };
 
-  const onDrop = useCallback((file) => {
-    // handle edge case where user provides a whole folder - must be declared to test pop-up functionality on-click & drag/drop functionality
+  const onDrop = useCallback((fileArray) => {
+    setResumeError("");
+
+    if (
+      fileArray.length > 0 &&
+      FILE_TYPES_TO_ACCEPT.split(",").includes(fileArray[0].type)
+    ) {
+      props.setResume(fileArray[0]);
+    } else {
+      setResumeError(INVALID_FILE_TYPE);
+    }
   }, []);
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -35,7 +51,11 @@ const CreateAccountStepThree = () => {
       <div
         {...getRootProps()}
         className="resume-upload-container"
-        style={isDragActive ? { backgroundColor: "var(--background-mixed)", borderWidth: "3px" } : {}}
+        style={
+          isDragActive
+            ? { backgroundColor: "var(--background-mixed)", borderWidth: "3px" }
+            : {}
+        }
       >
         <div
           className="resume-upload-background"
@@ -46,8 +66,8 @@ const CreateAccountStepThree = () => {
           }
         />
         <div className="resume-upload-items">
-          <input {...getInputProps()} />
-          <span class="material-symbols-outlined resume-upload-icon">
+          <input {...getInputProps()} accept={FILE_TYPES_TO_ACCEPT} />
+          <span className="material-symbols-outlined resume-upload-icon">
             cloud_upload
           </span>
           {isDragActive ? (
@@ -57,6 +77,7 @@ const CreateAccountStepThree = () => {
           )}
         </div>
       </div>
+      <span className="resume-upload-error">{resumeError}</span>
 
       <CreateAccountButton buttonText={CONTINUE} />
     </form>
