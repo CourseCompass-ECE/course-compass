@@ -7,10 +7,14 @@ import {
   DESIGNATIONS,
   CREATE_ACCOUNT,
   SKILLS_INTERESTS_PATH,
+  SKILL,
+  INTEREST,
 } from "../../utils/constants";
 import { initializeApp } from "firebase/app";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import CreateAccountButton from "./CreateAccountButton";
+import { REMOVE_PUNCTUATION_AND_SPLIT_WORDS } from "../../utils/regex";
+import { stopwords } from "../../../../backend/utils/constants";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -77,18 +81,23 @@ const CreateAccountStepSix = (props) => {
     }
 
     const parsedResumeData = await findParsedResume();
-    if (!parsedResumeData) {
+    if (!parsedResumeData?.data || !parsedResumeData?.meta?.pdf) {
       return exitAttemptToCreateAccount();
     }
 
     const newSkillsInterestsObject = await findNewSkillsInterestsFromResumeData(
-      parsedResumeData,
-      props.skills,
-      props.interests
+      parsedResumeData?.data
     );
     if (!newSkillsInterestsObject) {
       return exitAttemptToCreateAccount();
     }
+
+    let totalUserSkills = new Array(
+      new Set([...props.skills, ...newSkillsInterestsObject.skills])
+    );
+    let totalUserInterests = new Array(
+      new Set([...props.interests, ...newSkillsInterestsObject.interests])
+    );
 
     try {
       const storageRef = ref(storage, "images/" + props.pfp.name);
@@ -104,8 +113,9 @@ const CreateAccountStepSix = (props) => {
         email: props.email,
         password: props.password,
         pfpUrl: pfpUrl,
-        interests: props.interests,
-        skills: props.skills,
+        resumeUrl: parsedResumeData?.meta?.pdf,
+        interests: totalUserInterests,
+        skills: totalUserSkills,
         eceAreas: props.eceAreas,
         desiredDesignation: props.desiredDesignation,
         desiredMinors: props.desiredMinors,
@@ -195,13 +205,119 @@ const CreateAccountStepSix = (props) => {
     });
   };
 
-  const findNewSkillsInterestsFromResumeData = async (
-    parsedResumeData,
-    currentSkills,
-    currentInterests
+  const cleanseAndReturnArrayOfWords = (text) => {
+    let stopwordsSet = new Set(stopwords);
+
+    let wordArray = text
+      ?.match(REMOVE_PUNCTUATION_AND_SPLIT_WORDS)
+      ?.filter((word) => !stopwordsSet.has(word));
+
+    return wordArray ? wordArray : [];
+  };
+
+  const splitWordsInTextArray = (textArray) => {
+    let wordArray = [];
+    textArray.forEach((text) => {
+      wordArray.push(...cleanseAndReturnArrayOfWords(text));
+    });
+    return wordArray;
+  };
+
+  const findAllResumeSkillsInterests = (parsedResumeData) => {
+    let resumeSkillsInterests = new Set([...parsedResumeData?.hobby]);
+
+    parsedResumeData?.skill?.forEach((skill) => {
+      resumeSkillsInterests = new Set([
+        ...resumeSkillsInterests,
+        skill?.subCategory,
+        skill?.name,
+        skill?.category,
+      ]);
+    });
+
+    parsedResumeData?.education?.forEach((education) => {
+      let educationMajors = education?.educationMajor
+        ? education.educationMajor
+        : [];
+      let educationMinors = education?.educationMinor
+        ? education.educationMinor
+        : [];
+      let educationAccreditation = cleanseAndReturnArrayOfWords(
+        education?.educationAccreditation
+      );
+      let educationOrganization = cleanseAndReturnArrayOfWords(
+        education?.educationOrganization
+      );
+
+      resumeSkillsInterests = new Set([
+        ...resumeSkillsInterests,
+        ...educationAccreditation,
+        ...educationOrganization,
+        ...educationMajors,
+        ...educationMinors,
+      ]);
+    });
+
+    parsedResumeData?.workExperience?.forEach((workExperience) => {
+      let jobDescriptionTextArray = cleanseAndReturnArrayOfWords(
+        workExperience?.jobDescription
+      );
+
+      resumeSkillsInterests = new Set([
+        ...resumeSkillsInterests,
+        workExperience?.jobTitle,
+        ...jobDescriptionTextArray,
+      ]);
+    });
+
+    let summaryData = cleanseAndReturnArrayOfWords(parsedResumeData?.summary);
+    let objectiveData = cleanseAndReturnArrayOfWords(
+      parsedResumeData?.objective
+    );
+    resumeSkillsInterests = new Set([
+      ...resumeSkillsInterests,
+      ...summaryData,
+      ...objectiveData,
+    ]);
+
+    resumeSkillsInterests = new Set([
+      ...resumeSkillsInterests,
+      ...splitWordsInTextArray(parsedResumeData?.achievement),
+      ...splitWordsInTextArray(parsedResumeData?.association),
+    ]);
+  };
+
+  const convertSkillsInterestsObjectToSet = (
+    skillOrInterest,
+    skillsInterestsObject
   ) => {
+    return new Set(
+      skillsInterestsObject
+        .filter(
+          (skillInterest) => skillInterest.skillOrInterest === skillOrInterest
+        )
+        .map((skillInterest) => skillInterest.name.toLowerCase())
+    );
+  };
+
+  const findNewSkillsInterestsFromResumeData = async (parsedResumeData) => {
     let skillsInterestsObject = await findAllSkillsInterests();
     if (!skillsInterestsObject) return null;
+
+    let validSkillsSet = convertSkillsInterestsObjectToSet(
+      SKILL,
+      skillsInterestsObject
+    );
+    let validInterestsSet = convertSkillsInterestsObjectToSet(
+      INTEREST,
+      skillsInterestsObject
+    );
+
+    let newSkillsInterests = { skills: [], interests: [] };
+    const allResumeSkillsInterestsSet =
+      findAllResumeSkillsInterests(parsedResumeData);
+      
+    return newSkillsInterests;
   };
 
   const exitAttemptToFindSkillsInterests = () => {
@@ -223,7 +339,7 @@ const CreateAccountStepSix = (props) => {
 
       if (response.ok) {
         const data = await response.json();
-        return data;
+        return data?.skillsInterests;
       } else {
         return exitAttemptToFindSkillsInterests();
       }

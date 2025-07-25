@@ -5,3 +5,4 @@ export const UPPERCASE_LETTER = /[A-Z]/;
 export const LOWERCASE_LETTER = /[a-z]/;
 export const NUMBER = /[0-9]/;
 export const ONLY_NUMBERS = /^\d+$/;
+export const REMOVE_PUNCTUATION_AND_SPLIT_WORDS = /\w+(?:'\w+)*/g;
