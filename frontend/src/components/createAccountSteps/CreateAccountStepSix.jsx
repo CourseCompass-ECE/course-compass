@@ -15,6 +15,11 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import CreateAccountButton from "./CreateAccountButton";
 import { REMOVE_PUNCTUATION_AND_SPLIT_WORDS } from "../../utils/regex";
 import { stopwords } from "../../../../backend/utils/constants";
+import {
+  findParsedResume,
+  successfullyDeleteExistingParsedResume,
+} from "../../utils/resumeHelperFunctions";
+import ParsingLoader from "./ParsingLoader";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -26,22 +31,6 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
-
-const UPLOAD_RESUME_ENDPOINT = "https://api.affinda.com/v3/documents";
-const DUPLICATE_DOCUMENT_ERROR_CODE = "duplicate_document_error";
-const DUPLICATE_DOCUMENT_ERROR_MESSAGE =
-  "Résumé provided is a duplicate of a previously uploaded résumé. Please use a different résumé";
-const FAILED_TO_PARSE_STORE_RESUME_ERROR =
-  "Something went wrong parsing & storing your résumé. Please reupload your résumé in step 3";
-const FAILED_TO_RETRIEVE_SKILLS_INTERESTS =
-  "Something went wrong retrieving skills & interests";
-const RESUME = "Resume";
-const AFFINDA_PARSER_API_HEADER = {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${import.meta.env.VITE_AFFINDA_RESUME_PARSER_API_KEY}`,
-};
-const LOADING_TEXT =
-  "Parsing résumé, uploading résumé + profile photo to the cloud, creating account...";
 
 const CreateAccountStepSix = (props) => {
   const navigate = useNavigate();
@@ -56,9 +45,16 @@ const CreateAccountStepSix = (props) => {
   const LEARNING_GOAL = "Learning Goal (concept 1, concept 2, ...)";
   const LEARNING_GOAL_ERROR =
     "Please list 3 or more concepts, separated by commas";
-  const END_OF_STRING_TO_REMOVE = "base64,";
+  const FAILED_TO_RETRIEVE_SKILLS_INTERESTS =
+    "Something went wrong retrieving skills & interests";
+  const LOADING_TEXT =
+    "Parsing résumé, uploading résumé + profile photo to the cloud, creating account...";
 
-  const exitAttemptToCreateAccount = () => {
+  const exitAttemptToCreateAccount = async (parsedResumeData) => {
+    await successfullyDeleteExistingParsedResume(
+      parsedResumeData?.meta?.identifier,
+      props.setParsedResumeData
+    );
     setIsLoading(false);
   };
 
@@ -77,19 +73,27 @@ const CreateAccountStepSix = (props) => {
 
     if (learningGoal.length < 3) {
       setLearningGoalError(LEARNING_GOAL_ERROR);
-      return exitAttemptToCreateAccount();
+      setIsLoading(false);
+      return;
     }
 
-    const parsedResumeData = await findParsedResume();
+    const parsedResumeData = props.parsedResumeData
+      ? props.parsedResumeData
+      : await findParsedResume(
+          setSubmissionError,
+          props.resume,
+          props.fullName
+        );
     if (!parsedResumeData?.data || !parsedResumeData?.meta?.pdf) {
-      return exitAttemptToCreateAccount();
+      setIsLoading(false);
+      return;
     }
 
     const newSkillsInterestsObject = await findNewSkillsInterestsFromResumeData(
       parsedResumeData?.data
     );
     if (!newSkillsInterestsObject) {
-      return exitAttemptToCreateAccount();
+      return await exitAttemptToCreateAccount(parsedResumeData);
     }
 
     let totalUserSkills = [
@@ -113,7 +117,7 @@ const CreateAccountStepSix = (props) => {
         email: props.email,
         password: props.password,
         pfpUrl: pfpUrl,
-        resumeUrl: parsedResumeData?.meta?.pdf,
+        resumeId: parsedResumeData?.meta?.identifier,
         interests: totalUserInterests,
         skills: totalUserSkills,
         eceAreas: props.eceAreas,
@@ -144,65 +148,12 @@ const CreateAccountStepSix = (props) => {
             ? DUPLICATE_EMAIL_ERROR
             : GENERIC_ERROR
         );
-        return exitAttemptToCreateAccount();
+        return await exitAttemptToCreateAccount(parsedResumeData);
       }
     } catch (error) {
       setSubmissionError(GENERIC_ERROR);
-      return exitAttemptToCreateAccount();
+      return await exitAttemptToCreateAccount(parsedResumeData);
     }
-  };
-
-  const findParsedResume = async () => {
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(props.resume);
-      reader.addEventListener(
-        "load",
-        async () => {
-          try {
-            let newBaseURL = reader.result.slice(
-              reader.result.indexOf(END_OF_STRING_TO_REMOVE) +
-                END_OF_STRING_TO_REMOVE.length
-            );
-
-            const resumeData = {
-              file: newBaseURL,
-              workspace: import.meta.env.VITE_WORKSPACE_ID,
-              documentType: import.meta.env.VITE_DOCUMENT_TYPE_ID,
-              rejectDuplicates: true,
-              fileName: `${props.fullName}'s ${RESUME}`,
-              compact: true,
-              enableValidationTool: false,
-            };
-
-            const response = await fetch(UPLOAD_RESUME_ENDPOINT, {
-              method: "POST",
-              headers: AFFINDA_PARSER_API_HEADER,
-              body: JSON.stringify(resumeData),
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              resolve(data);
-            } else {
-              const errorObject = await response.json();
-              if (
-                errorObject?.errors &&
-                errorObject?.errors[0]?.code === DUPLICATE_DOCUMENT_ERROR_CODE
-              )
-                setSubmissionError(DUPLICATE_DOCUMENT_ERROR_MESSAGE);
-              else setSubmissionError(FAILED_TO_PARSE_STORE_RESUME_ERROR);
-
-              resolve(null);
-            }
-          } catch (error) {
-            setSubmissionError(FAILED_TO_PARSE_STORE_RESUME_ERROR);
-            resolve(null);
-          }
-        },
-        false
-      );
-    });
   };
 
   const cleanseAndReturnArrayOfWords = (text) => {
@@ -467,6 +418,7 @@ const CreateAccountStepSix = (props) => {
         }
       );
 
+
       if (response.ok) {
         const data = await response.json();
         return data?.skillsInterests;
@@ -504,13 +456,7 @@ const CreateAccountStepSix = (props) => {
         submissionError={submissionError}
       />
 
-      <div
-        className="error-modal-container"
-        style={{ display: isLoading ? "flex" : "none" }}
-      >
-        <div className="loader timetable-loader"></div>
-        <span className="loading-text">{LOADING_TEXT}</span>
-      </div>
+      <ParsingLoader isLoading={isLoading} loadingText={LOADING_TEXT} />
     </form>
   );
 };

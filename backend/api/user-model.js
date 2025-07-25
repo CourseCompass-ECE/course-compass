@@ -144,7 +144,7 @@ module.exports = {
         email: newUser.email,
         password: newUser.password,
         pfpUrl: newUser.pfpUrl,
-        resumeUrl: newUser.resumeUrl,
+        resumeId: newUser.resumeId,
         eceAreas: newUser.eceAreas,
         desiredDesignation: newUser.desiredDesignation,
         learningGoal: newUser.learningGoal,

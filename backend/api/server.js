@@ -155,7 +155,7 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
       !emailValid(newUser?.email.trim()) ||
       !passwordValid(newUser?.password) ||
       !newUser?.pfpUrl ||
-      !newUser?.resumeUrl ||
+      !newUser?.resumeId ||
       !arrayValid(newUser?.interests, SKILLS_INTERESTS_MIN_LENGTH) ||
       !arrayValid(newUser?.skills, SKILLS_INTERESTS_MIN_LENGTH) ||
       !arrayValid(newUser?.eceAreas, ECE_AREAS_MIN_LENGTH) ||

@@ -206,12 +206,12 @@ export const INTERESTS = [
   "Software Development",
   "Web Development",
   "Cloud Computing",
-  "User Experience (UX) Design",
+  "User Experience (ux) Design",
   "Artificial Intelligence Ethics",
-  "Virtual Reality (VR) & Augmented Reality (AR)",
+  "Virtual Reality (vr) & Augmented Reality (ar)",
   "Big Data Analytics",
   "Bioinformatics",
-  "Internet of Things (IoT)",
+  "Internet of Things (iot)",
   "Digital Marketing",
 
   "Classical Studies",
@@ -275,7 +275,7 @@ export const INTERESTS = [
   "Metaverse Studies",
   "Biomimicry",
   "Ocean Engineering",
-  "Self-Driving Car Engineering",
+  "Self-driving Car Engineering",
   "Biodiversity Conservation",
   "Neurotechnology",
   "Digital Ethics",
@@ -297,7 +297,7 @@ export const INTERESTS = [
   "Smart Cities",
   "Biodegradable Materials",
   "Voice Technology",
-  "Self-Sustaining Ecosystems",
+  "Self-sustaining Ecosystems",
   "Carbon Capture Technology",
 
   "Experiential Marketing",
@@ -313,13 +313,13 @@ export const INTERESTS = [
 
   "Cryptozoology",
   "Astroarchaeology",
-  "Steampunk & Retro-Futurism",
+  "Steampunk & Retro-futurism",
   "Survivalism & Prepping",
   "Parkour & Movement Studies",
   "eSports Psychology",
   "Tattoo Anthropology",
   "Mythical History & Folklore Analysis",
-  "Sci-Fi & Fantasy World-Building",
+  "Sci-fi & Fantasy World-building",
   "Utopian & Dystopian Studies",
 ];
 
@@ -420,6 +420,7 @@ export const SELECT_PATH = "/select";
 export const UPDATE_AREAS_PATH = "/update-areas";
 export const ID_QUERY_PARAM = "?id=";
 export const SKILLS_INTERESTS_PATH = "/skills-interests";
+export const BASE_RESUME_ENDPOINT = "https://api.affinda.com/v3/documents";
 
 export const YES = "Yes";
 export const NO = "No";
