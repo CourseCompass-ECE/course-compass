@@ -41,7 +41,7 @@ const AFFINDA_PARSER_API_HEADER = {
   Authorization: `Bearer ${import.meta.env.VITE_AFFINDA_RESUME_PARSER_API_KEY}`,
 };
 const LOADING_TEXT =
-  "Parsing résumé, uploading résumé + profile photo to the cloud...";
+  "Parsing résumé, uploading résumé + profile photo to the cloud, creating account...";
 
 const CreateAccountStepSix = (props) => {
   const navigate = useNavigate();
