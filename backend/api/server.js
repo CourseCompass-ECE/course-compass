@@ -29,6 +29,7 @@ const {
   GENERATE_PATH,
   SELECT_PATH,
   UPDATE_AREAS_PATH,
+  SKILLS_INTERESTS_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -38,11 +39,10 @@ const cors = require("cors");
 const session = require("express-session");
 const argon2 = require("argon2");
 const Course = require("./course-model");
-const MinorCertificate = require("./minorcertificate-model");
 const Timetable = require("./timetable-model");
-const TimetableCourse = require("./timetablecourse-model");
 const User = require("./user-model");
 const Email = require("./email-model");
+const SkillInterest = require("./skillinterest-model");
 const sendGrid = require("@sendgrid/mail");
 sendGrid.setApiKey(process.env.SENDGRID_API_KEY);
 const { findRecommendedCourses } = require("../utils/findRecommendedCourses");
@@ -155,6 +155,7 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
       !emailValid(newUser?.email.trim()) ||
       !passwordValid(newUser?.password) ||
       !newUser?.pfpUrl ||
+      !newUser?.resumeUrl ||
       !arrayValid(newUser?.interests, SKILLS_INTERESTS_MIN_LENGTH) ||
       !arrayValid(newUser?.skills, SKILLS_INTERESTS_MIN_LENGTH) ||
       !arrayValid(newUser?.eceAreas, ECE_AREAS_MIN_LENGTH) ||
@@ -184,6 +185,18 @@ server.post(Path.CREATE_ACCOUNT, async (req, res, next) => {
     next(err);
   }
 });
+
+server.get(
+  `${Path.CREATE_ACCOUNT}${SKILLS_INTERESTS_PATH}`,
+  async (req, res, next) => {
+    try {
+      const skillsInterests = await SkillInterest.findAllSkillsInterests();
+      res.status(200).json({ skillsInterests });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 server.post(Path.LOGIN, async (req, res, next) => {
   const userCredentials = req.body;
