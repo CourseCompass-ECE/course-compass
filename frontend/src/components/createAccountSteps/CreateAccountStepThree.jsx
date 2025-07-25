@@ -8,13 +8,13 @@ const CreateAccountStepThree = (props) => {
 
   const STEP_TITLE = "Add Your Résumé";
   const BEFORE_DRAG_INSTRUCTIONS =
-    "Drag & drop your résumé or click here to select it (pdf, doc, docx)";
+    "Drag & drop your résumé or click here to select it (pdf, docx)";
   const AFTER_DRAG_INSTRUCTIONS = "Drop your résumé here!";
   const FILE_TYPES_TO_ACCEPT =
-    ".doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf";
-  const INVALID_FILE_TYPE = "Please provide a valid file type: pdf, doc, docx";
+    ".docx,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf";
+  const INVALID_FILE_TYPE = "Please provide a valid file type: pdf, docx";
   const MISSING_RESUME =
-    "Please upload a résumé with one of the following file types: pdf, doc, docx";
+    "Please upload a résumé with one of the following file types: pdf, docx";
 
   const submitStepThree = (event) => {
     event.preventDefault();

@@ -1645,3 +1645,13 @@ footer {
 .confirm-area-change-btn:hover {
   background-color: var(--background-mixed);
 }
+
+.loading-text {
+  font-family: var(--header-font);
+  font-size: var(--subheader-size);
+  color: white;
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  top: 65%;
+}
