@@ -27,22 +27,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
 
-const UPLOAD_RESUME_ENDPOINT = "https://api.affinda.com/v3/documents";
-const DUPLICATE_DOCUMENT_ERROR_CODE = "duplicate_document_error";
-const DUPLICATE_DOCUMENT_ERROR_MESSAGE =
-  "Résumé provided is a duplicate of a previously uploaded résumé. Please use a different résumé";
-const FAILED_TO_PARSE_STORE_RESUME_ERROR =
-  "Something went wrong parsing & storing your résumé. Please reupload your résumé in step 3";
-const FAILED_TO_RETRIEVE_SKILLS_INTERESTS =
-  "Something went wrong retrieving skills & interests";
-const RESUME = "Resume";
-const AFFINDA_PARSER_API_HEADER = {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${import.meta.env.VITE_AFFINDA_RESUME_PARSER_API_KEY}`,
-};
-const LOADING_TEXT =
-  "Parsing résumé, uploading résumé + profile photo to the cloud, creating account...";
-
 const CreateAccountStepSix = (props) => {
   const navigate = useNavigate();
   const [learningGoalError, setLearningGoalError] = useState("");
@@ -57,6 +41,23 @@ const CreateAccountStepSix = (props) => {
   const LEARNING_GOAL_ERROR =
     "Please list 3 or more concepts, separated by commas";
   const END_OF_STRING_TO_REMOVE = "base64,";
+  const UPLOAD_RESUME_ENDPOINT = "https://api.affinda.com/v3/documents";
+  const DUPLICATE_DOCUMENT_ERROR_CODE = "duplicate_document_error";
+  const DUPLICATE_DOCUMENT_ERROR_MESSAGE =
+    "Résumé provided is a duplicate of a previously uploaded résumé. Please use a different résumé";
+  const FAILED_TO_PARSE_STORE_RESUME_ERROR =
+    "Something went wrong parsing & storing your résumé. Please reupload your résumé in step 3";
+  const FAILED_TO_RETRIEVE_SKILLS_INTERESTS =
+    "Something went wrong retrieving skills & interests";
+  const RESUME = "Resume";
+  const AFFINDA_PARSER_API_HEADER = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${
+      import.meta.env.VITE_AFFINDA_RESUME_PARSER_API_KEY
+    }`,
+  };
+  const LOADING_TEXT =
+    "Parsing résumé, uploading résumé + profile photo to the cloud, creating account...";
 
   const exitAttemptToCreateAccount = () => {
     setIsLoading(false);
@@ -80,7 +81,7 @@ const CreateAccountStepSix = (props) => {
       return exitAttemptToCreateAccount();
     }
 
-    const parsedResumeData = await findParsedResume();
+    const parsedResumeData = props.parsedResumeData ? props.parsedResumeData : await findParsedResume();
     if (!parsedResumeData?.data || !parsedResumeData?.meta?.pdf) {
       return exitAttemptToCreateAccount();
     }

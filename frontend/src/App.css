@@ -298,7 +298,8 @@ footer {
   margin-left: -250px;
 }
 
-.form-btn {
+.form-btn,
+.update-resume-button {
   width: 225px;
   height: 45px;
   margin-top: 10px;
@@ -311,9 +312,27 @@ footer {
 }
 
 .form-btn:hover,
-.create-btn:hover {
+.create-btn:hover,
+.update-resume-button:hover {
   border-width: 2px;
   background-color: var(--background-darker);
+}
+
+.update-resume-container {
+  width: 50vw;
+  display: flex;
+  justify-content: flex-start;
+  margin: -90px 0 0 25px;
+  position: relative;
+  z-index: 2;
+}
+
+.update-resume-button {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--background-darker-2);
 }
 
 .create-account-btn {
@@ -1654,4 +1673,24 @@ footer {
   width: 100%;
   text-align: center;
   top: 65%;
+}
+
+#react-doc-viewer {
+  background-color: var(--background-mixed);
+  border-radius: 20px;
+  border: 2px solid var(--light-gray);
+  box-shadow: 5px 5px 40px var(--gray);
+  height: 45vh;
+  width: 50vw;
+  overflow: scroll;
+  margin-top: -15px;
+}
+
+#react-doc-viewer #header-bar {
+  border-radius: 10px 10px 0 0;
+}
+
+#msdoc-renderer {
+  background-color: black;
+  height: 45vh;
 }

@@ -1,7 +1,13 @@
 const CreateAccountButton = (props) => {
   return (
     <div className="text-input-container create-account-btn">
-      <button type="submit" className="form-btn">
+      <button
+        type="submit"
+        className="form-btn"
+        onClick={(event) =>
+          props.submitStepThree ? props.submitStepThree(event) : null
+        }
+      >
         {props.buttonText}
       </button>
       {props.submissionError ? (

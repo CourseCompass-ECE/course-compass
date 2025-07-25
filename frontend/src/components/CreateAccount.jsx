@@ -14,6 +14,8 @@ const CreateAccount = () => {
   const [pfp, setPfp] = useState(null);
   const [pfpPreview, setPfpPreview] = useState("");
   const [resume, setResume] = useState(null);
+  const [resumeToDisplay, setResumeToDisplay] = useState(null);
+  const [parsedResumeData, setParsedResumeData] = useState(null);
   const [eceAreas, setEceAreas] = useState([]);
   const [interests, setInterests] = useState([]);
   const [skills, setSkills] = useState([]);
@@ -63,6 +65,10 @@ const CreateAccount = () => {
             currentStep={currentStep}
             setResume={setResume}
             resume={resume}
+            resumeToDisplay={resumeToDisplay}
+            setResumeToDisplay={setResumeToDisplay}
+            parsedResumeData={parsedResumeData}
+            setParsedResumeData={setParsedResumeData}
           />
         );
       case 4:
@@ -107,6 +113,7 @@ const CreateAccount = () => {
             learningGoalText={learningGoalText}
             setLearningGoalText={setLearningGoalText}
             resume={resume}
+            parsedResumeData={parsedResumeData}
           />
         );
       default:
