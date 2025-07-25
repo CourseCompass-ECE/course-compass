@@ -92,12 +92,12 @@ const CreateAccountStepSix = (props) => {
       return exitAttemptToCreateAccount();
     }
 
-    let totalUserSkills = new Array(
-      new Set([...props.skills, ...newSkillsInterestsObject.skills])
-    );
-    let totalUserInterests = new Array(
-      new Set([...props.interests, ...newSkillsInterestsObject.interests])
-    );
+    let totalUserSkills = [
+      ...new Set([...props.skills, ...newSkillsInterestsObject.skills]),
+    ];
+    let totalUserInterests = [
+      ...new Set([...props.interests, ...newSkillsInterestsObject.interests]),
+    ];
 
     try {
       const storageRef = ref(storage, "images/" + props.pfp.name);
@@ -217,14 +217,15 @@ const CreateAccountStepSix = (props) => {
 
   const splitWordsInTextArray = (textArray) => {
     let wordArray = [];
-    textArray.forEach((text) => {
+    textArray?.forEach((text) => {
       wordArray.push(...cleanseAndReturnArrayOfWords(text));
     });
     return wordArray;
   };
 
   const findAllResumeSkillsInterests = (parsedResumeData) => {
-    let resumeSkillsInterests = new Set([...parsedResumeData?.hobby]);
+    let hobbyArray = parsedResumeData?.hobby ? parsedResumeData.hobby : [];
+    let resumeSkillsInterests = new Set([...hobbyArray]);
 
     parsedResumeData?.skill?.forEach((skill) => {
       resumeSkillsInterests = new Set([
@@ -259,14 +260,19 @@ const CreateAccountStepSix = (props) => {
     });
 
     parsedResumeData?.workExperience?.forEach((workExperience) => {
-      let jobDescriptionTextArray = cleanseAndReturnArrayOfWords(
+      let jobDescription = cleanseAndReturnArrayOfWords(
         workExperience?.jobDescription
+      );
+      let jobTitle = cleanseAndReturnArrayOfWords(workExperience?.jobTitle);
+      let organization = cleanseAndReturnArrayOfWords(
+        workExperience?.workExperienceOrganization
       );
 
       resumeSkillsInterests = new Set([
         ...resumeSkillsInterests,
-        workExperience?.jobTitle,
-        ...jobDescriptionTextArray,
+        ...jobTitle,
+        ...jobDescription,
+        ...organization,
       ]);
     });
 
@@ -285,6 +291,8 @@ const CreateAccountStepSix = (props) => {
       ...splitWordsInTextArray(parsedResumeData?.achievement),
       ...splitWordsInTextArray(parsedResumeData?.association),
     ]);
+
+    return resumeSkillsInterests;
   };
 
   const convertSkillsInterestsObjectToSet = (
@@ -297,6 +305,98 @@ const CreateAccountStepSix = (props) => {
           (skillInterest) => skillInterest.skillOrInterest === skillOrInterest
         )
         .map((skillInterest) => skillInterest.name.toLowerCase())
+    );
+  };
+
+  const doesStringArrayContainSkillInterest = (stringArray, skillInterest) => {
+    for (const text of stringArray) {
+      if (text?.includes(skillInterest)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // Now review the full sentence/phrase fields (precisely educationAccreditation, educationOrganization, workExperienceOrganization,
+  // jobDescription, jobTitle, summary, objective, achievement, and association) & find any sentences containing any of the skills/interests
+  const findSkillsInterestsInFullSentences = (
+    parsedResumeData,
+    skillsInterestsSet
+  ) => {
+    let moreSkillsInterestsMatches = new Set([]);
+
+    for (const skillInterest of [...skillsInterestsSet]) {
+      let isSkillInterestAdded = false;
+
+      let educationArray = parsedResumeData?.education
+        ? parsedResumeData.education
+        : [];
+      for (const education of educationArray) {
+        if (
+          education?.educationAccreditation?.includes(skillInterest) ||
+          education?.educationOrganization?.includes(skillInterest)
+        ) {
+          moreSkillsInterestsMatches.add(skillInterest);
+          isSkillInterestAdded = true;
+          break;
+        }
+      }
+      if (isSkillInterestAdded) continue;
+
+      let workExperienceArray = parsedResumeData?.workExperience
+        ? parsedResumeData.workExperience
+        : [];
+      for (const workExperience of workExperienceArray) {
+        if (
+          workExperience?.jobDescription?.includes(skillInterest) ||
+          workExperience?.jobTitle?.includes(skillInterest) ||
+          workExperience?.workExperienceOrganization?.includes(skillInterest)
+        ) {
+          moreSkillsInterestsMatches.add(skillInterest);
+          isSkillInterestAdded = true;
+          break;
+        }
+      }
+      if (isSkillInterestAdded) continue;
+
+      if (
+        doesStringArrayContainSkillInterest(
+          parsedResumeData?.achievement ? parsedResumeData.achievement : [],
+          skillInterest
+        )
+      ) {
+        moreSkillsInterestsMatches.add(skillInterest);
+        continue;
+      } else if (
+        doesStringArrayContainSkillInterest(
+          parsedResumeData?.association ? parsedResumeData.association : [],
+          skillInterest
+        )
+      ) {
+        moreSkillsInterestsMatches.add(skillInterest);
+        continue;
+      }
+
+      if (
+        parsedResumeData?.summary?.includes(skillInterest) ||
+        parsedResumeData?.objective?.includes(skillInterest)
+      )
+        moreSkillsInterestsMatches.add(skillInterest);
+    }
+
+    return moreSkillsInterestsMatches;
+  };
+
+  const capitalizeSetItems = (set) => {
+    return new Set(
+      [...set].map((setItem) => {
+        return setItem
+          .split(" ")
+          .map((word) => {
+            return word[0].toUpperCase() + word.slice(1);
+          })
+          .join(" ");
+      })
     );
   };
 
@@ -313,10 +413,40 @@ const CreateAccountStepSix = (props) => {
       skillsInterestsObject
     );
 
-    let newSkillsInterests = { skills: [], interests: [] };
-    const allResumeSkillsInterestsSet =
+    let newSkillsInterests = {};
+    let allResumeSkillsInterestsSet =
       findAllResumeSkillsInterests(parsedResumeData);
-      
+    allResumeSkillsInterestsSet = new Set(
+      [...allResumeSkillsInterestsSet].map((skillInterest) =>
+        skillInterest?.toLowerCase()
+      )
+    );
+
+    newSkillsInterests.skills = validSkillsSet.intersection(
+      allResumeSkillsInterestsSet
+    );
+    newSkillsInterests.interests = validInterestsSet.intersection(
+      allResumeSkillsInterestsSet
+    );
+
+    const moreSkillsInterestsMatches = findSkillsInterestsInFullSentences(
+      parsedResumeData,
+      new Set([...validSkillsSet, ...validInterestsSet])
+    );
+    newSkillsInterests.skills = new Set([
+      ...newSkillsInterests.skills,
+      ...validSkillsSet.intersection(moreSkillsInterestsMatches),
+    ]);
+    newSkillsInterests.interests = new Set([
+      ...newSkillsInterests.interests,
+      ...validInterestsSet.intersection(moreSkillsInterestsMatches),
+    ]);
+
+    newSkillsInterests.skills = capitalizeSetItems(newSkillsInterests.skills);
+    newSkillsInterests.interests = capitalizeSetItems(
+      newSkillsInterests.interests
+    );
+
     return newSkillsInterests;
   };
 
