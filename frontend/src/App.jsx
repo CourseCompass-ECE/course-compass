@@ -2,11 +2,8 @@ import "./App.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { useState } from "react";
 import Login from "./components/Login";
-import LandingPage from "./components/LandingPage";
 import CreateAccount from "./components/CreateAccount";
 import Explore from "./components/Explore";
-import ExploreCourseDetails from "./components/ExploreCourseDetails";
-import Profile from "./components/Profile";
 import ShoppingCart from "./components/ShoppingCart";
 import Email from "./components/Email";
 import CreateEmail from "./components/CreateEmail";
@@ -31,24 +28,12 @@ function App() {
           element: <Login />,
         },
         {
-          path: Path.LANDING_PAGE,
-          element: <LandingPage />,
-        },
-        {
           path: Path.CREATE_ACCOUNT,
           element: <CreateAccount />,
         },
         {
           path: Path.EXPLORE,
           element: <Explore />,
-        },
-        {
-          path: Path.EXPLORE_COURSE,
-          element: <ExploreCourseDetails />,
-        },
-        {
-          path: Path.PROFILE,
-          element: <Profile />,
         },
         {
           path: Path.SHOPPING_CART,

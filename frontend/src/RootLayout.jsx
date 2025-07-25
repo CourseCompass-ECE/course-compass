@@ -9,8 +9,8 @@ const RootLayout = (props) => {
   const navigate = useNavigate();
   const [logoutError, setLogoutError] = useState("");
   const location = useLocation();
-  const headerIcons = ["mail", "shopping_cart", "account_circle"];
-  const headerIconsPath = [Path.EMAIL, Path.SHOPPING_CART, Path.PROFILE];
+  const headerIcons = ["mail", "shopping_cart"];
+  const headerIconsPath = [Path.EMAIL, Path.SHOPPING_CART];
   const EXPLORE = "Explore";
   const LOGIN = "Login";
   const TIMETABLES = "Timetables";
@@ -38,7 +38,7 @@ const RootLayout = (props) => {
 
   useEffect(() => {
     const userAuthentication = async () => {
-      const loggedInStatus = await checkUserLoggedIn();
+      const loggedInStatus = await checkUserLoggedIn(props.setIsUserLoggedIn);
       const onPageWhereUserLoggedIn = location.pathname.includes("/user");
       
       if (!loggedInStatus && (onPageWhereUserLoggedIn || location.pathname === "/")) {
@@ -46,7 +46,6 @@ const RootLayout = (props) => {
       } else if (loggedInStatus && !onPageWhereUserLoggedIn) {
         navigate(Path.EXPLORE);
       }
-      props.setIsUserLoggedIn(loggedInStatus);
     };
 
     userAuthentication();
@@ -59,7 +58,7 @@ const RootLayout = (props) => {
         <div className="header-content-container">
           <Link
             className="header-title"
-            to={props.isUserLoggedIn ? Path.EXPLORE : Path.LANDING_PAGE}
+            to={props.isUserLoggedIn ? Path.EXPLORE : Path.LOGIN}
           >
             C<span className="header-title-compass">🧭</span>urseC
             <span className="header-title-compass">🧭</span>mpass
