@@ -420,6 +420,11 @@ export const SELECT_PATH = "/select";
 export const UPDATE_AREAS_PATH = "/update-areas";
 export const ID_QUERY_PARAM = "?id=";
 export const SKILLS_INTERESTS_PATH = "/skills-interests";
+export const BASE_RESUME_ENDPOINT = "https://api.affinda.com/v3/documents";
+export const AFFINDA_PARSER_API_HEADER = {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${import.meta.env.VITE_AFFINDA_RESUME_PARSER_API_KEY}`,
+};
 
 export const YES = "Yes";
 export const NO = "No";

@@ -37,7 +37,7 @@ model User {
   email String @unique
   password String
   pfpUrl String
-  resumeUrl String
+  resumeId String
   skillsInterests SkillInterest[] @relation("UsersPossessingSkillsInterests")
   eceAreas Area[]
   desiredDesignation Designation

@@ -1,12 +1,15 @@
 import CreateAccountButton from "./CreateAccountButton";
-import { CONTINUE } from "../../utils/constants";
+import { CONTINUE, GENERIC_ERROR, AFFINDA_PARSER_API_HEADER, BASE_RESUME_ENDPOINT } from "../../utils/constants";
 import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
 import "@cyntler/react-doc-viewer/dist/index.css";
+import { findParsedResume } from "../../utils/findParsedResume";
+import ParsingLoader from "./ParsingLoader";
 
 const CreateAccountStepThree = (props) => {
   const [resumeError, setResumeError] = useState("");
+  const [isLoadingDocx, setIsLoadingDocx] = useState(false);
   const fileInputRef = useRef();
 
   const STEP_TITLE = "Add Your Résumé";
@@ -20,6 +23,8 @@ const CreateAccountStepThree = (props) => {
     "Please upload a résumé with one of the following file types: pdf, docx";
   const DEFAULT_PDF_ZOOM = 0.7;
   const UPDATE_RESUME = "Update Résumé";
+  const LOADING_DOCX_TEXT = "Loading your docx file...";
+  const IDENTIFIER_QUERY_PARAM = "?identifier=";
 
   const submitStepThree = (event) => {
     event.preventDefault();
@@ -30,34 +35,87 @@ const CreateAccountStepThree = (props) => {
     }
   };
 
-  const onDrop = useCallback(async (fileArray) => {
-    setResumeError("");
-    let validFileTypes = FILE_TYPES_TO_ACCEPT.split(",");
+  const successfullyDeleteExistingParsedResume = async (resumeId) => {
+    try {
+      const response = await fetch(`${BASE_RESUME_ENDPOINT}/${resumeId}`, {
+        method: "DELETE",
+        headers: AFFINDA_PARSER_API_HEADER
+      });
 
-    if (fileArray.length > 0 && validFileTypes.includes(fileArray[0].type)) {
-      props.setResume(fileArray[0]);
-
-      let isPdfFile = validFileTypes.slice(0, 2).includes(fileArray[0].type)
-      props.setResumeToDisplay([
-        {
-          uri: isPdfFile
-            ? window.URL.createObjectURL(fileArray[0])
-            : await generateParsedResumeAndPdfUrlFromDocx(fileArray),
-          fileName: fileArray[0].name
-        },
-      ]);
-    } else {
-      setResumeError(INVALID_FILE_TYPE);
+      if (response.ok) {
+        props.setParsedResumeData(null);
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error) {
+      return false;
     }
+  };
 
-    fileInputRef.current.value = null;
-  }, []);
+  const onDrop = useCallback(
+    async (fileArray) => {
+      setResumeError("");
+      let validFileTypes = FILE_TYPES_TO_ACCEPT.split(",");
+
+      if (fileArray.length > 0 && validFileTypes.includes(fileArray[0].type)) {
+        if (
+          props.parsedResumeData &&
+          !successfullyDeleteExistingParsedResume(
+            props.parsedResumeData?.meta?.identifier
+          )
+        ) {
+          setResumeError(GENERIC_ERROR);
+          return;
+        }
+
+        props.setResume(fileArray[0]);
+
+        let isPdfFile = validFileTypes.slice(0, 2).includes(fileArray[0].type);
+        let resumeUri = isPdfFile
+          ? window.URL.createObjectURL(fileArray[0])
+          : await generateParsedResumeAndPdfUrlFromDocx(fileArray[0]);
+        setIsLoadingDocx(false);
+
+        if (resumeUri)
+          props.setResumeToDisplay([
+            {
+              uri: resumeUri,
+              fileName: fileArray[0].name,
+            },
+          ]);
+        else props.setResumeToDisplay(null);
+      } else {
+        setResumeError(INVALID_FILE_TYPE);
+      }
+
+      fileInputRef.current.value = null;
+    },
+    [props.parsedResumeData]
+  );
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
   });
 
-  const generateParsedResumeAndPdfUrlFromDocx = async (fileArray) => {
-    await findParsedResume();
+  const generateParsedResumeAndPdfUrlFromDocx = async (resumeFile) => {
+    setIsLoadingDocx(true);
+    const parsedResumeData = await findParsedResume(
+      setResumeError,
+      resumeFile,
+      props.fullName
+    );
+
+    if (!parsedResumeData) {
+      props.setResume(null);
+      props.setParsedResumeData(null);
+      return null;
+    } else {
+      props.setParsedResumeData(parsedResumeData);
+      const pdfUrl = parsedResumeData?.meta?.pdf;
+      const response = await fetch(pdfUrl);
+      const blobData = await response.blob();
+      return URL.createObjectURL(blobData);
+    }
   };
 
   return (
@@ -122,6 +180,10 @@ const CreateAccountStepThree = (props) => {
         </>
       )}
 
+      <ParsingLoader
+        isLoading={isLoadingDocx}
+        loadingText={LOADING_DOCX_TEXT}
+      />
       <span className="resume-upload-error">{resumeError}</span>
 
       <CreateAccountButton

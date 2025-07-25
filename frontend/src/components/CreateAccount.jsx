@@ -69,6 +69,7 @@ const CreateAccount = () => {
             setResumeToDisplay={setResumeToDisplay}
             parsedResumeData={parsedResumeData}
             setParsedResumeData={setParsedResumeData}
+            fullName={fullName}
           />
         );
       case 4:
