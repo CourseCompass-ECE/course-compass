@@ -26,6 +26,7 @@ import {
   UPDATE_AREAS_PATH,
   MAXIMUM_DURATION,
   OVERLOAD_PATH,
+  OVERLOADED_POSITION,
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -386,6 +387,7 @@ const Timetable = () => {
         setDesignation(data?.timetable?.designation);
         setTimetable(data?.timetable);
         organizeCourses(data?.timetable?.courses);
+        setOverloadedCoursesToDisplay(data?.timetable?.courses);
         areRequirementsMet(
           data?.timetable,
           setKernelCourses,
@@ -409,8 +411,9 @@ const Timetable = () => {
   const organizeCourses = (courses) => {
     let newTerms = initialTerms;
     courses.forEach((courseObject) => {
-      newTerms[courseObject.term - 1].courses[courseObject.position - 1] =
-        courseObject.course;
+      if (courseObject.position !== OVERLOADED_POSITION)
+        newTerms[courseObject.term - 1].courses[courseObject.position - 1] =
+          courseObject.course;
     });
     setTerms(newTerms);
   };
@@ -521,7 +524,9 @@ const Timetable = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setOverloadedCoursesOptions(data?.overloadedCourses);
+        if (data?.overloadedCourses.length > 0)
+          setOverloadedCoursesOptions(data?.overloadedCourses);
+        else throw new Error();
       } else {
         const error = await response.json();
         setOverloadTimetableError(
@@ -532,6 +537,21 @@ const Timetable = () => {
       setIsTimetableGeneratingOverloading(false);
       setOverloadTimetableError(error?.message ? error.message : GENERIC_ERROR);
     }
+  };
+
+  const setOverloadedCoursesToDisplay = (timetableCourses) => {
+    let courseArray = Array(4).fill(null);
+    timetableCourses
+      .filter((courseObject) => courseObject.position === OVERLOADED_POSITION)
+      .forEach((courseObject) => {
+        courseArray[courseObject.term - 1] = {
+          title: courseObject.course.title,
+          code: courseObject.course.code,
+          id: courseObject.course.id,
+          term: courseObject.term,
+        };
+      });
+    setOverloadedCourses({ ...initialOverloadedCourses, courses: courseArray });
   };
 
   const updateOverloadedCourses = async () => {

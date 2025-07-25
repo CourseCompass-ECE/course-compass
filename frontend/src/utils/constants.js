@@ -469,3 +469,5 @@ export const MAXIMUM_DURATION = 30;
 
 export const CREATE_ACCOUNT = "Create Account";
 export const CONTINUE = "Continue";
+
+export const OVERLOADED_POSITION = 6;

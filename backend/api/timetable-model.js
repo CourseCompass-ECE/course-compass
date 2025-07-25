@@ -35,7 +35,7 @@ module.exports = {
         userId,
       },
     });
-    
+
     if (timetableInUserPosession) {
       await prisma.timetableCourse.delete({
         where: {

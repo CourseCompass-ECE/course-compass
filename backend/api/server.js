@@ -51,7 +51,7 @@ const {
   generateTimetable,
   addTimetable,
 } = require("../utils/generateTimetable");
-const { findOverloadedCourses } = require("../utils/findOverloadedCourses");
+const { findOverloadedCourses, updateOverloadedCourses } = require("../utils/findOverloadedCourses");
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
@@ -673,7 +673,7 @@ server.post(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
   }
 });
 
-server.post(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
+server.put(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
   const timetableId = req.query?.id;
   const courses = req.body?.courses;
 
@@ -693,7 +693,7 @@ server.post(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
       Number(timetableId),
       userId
     );
-    await Timetable.updateOverloadedCourses(courses, timetable, userId);
+    await updateOverloadedCourses(courses, timetable, userId);
     res.status(201).end();
   } catch (err) {
     next(err);
