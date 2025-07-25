@@ -97,6 +97,10 @@ const Timetable = () => {
   const [overloadedCourses, setOverloadedCourses] = useState(
     initialOverloadedCourses
   );
+  const [overloadedCoursesOptions, setOverloadedCoursesOptions] =
+    useState(null);
+  const [originalOverloadedCourses, setOriginalOverloadedCourses] =
+    useState(null);
   const [coursesPlanToOverload, setCoursesPlanToOverload] = useState([]);
   const [overloadTimetableError, setOverloadTimetableError] = useState("");
   const [isPlanningToOverload, setIsPlanningToOverload] = useState(false);
@@ -517,7 +521,7 @@ const Timetable = () => {
 
       if (response.ok) {
         const data = await response.json();
-        // setOverloadedCourses({...initialOverloadedCourses, courses: data?.overloadedCourses});
+        setOverloadedCoursesOptions(data?.overloadedCourses);
       } else {
         const error = await response.json();
         setOverloadTimetableError(
@@ -530,6 +534,48 @@ const Timetable = () => {
     }
   };
 
+  const updateOverloadedCourses = async () => {
+    try {
+      let cleanedOverloadedCourses = overloadedCoursesOptions[
+        currentTimetableOption - 1
+      ]?.courses?.filter((course) => course.id !== null);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${OVERLOAD_PATH}${ID_QUERY_PARAM}${timetable.id}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            courses: cleanedOverloadedCourses,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        exitTimetableOptions();
+        fetchTimetableData(timetable.id);
+      } else {
+        setSelectTimetableError(GENERIC_ERROR);
+      }
+    } catch (error) {
+      setSelectTimetableError(GENERIC_ERROR);
+    }
+  };
+
+  const enableOverloadedSelection = () => {
+    setOriginalOverloadedCourses(overloadedCourses);
+    setOverloadedCourses({
+      ...initialOverloadedCourses,
+      courses: overloadedCoursesOptions[0]?.courses,
+    });
+    setCurrentTimetableOption(1);
+  };
+
   const enableTimetableSelection = () => {
     setOriginalTerms(terms);
     organizeCourses(generatedTimetables[0].courses);
@@ -538,19 +584,30 @@ const Timetable = () => {
 
   const updateTimetableOption = (change) => {
     const newTimetableOption = currentTimetableOption + change;
+    let timetableOptions = overloadedCoursesOptions
+      ? overloadedCoursesOptions
+      : generatedTimetables;
     if (
       newTimetableOption > 0 &&
-      newTimetableOption <= generatedTimetables.length
+      newTimetableOption <= timetableOptions.length
     ) {
       setSelectTimetableError("");
       setCurrentTimetableOption(newTimetableOption);
-      organizeCourses(generatedTimetables[newTimetableOption - 1].courses);
+      if (generatedTimetables)
+        organizeCourses(timetableOptions[newTimetableOption - 1].courses);
+      else
+        setOverloadedCourses({
+          ...initialOverloadedCourses,
+          courses: overloadedCoursesOptions[newTimetableOption - 1]?.courses,
+        });
     }
   };
 
   const exitTimetableOptions = () => {
     setOriginalTerms(null);
+    setOriginalOverloadedCourses(null);
     setGeneratedTimetables(null);
+    setOverloadedCoursesOptions(null);
     setCurrentTimetableOption(null);
   };
 
@@ -746,7 +803,7 @@ const Timetable = () => {
   }, [designation]);
 
   useEffect(() => {
-    if (originalTerms) return;
+    if (originalTerms || originalOverloadedCourses) return;
     if (
       timetable &&
       errors.some((errorObject) => errorObject.errors.length > 0) ===
@@ -759,6 +816,10 @@ const Timetable = () => {
   useEffect(() => {
     if (generatedTimetables) enableTimetableSelection();
   }, [generatedTimetables]);
+
+  useEffect(() => {
+    if (overloadedCoursesOptions) enableOverloadedSelection();
+  }, [overloadedCoursesOptions]);
 
   return (
     <div className="page-container">
@@ -871,12 +932,16 @@ const Timetable = () => {
                     onClick={(event) =>
                       event.target.innerText !== FAVORITE_ICON &&
                       event.target.innerText !== CART_ICON &&
-                      !originalTerms
+                      !originalTerms &&
+                      !originalOverloadedCourses
                         ? setSelectedCourse(course.id)
                         : null
                     }
                     style={{
-                      cursor: originalTerms ? "not-allowed" : "pointer",
+                      cursor:
+                        originalTerms || originalOverloadedCourses
+                          ? "not-allowed"
+                          : "pointer",
                     }}
                   >
                     <ExploreCourse
@@ -907,7 +972,10 @@ const Timetable = () => {
           >
             <div
               className="timetable-options-container"
-              style={{ display: originalTerms ? "block" : "none" }}
+              style={{
+                display:
+                  originalTerms || originalOverloadedCourses ? "block" : "none",
+              }}
             >
               <span
                 className="material-symbols-outlined timetable-selection-arrow"
@@ -915,7 +983,9 @@ const Timetable = () => {
               >
                 arrow_left
               </span>
-              {`${OPTION}${currentTimetableOption} of ${generatedTimetables?.length}`}
+              {`${OPTION}${currentTimetableOption} of ${
+                generatedTimetables?.length || overloadedCoursesOptions?.length
+              }`}
               <img
                 className="timetable-score-outline"
                 alt={TIMETABLE_SCORE_OUTLINE_ALT}
@@ -926,8 +996,10 @@ const Timetable = () => {
                 }
               />
               <span className="timetable-option-score">
-                {currentTimetableOption
+                {currentTimetableOption && generatedTimetables
                   ? generatedTimetables[currentTimetableOption - 1]?.score
+                  : currentTimetableOption && overloadedCoursesOptions
+                  ? overloadedCoursesOptions[currentTimetableOption - 1]?.score
                   : ""}
                 %
               </span>
@@ -940,14 +1012,20 @@ const Timetable = () => {
               <div className="timetable-options-select-container">
                 <span
                   className="material-symbols-outlined timetable-edit-icon timetable-yes"
-                  onClick={handleTimetableSelection}
+                  onClick={
+                    originalTerms
+                      ? handleTimetableSelection
+                      : updateOverloadedCourses
+                  }
                 >
                   check_circle
                 </span>
                 <span
                   className="material-symbols-outlined timetable-edit-icon timetable-no"
                   onClick={() => {
-                    setTerms(originalTerms);
+                    originalTerms
+                      ? setTerms(originalTerms)
+                      : setOverloadedCourses(originalOverloadedCourses);
                     exitTimetableOptions();
                   }}
                 >
@@ -976,9 +1054,15 @@ const Timetable = () => {
               <button
                 className="create-btn generate-background generate-timetable"
                 onClick={() =>
-                  originalTerms ? null : generateTimetable(timetable?.id)
+                  originalTerms || originalOverloadedCourses
+                    ? null
+                    : generateTimetable(timetable?.id)
                 }
-                style={originalTerms ? { cursor: "not-allowed" } : {}}
+                style={
+                  originalTerms || originalOverloadedCourses
+                    ? { cursor: "not-allowed" }
+                    : {}
+                }
               >
                 <span className="material-symbols-outlined">wand_stars</span>
                 {GENERATE_BUTTON_TEXT}
@@ -1027,9 +1111,15 @@ const Timetable = () => {
               <button
                 className="create-btn generate-background generate-timetable"
                 onClick={() =>
-                  originalTerms ? null : setIsPlanningToOverload(true)
+                  originalTerms || originalOverloadedCourses
+                    ? null
+                    : setIsPlanningToOverload(true)
                 }
-                style={originalTerms ? { cursor: "not-allowed" } : {}}
+                style={
+                  originalTerms || originalOverloadedCourses
+                    ? { cursor: "not-allowed" }
+                    : {}
+                }
               >
                 <span className="material-symbols-outlined">add_ad</span>
                 {OVERLOAD_BUTTON_TEXT}
@@ -1053,7 +1143,9 @@ const Timetable = () => {
                         deleteTimetableCourse(course.id)
                       }
                       isViewOnlyTimetableCourse={
-                        originalTerms || term.title === OVERLOADED_COURSES_TITLE
+                        originalTerms ||
+                        term.title === OVERLOADED_COURSES_TITLE ||
+                        originalOverloadedCourses
                           ? true
                           : false
                       }
@@ -1133,7 +1225,7 @@ const Timetable = () => {
       <section
         className="timetable-requirements-container"
         style={
-          originalTerms
+          originalTerms || originalOverloadedCourses
             ? { cursor: "not-allowed" }
             : {
                 bottom: isRequirementsMenuOpen
@@ -1142,12 +1234,16 @@ const Timetable = () => {
               }
         }
         onMouseEnter={() =>
-          originalTerms ? null : setIsRequirementsMenuOpen(true)
+          originalTerms || originalOverloadedCourses
+            ? null
+            : setIsRequirementsMenuOpen(true)
         }
         onMouseLeave={() => setIsRequirementsMenuOpen(false)}
       >
         <span className="material-symbols-outlined requirements-menu">
-          {isRequirementsMenuOpen && !originalTerms
+          {isRequirementsMenuOpen &&
+          !originalTerms &&
+          !originalOverloadedCourses
             ? "keyboard_arrow_down"
             : "keyboard_arrow_up"}
         </span>

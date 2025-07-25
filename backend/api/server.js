@@ -673,6 +673,33 @@ server.post(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
   }
 });
 
+server.post(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const courses = req.body?.courses;
+
+  try {
+    if (!numberValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    else if (
+      courses.some(
+        (course) =>
+          !ONLY_NUMBERS.test(course.id) ||
+          !ONLY_NUMBERS.test(course.term)
+      )
+    )
+      throw new Error(INVALID_COURSES_PROVIDED);
+
+    const userId = Number(req.session?.user?.id);
+    const timetable = await User.findUserTimetableByIds(
+      Number(timetableId),
+      userId
+    );
+    await Timetable.updateOverloadedCourses(courses, timetable, userId);
+    res.status(201).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
 server.post(`${Path.TIMETABLE}${SELECT_PATH}`, async (req, res, next) => {
   const timetableId = req.query?.id;
   const courses = req.body?.courses;

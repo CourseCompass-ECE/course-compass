@@ -9,14 +9,22 @@ export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
   const timetable = await User.findUserTimetableByIds(timetableId, userId);
   if (!user || !timetable) throw new Error(GENERIC_ERROR);
 
+  let options = courseIds.map((courseId) => {
+    return { id: courseId, availableTerms: [] };
+  });
+
   let overloadedCourses = [...Array(4)]?.map((_, term) => {
     return {
       title: NO_COURSE,
       code: NO_CODE,
-      id: null,
+      id: courseIds[term],
       term: term + 1,
     };
   });
 
-  return [{ score: 10, courses: overloadedCourses },{ score: 15, courses: overloadedCourses },{ score: 20, courses: overloadedCourses },];
+  return [
+    { score: 10, courses: overloadedCourses },
+    { score: 15, courses: overloadedCourses },
+    { score: 20, courses: overloadedCourses },
+  ];
 };
