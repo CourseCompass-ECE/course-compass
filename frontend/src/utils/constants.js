@@ -419,6 +419,7 @@ export const GENERATE_PATH = "/generate";
 export const SELECT_PATH = "/select";
 export const UPDATE_AREAS_PATH = "/update-areas";
 export const ID_QUERY_PARAM = "?id=";
+export const SKILLS_INTERESTS_PATH = "/skills-interests";
 
 export const YES = "Yes";
 export const NO = "No";
@@ -461,3 +462,6 @@ export const TIMETABLE_AREAS_CHANGE_TITLE =
   "To Proceed, Timetable Areas Must Change";
 
 export const MAXIMUM_DURATION = 30;
+
+export const CREATE_ACCOUNT = "Create Account";
+export const CONTINUE = "Continue";

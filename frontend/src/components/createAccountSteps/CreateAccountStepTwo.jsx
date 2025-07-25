@@ -1,4 +1,6 @@
 import { useState } from "react";
+import CreateAccountButton from "./CreateAccountButton";
+import { CONTINUE } from "../../utils/constants";
 
 const CreateAccountStepTwo = (props) => {
   const [pfpError, setPfpError] = useState("");
@@ -67,11 +69,7 @@ const CreateAccountStepTwo = (props) => {
         </span>
       </div>
 
-      <div className="text-input-container create-account-btn">
-        <button type="submit" className="form-btn">
-          Continue
-        </button>
-      </div>
+      <CreateAccountButton buttonText={CONTINUE} />
     </form>
   );
 };

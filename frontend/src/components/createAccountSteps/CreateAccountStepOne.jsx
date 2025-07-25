@@ -7,7 +7,8 @@ import {
   LOWERCASE_LETTER,
   NUMBER,
 } from "../../utils/regex";
-import { EMAIL_ERROR } from "../../utils/constants";
+import CreateAccountButton from "./CreateAccountButton";
+import { EMAIL_ERROR, CONTINUE } from "../../utils/constants";
 
 const CreateAccountStepOne = (props) => {
   const [fullNameError, setFullNameError] = useState("");
@@ -55,7 +56,10 @@ const CreateAccountStepOne = (props) => {
     setEmailError("");
     setPasswordError("");
 
-    if (!props.fullName || props.fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length < 2) {
+    if (
+      !props.fullName ||
+      props.fullName.trim().split(ONE_OR_MORE_WHITESPACE_REGEX).length < 2
+    ) {
       setFullNameError(FULL_NAME_ERROR);
       return;
     } else if (!props.email || !EMAIL_REGEX.test(props.email.trim())) {
@@ -150,11 +154,7 @@ const CreateAccountStepOne = (props) => {
         <span className="text-input-error">{passwordError}</span>
       </div>
 
-      <div className="text-input-container create-account-btn">
-        <button type="submit" className="form-btn">
-          Continue
-        </button>
-      </div>
+      <CreateAccountButton buttonText={CONTINUE} />
     </form>
   );
 };

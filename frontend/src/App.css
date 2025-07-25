@@ -144,7 +144,7 @@ footer {
   margin: 10vh 0 2vh 0;
 }
 
-.create-account-step-five-title {
+.create-account-step-six-title {
   margin-bottom: 0vh;
 }
 
@@ -156,6 +156,49 @@ footer {
   margin-bottom: 5vh;
   max-width: 80vw;
   text-align: center;
+}
+
+.resume-upload-container {
+  border: 2px solid var(--background-darker-2);
+  width: 30vw;
+  height: 40vh;
+  padding: 0 30px 0 30px;
+  border-radius: 20px;
+  border-style: dashed;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  align-items: center;
+  font-family: var(--header-font);
+  font-size: var(--subheader-size);
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.resume-upload-container:hover {
+  border-width: 3px;
+}
+
+.resume-upload-background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.35;
+}
+
+.resume-upload-container:hover .resume-upload-background {
+  background: linear-gradient(135deg, #c3dafe, #e0c3fc);
+}
+
+.resume-upload-items {
+  z-index: 1;
+}
+
+.resume-upload-icon {
+  font-size: var(--title-size);
 }
 
 .login-password-container,
@@ -251,8 +294,8 @@ footer {
 }
 
 .create-account-submission-error {
-  width: 325px;
-  margin-left: -50px;
+  width: 725px;
+  margin-left: -250px;
 }
 
 .form-btn {
@@ -289,7 +332,7 @@ footer {
   list-style-type: none;
   padding: 0;
   margin: 0 0 10px 0;
-  width: 75vw;
+  width: 90vw;
 }
 
 .create-account-progress-bar-content-item {
@@ -302,7 +345,7 @@ footer {
 }
 
 .create-account-progress-bar {
-  width: 75vw;
+  width: 90vw;
   height: 30%;
   border: 2px solid var(--gray);
   border-radius: 20px;
@@ -353,7 +396,7 @@ footer {
   height: 150px;
   position: absolute;
   left: 34%;
-  top: -165px
+  top: -165px;
 }
 
 .create-account-pfp-img {
@@ -1398,6 +1441,12 @@ footer {
   font-weight: 600;
 }
 
+.resume-upload-error {
+  font-size: var(--small-text-size);
+  color: var(--error-red);
+  font-weight: 600;
+}
+
 .reject-icon {
   margin-right: 20px;
 }
@@ -1475,7 +1524,8 @@ footer {
   cursor: pointer;
 }
 
-.close-modal:hover, .timetable-selection-arrow {
+.close-modal:hover,
+.timetable-selection-arrow {
   color: var(--dark-gray);
 }
 
@@ -1521,7 +1571,7 @@ footer {
 }
 
 .timetable-selection-arrow:hover {
-  color: var(--main-color)
+  color: var(--main-color);
 }
 
 .timetable-info-icon {
@@ -1594,4 +1644,14 @@ footer {
 
 .confirm-area-change-btn:hover {
   background-color: var(--background-mixed);
+}
+
+.loading-text {
+  font-family: var(--header-font);
+  font-size: var(--subheader-size);
+  color: white;
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  top: 65%;
 }
