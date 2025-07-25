@@ -1694,3 +1694,21 @@ footer {
   background-color: black;
   height: 45vh;
 }
+
+.timetable-settings {
+  font-size: 26px;
+  padding-bottom: 15px;
+}
+
+.overload-timetable {
+  position: absolute;
+  top: 60px;
+  right: 10px;
+}
+
+.overloaded-term-number {
+  position: absolute;
+  top: 15%;
+  font-size: var(--subheader-size);
+  font-weight: 600;
+}

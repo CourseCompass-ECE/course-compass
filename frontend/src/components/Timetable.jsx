@@ -24,6 +24,7 @@ import {
   TIMETABLE_AREAS_CHANGE_TITLE,
   UPDATE_AREAS_PATH,
   MAXIMUM_DURATION,
+  OVERLOAD_PATH,
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -34,6 +35,7 @@ import { Slider, Checkbox } from "@mui/material";
 import ErrorModal from "./errorModal/ErrorModal";
 
 const Timetable = () => {
+  const OVERLOADED_COURSES_TITLE = "Overloaded Courses";
   const initialTerms = [
     {
       title: "3rd Year, Fall",
@@ -43,6 +45,10 @@ const Timetable = () => {
     { title: "4th Year, Fall", courses: Array(5).fill(null) },
     { title: "4th Year, Winter", courses: Array(5).fill(null) },
   ];
+  const initialOverloadedCourses = {
+    title: OVERLOADED_COURSES_TITLE,
+    courses: Array(4).fill(null),
+  };
   const DEFAULT_DURATION = 5;
   const MINIMUM_DURATION = 1;
 
@@ -62,7 +68,10 @@ const Timetable = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [updateTimetableError, setUpdateTimetableError] = useState("");
   const [generateTimetableError, setGenerateTimetableError] = useState("");
-  const [isTimetableGenerating, setIsTimetableGenerating] = useState(false);
+  const [
+    isTimetableGeneratingOverloading,
+    setIsTimetableGeneratingOverloading,
+  ] = useState(false);
   const [generatedTimetables, setGeneratedTimetables] = useState(null);
   const [currentTimetableOption, setCurrentTimetableOption] = useState(null);
   const [originalTerms, setOriginalTerms] = useState(null);
@@ -84,6 +93,11 @@ const Timetable = () => {
   const [displayUpdateAreasPopup, setDisplayUpdateAreasPopup] = useState(false);
   const [kernelAreaChanges, setKernelAreaChanges] = useState(null);
   const [depthAreaChanges, setDepthAreaChanges] = useState(null);
+  const [overloadedCourses, setOverloadedCourses] = useState(
+    initialOverloadedCourses
+  );
+  const [coursesPlanToOverload, setCoursesPlanToOverload] = useState([]);
+  const [overloadTimetableError, setOverloadTimetableError] = useState("");
 
   const TIMETABLE = "Timetable";
   const TIMETABLE_DESCRIPTION = "Timetable Description ";
@@ -92,7 +106,8 @@ const Timetable = () => {
     "No designation is possible with the current timetable";
   const TIMETABLE_SELECTION_INFO =
     "Click on a course from your shopping cart or currently in your timetable, then click on any open tile to move it";
-  const BUTTON_TEXT = "Generate Timetable";
+  const GENERATE_BUTTON_TEXT = "Generate Timetable";
+  const OVERLOAD_BUTTON_TEXT = "Overload Timetable";
   const CART_SEARCH_PLACEHOLDER = "Search by title or code";
   const FAVORITE_ICON = "star";
   const CART_ICON = "remove_shopping_cart";
@@ -103,7 +118,8 @@ const Timetable = () => {
   const OTHER_COURSES = "11 Other Courses: ";
   const NO_COURSE = "No course added yet";
   const NO_ERRORS = "Great job - no errors found!";
-  const TIMETABLE_ERROR_TITLE = "Unable to Generate Timetable";
+  const GENERATE_TIMETABLE_ERROR_TITLE = "Unable to Generate Timetable";
+  const OVERLOAD_TIMETABLE_ERROR_TITLE = "Unable to Overload Timetable";
   const REQUIREMENTS_CONTAINER_NEW_BOTTOM = "7vh";
   const OPTION = "Option: ";
   const TIMETABLE_SCORE_OUTLINE_ALT =
@@ -117,6 +133,7 @@ const Timetable = () => {
   const DURATION_QUERY_PARAM = "&duration=";
   const ANY_KERNEL_DEPTH_QUERY_PARAM = "&anyKernelDepth=";
   const ANY_DEPTH_QUERY_PARAM = "&anyDepth=";
+  const GENERATE_TIMETABLE_SETTINGS = "Generate Timetable Settings:";
   const CHOOSE_ANY_KERNEL_AND_DEPTH_AREAS = "Choose any kernel & depth areas:";
   const CHOOSE_ANY_DEPTH_AREAS = "Choose any depth areas:";
   const KERNEL_AREA_CHANGES = "Kernel Area Changes:";
@@ -435,7 +452,7 @@ const Timetable = () => {
 
   const generateTimetable = async (timetableId) => {
     try {
-      setIsTimetableGenerating(true);
+      setIsTimetableGeneratingOverloading(true);
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${
           Path.TIMETABLE
@@ -447,7 +464,7 @@ const Timetable = () => {
           credentials: "include",
         }
       );
-      setIsTimetableGenerating(false);
+      setIsTimetableGeneratingOverloading(false);
 
       if (response.ok) {
         const data = await response.json();
@@ -460,8 +477,40 @@ const Timetable = () => {
         );
       }
     } catch (error) {
-      setIsTimetableGenerating(false);
+      setIsTimetableGeneratingOverloading(false);
       setGenerateTimetableError(error?.message ? error.message : GENERIC_ERROR);
+    }
+  };
+
+  const overloadTimetable = async (timetableId) => {
+    try {
+      setIsTimetableGeneratingOverloading(true);
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}${
+          Path.TIMETABLE
+        }${OVERLOAD_PATH}${ID_QUERY_PARAM}${timetableId}`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            courses: coursesPlanToOverload,
+          }),
+        }
+      );
+      setIsTimetableGeneratingOverloading(false);
+
+      if (response.ok) {
+        const data = await response.json();
+      } else {
+        const error = await response.json();
+        setOverloadTimetableError(error?.message ? error.message : GENERIC_ERROR);
+      }
+    } catch (error) {
+      setIsTimetableGeneratingOverloading(false);
+      setOverloadTimetableError(error?.message ? error.message : GENERIC_ERROR);
     }
   };
 
@@ -586,7 +635,10 @@ const Timetable = () => {
             ? areaChangesObject?.removed?.map((kernelAreaRemoved, index) => {
                 let kernelAreaAdded = areaChangesObject.added[index];
                 return (
-                  <li key={index} className="area-change">{`${ECE_AREAS[kernelAreaRemoved]} -> ${ECE_AREAS[kernelAreaAdded]}`}</li>
+                  <li
+                    key={index}
+                    className="area-change"
+                  >{`${ECE_AREAS[kernelAreaRemoved]} -> ${ECE_AREAS[kernelAreaAdded]}`}</li>
                 );
               })
             : null}
@@ -645,6 +697,11 @@ const Timetable = () => {
   const depthToggled = () => {
     if (anyDepth) setAnyKernelDepth(false);
     setAnyDepth(!anyDepth);
+  };
+
+  const resetTimetableErrorMessages = () => {
+    setGenerateTimetableError("");
+    setOverloadTimetableError("");
   };
 
   useEffect(() => {
@@ -908,10 +965,13 @@ const Timetable = () => {
                 style={originalTerms ? { cursor: "not-allowed" } : {}}
               >
                 <span className="material-symbols-outlined">wand_stars</span>
-                {BUTTON_TEXT}
+                {GENERATE_BUTTON_TEXT}
               </button>
             </div>
             <div className="generate-timetable-options-container">
+              <span className="timetable-settings">
+                {GENERATE_TIMETABLE_SETTINGS}
+              </span>
               <span className="timetable-option-text timetable-checkbox-option-text">
                 {CHOOSE_ANY_KERNEL_AND_DEPTH_AREAS}
               </span>
@@ -946,9 +1006,22 @@ const Timetable = () => {
             <span className="timetable-change-error">
               {updateTimetableError}
             </span>
+
+            <div className="create-btn-height overload-timetable">
+              <button
+                className="create-btn generate-background generate-timetable"
+                onClick={() =>
+                  originalTerms ? null : overloadTimetable(timetable?.id)
+                }
+                style={originalTerms ? { cursor: "not-allowed" } : {}}
+              >
+                <span className="material-symbols-outlined">add_ad</span>
+                {OVERLOAD_BUTTON_TEXT}
+              </button>
+            </div>
           </h2>
 
-          {terms.map((term, termId) => (
+          {[...terms, overloadedCourses].map((term, termId) => (
             <section key={termId} className="term-container">
               <h3 className="term-title">{term.title}</h3>
               <div className="timetable-course-container">
@@ -963,15 +1036,30 @@ const Timetable = () => {
                       deleteTimetableCourse={() =>
                         deleteTimetableCourse(course.id)
                       }
-                      isTimetableOption={originalTerms ? true : false}
+                      isViewOnlyTimetableCourse={
+                        originalTerms || term.title === OVERLOADED_COURSES_TITLE
+                          ? true
+                          : false
+                      }
+                      termNumber={
+                        term.title === OVERLOADED_COURSES_TITLE
+                          ? positionId + 1
+                          : null
+                      }
                     />
                   ) : (
                     <article
                       key={positionId}
                       className="course-placeholder"
-                      style={!selectedCourse ? { cursor: "not-allowed" } : {}}
+                      style={
+                        !selectedCourse ||
+                        term.title === OVERLOADED_COURSES_TITLE
+                          ? { cursor: "not-allowed" }
+                          : {}
+                      }
                       onClick={() =>
-                        selectedCourse
+                        selectedCourse &&
+                        term.title !== OVERLOADED_COURSES_TITLE
                           ? updateTimetableCourses(
                               selectedCourse,
                               termId + 1,
@@ -989,11 +1077,19 @@ const Timetable = () => {
       </div>
 
       <ErrorModal
-        title={TIMETABLE_ERROR_TITLE}
-        message={generateTimetableError}
-        closeAction={() => setGenerateTimetableError("")}
-        isModalDisplaying={generateTimetableError || isTimetableGenerating}
-        displayLoader={isTimetableGenerating}
+        title={
+          generateTimetableError
+            ? GENERATE_TIMETABLE_ERROR_TITLE
+            : OVERLOAD_TIMETABLE_ERROR_TITLE
+        }
+        message={generateTimetableError || overloadTimetableError}
+        closeAction={resetTimetableErrorMessages}
+        isModalDisplaying={
+          generateTimetableError ||
+          overloadTimetableError ||
+          isTimetableGeneratingOverloading
+        }
+        displayLoader={isTimetableGeneratingOverloading}
       />
 
       <ErrorModal

@@ -30,6 +30,7 @@ const {
   SELECT_PATH,
   UPDATE_AREAS_PATH,
   SKILLS_INTERESTS_PATH,
+  OVERLOAD_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -639,6 +640,17 @@ server.get(`${Path.TIMETABLE}${GENERATE_PATH}`, async (req, res, next) => {
       anyDepth ? true : false
     );
     res.status(200).json({ timetableOptions });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.post(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  try {
+    if (!numberValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    const userId = Number(req.session?.user?.id);
+    res.status(200).json({timetableId});
   } catch (err) {
     next(err);
   }
