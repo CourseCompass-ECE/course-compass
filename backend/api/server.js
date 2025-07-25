@@ -51,6 +51,7 @@ const {
   generateTimetable,
   addTimetable,
 } = require("../utils/generateTimetable");
+const { findOverloadedCourses } = require("../utils/findOverloadedCourses");
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
@@ -58,6 +59,7 @@ const INVALID_TIMETABLE_DETAILS_ERROR = "Invalid timetable details provided";
 const INVALID_TIMETABLE_COURSE_DETAILS_ERROR =
   "Invalid timetable course details provided";
 const INVALID_COURSE_ID = "Invalid course id provided";
+const INVALID_COURSE_IDS = "Invalid course ids provided";
 const INVALID_TIMETABLE_ID = "Invalid timetable id provided";
 const INVALID_DURATION = "Invalid timetable duration provided";
 const INVALID_KERNEL_DEPTH = "Invalid checkbox values provided";
@@ -647,10 +649,25 @@ server.get(`${Path.TIMETABLE}${GENERATE_PATH}`, async (req, res, next) => {
 
 server.post(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
   const timetableId = req.query?.id;
+  const courseIds = req.body?.courseIds;
+
   try {
     if (!numberValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    else if (
+      !courseIds ||
+      courseIds.length === 0 ||
+      courseIds.length > 4 ||
+      courseIds.some((courseId) => !numberValid(courseId))
+    )
+      throw new Error(INVALID_COURSE_IDS);
+
     const userId = Number(req.session?.user?.id);
-    res.status(200).json({timetableId});
+    const overloadedCourses = await findOverloadedCourses(
+      userId,
+      courseIds,
+      Number(timetableId)
+    );
+    res.status(200).json({ overloadedCourses });
   } catch (err) {
     next(err);
   }

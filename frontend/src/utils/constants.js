@@ -462,6 +462,8 @@ export const ECE472_CODE = "ECE472H1";
 
 export const TIMETABLE_AREAS_CHANGE_TITLE =
   "To Proceed, Timetable Areas Must Change";
+export const PLAN_COURSES_TO_OVERLOAD =
+  "To Proceed, Select 1-4 Courses to Overload With";
 
 export const MAXIMUM_DURATION = 30;
 

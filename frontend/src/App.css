@@ -1523,6 +1523,7 @@ footer {
 .timetable-generate-error-title {
   font-family: var(--header-font);
   font-weight: normal;
+  text-align: center;
   padding-bottom: 8%;
   margin: 0 15px 0 15px;
 }
@@ -1711,4 +1712,11 @@ footer {
   top: 15%;
   font-size: var(--subheader-size);
   font-weight: 600;
+}
+
+.overload-course-container {
+  height: 32vh;
+  width: 40vw;
+  overflow: scroll;
+  margin-bottom: 20px;
 }

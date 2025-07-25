@@ -22,6 +22,7 @@ import {
   GENERATE_PATH,
   SELECT_PATH,
   TIMETABLE_AREAS_CHANGE_TITLE,
+  PLAN_COURSES_TO_OVERLOAD,
   UPDATE_AREAS_PATH,
   MAXIMUM_DURATION,
   OVERLOAD_PATH,
@@ -98,6 +99,7 @@ const Timetable = () => {
   );
   const [coursesPlanToOverload, setCoursesPlanToOverload] = useState([]);
   const [overloadTimetableError, setOverloadTimetableError] = useState("");
+  const [isPlanningToOverload, setIsPlanningToOverload] = useState(false);
 
   const TIMETABLE = "Timetable";
   const TIMETABLE_DESCRIPTION = "Timetable Description ";
@@ -138,6 +140,8 @@ const Timetable = () => {
   const CHOOSE_ANY_DEPTH_AREAS = "Choose any depth areas:";
   const KERNEL_AREA_CHANGES = "Kernel Area Changes:";
   const DEPTH_AREA_CHANGES = "Depth Area Changes:";
+  const INSUFFICIENT_COURSES_PROVIDED =
+    "At least 1 course must be added to overload the timetable";
 
   const filteredCoursesInCart = coursesInCart.filter(
     (course) =>
@@ -484,6 +488,15 @@ const Timetable = () => {
 
   const overloadTimetable = async (timetableId) => {
     try {
+      let courseIds = coursesPlanToOverload;
+      setCoursesPlanToOverload([]);
+      setIsPlanningToOverload(false);
+
+      if (courseIds.length === 0) {
+        setOverloadTimetableError(INSUFFICIENT_COURSES_PROVIDED);
+        return;
+      }
+
       setIsTimetableGeneratingOverloading(true);
       const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}${
@@ -496,7 +509,7 @@ const Timetable = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            courses: coursesPlanToOverload,
+            courseIds: courseIds,
           }),
         }
       );
@@ -504,9 +517,12 @@ const Timetable = () => {
 
       if (response.ok) {
         const data = await response.json();
+        // setOverloadedCourses({...initialOverloadedCourses, courses: data?.overloadedCourses});
       } else {
         const error = await response.json();
-        setOverloadTimetableError(error?.message ? error.message : GENERIC_ERROR);
+        setOverloadTimetableError(
+          error?.message ? error.message : GENERIC_ERROR
+        );
       }
     } catch (error) {
       setIsTimetableGeneratingOverloading(false);
@@ -1011,7 +1027,7 @@ const Timetable = () => {
               <button
                 className="create-btn generate-background generate-timetable"
                 onClick={() =>
-                  originalTerms ? null : overloadTimetable(timetable?.id)
+                  originalTerms ? null : setIsPlanningToOverload(true)
                 }
                 style={originalTerms ? { cursor: "not-allowed" } : {}}
               >
@@ -1098,7 +1114,20 @@ const Timetable = () => {
         closeAction={cancelChangeAreasAttempt}
         isModalDisplaying={displayUpdateAreasPopup}
         displayLoader={false}
-        updateTimetableAreas={updateTimetableAreas}
+        actionOnConfirmation={updateTimetableAreas}
+      />
+
+      <ErrorModal
+        title={PLAN_COURSES_TO_OVERLOAD}
+        message={null}
+        timetableCourses={timetable?.courses}
+        coursesInCart={coursesInCart}
+        coursesPlanToOverload={coursesPlanToOverload}
+        setCoursesPlanToOverload={setCoursesPlanToOverload}
+        closeAction={() => setIsPlanningToOverload(false)}
+        isModalDisplaying={isPlanningToOverload}
+        displayLoader={false}
+        actionOnConfirmation={() => overloadTimetable(timetable.id)}
       />
 
       <section
