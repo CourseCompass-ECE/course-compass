@@ -115,6 +115,7 @@ const CreateAccount = () => {
             setLearningGoalText={setLearningGoalText}
             resume={resume}
             parsedResumeData={parsedResumeData}
+            setParsedResumeData={setParsedResumeData}
           />
         );
       default:

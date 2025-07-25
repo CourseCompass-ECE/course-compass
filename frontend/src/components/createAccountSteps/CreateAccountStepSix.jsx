@@ -15,7 +15,10 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import CreateAccountButton from "./CreateAccountButton";
 import { REMOVE_PUNCTUATION_AND_SPLIT_WORDS } from "../../utils/regex";
 import { stopwords } from "../../../../backend/utils/constants";
-import { findParsedResume } from "../../utils/findParsedResume";
+import {
+  findParsedResume,
+  successfullyDeleteExistingParsedResume,
+} from "../../utils/resumeHelperFunctions";
 import ParsingLoader from "./ParsingLoader";
 
 const firebaseConfig = {
@@ -47,7 +50,11 @@ const CreateAccountStepSix = (props) => {
   const LOADING_TEXT =
     "Parsing résumé, uploading résumé + profile photo to the cloud, creating account...";
 
-  const exitAttemptToCreateAccount = () => {
+  const exitAttemptToCreateAccount = async (parsedResumeData) => {
+    await successfullyDeleteExistingParsedResume(
+      parsedResumeData?.meta?.identifier,
+      props.setParsedResumeData
+    );
     setIsLoading(false);
   };
 
@@ -66,7 +73,8 @@ const CreateAccountStepSix = (props) => {
 
     if (learningGoal.length < 3) {
       setLearningGoalError(LEARNING_GOAL_ERROR);
-      return exitAttemptToCreateAccount();
+      setIsLoading(false);
+      return;
     }
 
     const parsedResumeData = props.parsedResumeData
@@ -77,14 +85,15 @@ const CreateAccountStepSix = (props) => {
           props.fullName
         );
     if (!parsedResumeData?.data || !parsedResumeData?.meta?.pdf) {
-      return exitAttemptToCreateAccount();
+      setIsLoading(false);
+      return;
     }
 
     const newSkillsInterestsObject = await findNewSkillsInterestsFromResumeData(
       parsedResumeData?.data
     );
     if (!newSkillsInterestsObject) {
-      return exitAttemptToCreateAccount();
+      return await exitAttemptToCreateAccount(parsedResumeData);
     }
 
     let totalUserSkills = [
@@ -139,11 +148,11 @@ const CreateAccountStepSix = (props) => {
             ? DUPLICATE_EMAIL_ERROR
             : GENERIC_ERROR
         );
-        return exitAttemptToCreateAccount();
+        return await exitAttemptToCreateAccount(parsedResumeData);
       }
     } catch (error) {
       setSubmissionError(GENERIC_ERROR);
-      return exitAttemptToCreateAccount();
+      return await exitAttemptToCreateAccount(parsedResumeData);
     }
   };
 
@@ -408,6 +417,7 @@ const CreateAccountStepSix = (props) => {
           credentials: "include",
         }
       );
+
 
       if (response.ok) {
         const data = await response.json();

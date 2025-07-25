@@ -1,10 +1,13 @@
 import CreateAccountButton from "./CreateAccountButton";
-import { CONTINUE, GENERIC_ERROR, AFFINDA_PARSER_API_HEADER, BASE_RESUME_ENDPOINT } from "../../utils/constants";
+import { CONTINUE, GENERIC_ERROR } from "../../utils/constants";
 import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
 import "@cyntler/react-doc-viewer/dist/index.css";
-import { findParsedResume } from "../../utils/findParsedResume";
+import {
+  findParsedResume,
+  successfullyDeleteExistingParsedResume,
+} from "../../utils/resumeHelperFunctions";
 import ParsingLoader from "./ParsingLoader";
 
 const CreateAccountStepThree = (props) => {
@@ -24,7 +27,6 @@ const CreateAccountStepThree = (props) => {
   const DEFAULT_PDF_ZOOM = 0.7;
   const UPDATE_RESUME = "Update Résumé";
   const LOADING_DOCX_TEXT = "Loading your docx file...";
-  const IDENTIFIER_QUERY_PARAM = "?identifier=";
 
   const submitStepThree = (event) => {
     event.preventDefault();
@@ -32,24 +34,6 @@ const CreateAccountStepThree = (props) => {
       props.setCurrentStep(props.currentStep + 1);
     } else {
       setResumeError(MISSING_RESUME);
-    }
-  };
-
-  const successfullyDeleteExistingParsedResume = async (resumeId) => {
-    try {
-      const response = await fetch(`${BASE_RESUME_ENDPOINT}/${resumeId}`, {
-        method: "DELETE",
-        headers: AFFINDA_PARSER_API_HEADER
-      });
-
-      if (response.ok) {
-        props.setParsedResumeData(null);
-        return true;
-      } else {
-        return false;
-      }
-    } catch (error) {
-      return false;
     }
   };
 
@@ -61,9 +45,10 @@ const CreateAccountStepThree = (props) => {
       if (fileArray.length > 0 && validFileTypes.includes(fileArray[0].type)) {
         if (
           props.parsedResumeData &&
-          !successfullyDeleteExistingParsedResume(
-            props.parsedResumeData?.meta?.identifier
-          )
+          !(await successfullyDeleteExistingParsedResume(
+            props.parsedResumeData?.meta?.identifier,
+            props.setParsedResumeData
+          ))
         ) {
           setResumeError(GENERIC_ERROR);
           return;
@@ -163,6 +148,11 @@ const CreateAccountStepThree = (props) => {
       ) : (
         <>
           <DocViewer
+            key={
+              props.resumeToDisplay
+                ? props.resumeToDisplay[0].uri
+                : "empty-display"
+            }
             documents={props.resumeToDisplay}
             config={{
               pdfZoom: {
