@@ -416,6 +416,7 @@ export const DESIGNATION_PATH = "/designation";
 export const CONFLICT_STATUS_PATH = "/conflict-status";
 export const RECOMMENDATIONS_PATH = "/recommendations";
 export const GENERATE_PATH = "/generate";
+export const OVERLOAD_PATH = "/overload";
 export const SELECT_PATH = "/select";
 export const UPDATE_AREAS_PATH = "/update-areas";
 export const ID_QUERY_PARAM = "?id=";
@@ -461,8 +462,12 @@ export const ECE472_CODE = "ECE472H1";
 
 export const TIMETABLE_AREAS_CHANGE_TITLE =
   "To Proceed, Timetable Areas Must Change";
+export const PLAN_COURSES_TO_OVERLOAD =
+  "To Proceed, Select 1-4 Courses to Overload With";
 
 export const MAXIMUM_DURATION = 30;
 
 export const CREATE_ACCOUNT = "Create Account";
 export const CONTINUE = "Continue";
+
+export const OVERLOADED_POSITION = 6;

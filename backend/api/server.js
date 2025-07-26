@@ -30,6 +30,7 @@ const {
   SELECT_PATH,
   UPDATE_AREAS_PATH,
   SKILLS_INTERESTS_PATH,
+  OVERLOAD_PATH,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -50,6 +51,7 @@ const {
   generateTimetable,
   addTimetable,
 } = require("../utils/generateTimetable");
+const { findOverloadedCourses, updateOverloadedCourses } = require("../utils/findOverloadedCourses");
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
@@ -57,6 +59,7 @@ const INVALID_TIMETABLE_DETAILS_ERROR = "Invalid timetable details provided";
 const INVALID_TIMETABLE_COURSE_DETAILS_ERROR =
   "Invalid timetable course details provided";
 const INVALID_COURSE_ID = "Invalid course id provided";
+const INVALID_COURSE_IDS = "Invalid course ids provided";
 const INVALID_TIMETABLE_ID = "Invalid timetable id provided";
 const INVALID_DURATION = "Invalid timetable duration provided";
 const INVALID_KERNEL_DEPTH = "Invalid checkbox values provided";
@@ -639,6 +642,59 @@ server.get(`${Path.TIMETABLE}${GENERATE_PATH}`, async (req, res, next) => {
       anyDepth ? true : false
     );
     res.status(200).json({ timetableOptions });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.post(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const courseIds = req.body?.courseIds;
+
+  try {
+    if (!numberValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    else if (
+      !courseIds ||
+      courseIds.length === 0 ||
+      courseIds.length > 4 ||
+      courseIds.some((courseId) => !numberValid(courseId))
+    )
+      throw new Error(INVALID_COURSE_IDS);
+
+    const userId = Number(req.session?.user?.id);
+    const overloadedCourses = await findOverloadedCourses(
+      userId,
+      courseIds,
+      Number(timetableId)
+    );
+    res.status(200).json({ overloadedCourses });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.put(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
+  const timetableId = req.query?.id;
+  const courses = req.body?.courses;
+
+  try {
+    if (!numberValid(timetableId)) throw new Error(INVALID_TIMETABLE_ID);
+    else if (
+      courses.some(
+        (course) =>
+          !ONLY_NUMBERS.test(course.id) ||
+          !ONLY_NUMBERS.test(course.term)
+      )
+    )
+      throw new Error(INVALID_COURSES_PROVIDED);
+
+    const userId = Number(req.session?.user?.id);
+    const timetable = await User.findUserTimetableByIds(
+      Number(timetableId),
+      userId
+    );
+    await updateOverloadedCourses(courses, timetable, userId);
+    res.status(201).end();
   } catch (err) {
     next(err);
   }
