@@ -439,6 +439,7 @@ export const DEPTH_TEXT = "Depth Areas";
 
 export const AMOUNT_OF_KERNEL_AREAS = 4;
 export const AMOUNT_OF_DEPTH_AREAS = 2;
+export const KERNEL_DEPTH_COURSES_NEEDED = 8;
 
 const PREREQ_ERRORS = "Prerequisite Errors";
 const COREQ_ERRORS = "Corequisite Errors";

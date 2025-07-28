@@ -35,6 +35,7 @@ import { areRequirementsMet } from "../utils/requirementsCheck";
 import { updateCoursesInCart } from "../utils/updateCourses";
 import { Slider, Checkbox } from "@mui/material";
 import ErrorModal from "./errorModal/ErrorModal";
+import { isValidIgnoringOverloaded } from "../../../backend/utils/requirementCheckHelpers";
 
 const Timetable = () => {
   const OVERLOADED_COURSES_TITLE = "Overloaded Courses";
@@ -147,6 +148,8 @@ const Timetable = () => {
   const DEPTH_AREA_CHANGES = "Depth Area Changes:";
   const INSUFFICIENT_COURSES_PROVIDED =
     "At least 1 course must be added to overload the timetable";
+  const CONFLICTING_TIMETABLE_ERROR =
+    "Current timetable faces conflicts that must be addressed before overloading";
 
   const filteredCoursesInCart = coursesInCart.filter(
     (course) =>
@@ -395,7 +398,6 @@ const Timetable = () => {
           setIsECE472Met,
           setIsOtherCoursesMet,
           setOtherCoursesAmount,
-          initialErrors,
           setErrors,
           setDesignation
         );
@@ -501,6 +503,9 @@ const Timetable = () => {
 
       if (courseIds.length === 0) {
         setOverloadTimetableError(INSUFFICIENT_COURSES_PROVIDED);
+        return;
+      } else if (!isValidIgnoringOverloaded(timetable)) {
+        setOverloadTimetableError(CONFLICTING_TIMETABLE_ERROR);
         return;
       }
 
@@ -1231,7 +1236,9 @@ const Timetable = () => {
       <ErrorModal
         title={PLAN_COURSES_TO_OVERLOAD}
         message={null}
-        timetableCourses={timetable?.courses}
+        timetableCourses={timetable?.courses?.filter(
+          (courseObject) => courseObject.position !== OVERLOADED_POSITION
+        )}
         coursesInCart={coursesInCart}
         coursesPlanToOverload={coursesPlanToOverload}
         setCoursesPlanToOverload={setCoursesPlanToOverload}
