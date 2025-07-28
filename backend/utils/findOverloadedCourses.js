@@ -1,6 +1,7 @@
 import {
   GENERIC_ERROR,
   OVERLOADED_POSITION,
+  TERMS
 } from "../../frontend/src/utils/constants.js";
 import User from "../api/user-model.js";
 import Timetable from "../api/timetable-model.js";
@@ -13,7 +14,6 @@ const MIN_TERM = 1;
 const MAX_TERM = 5;
 const REQUIREMENTS_CONFLICT =
   "1 or more of the courses have requirements conflicts not being met by the timetable";
-const TERMS = [1, 2, 3, 4];
 
 const findAvailableTerms = (timetable, courseOption) => {
   let termsOfPrerequisites = [];

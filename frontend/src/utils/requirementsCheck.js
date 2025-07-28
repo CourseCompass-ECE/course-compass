@@ -2,27 +2,17 @@ import {
   COMPUTER_AREAS,
   COMPUTER,
   ELECTRICAL,
-  ECE472_CODE
+  ECE472_CODE,
+  OVERLOADED_POSITION,
 } from "./constants.js";
+import {
+  updateAreaCoursesList,
+  initializeAreaCoursesList,
+} from "../../../backend/utils/areaCoursesListHelpers.js";
 
 const PREREQ_INDEX = 0;
 const COREQ_INDEX = 1;
 const EXCLUSIONS_INDEX = 2;
-
-export const updateAreaCoursesList = (courseObject, areaCoursesList) => {
-  courseObject.course.area.forEach((area) => {
-    areaCoursesList
-      .find((areaCourseList) => areaCourseList.area === area)
-      ?.courses?.push(courseObject.course);
-  });
-};
-
-export const initializeAreaCoursesList = (areaCourseList, kernelAreas) => {
-  kernelAreas.forEach((area) => {
-    areaCourseList.push({ area, courses: [] });
-  });
-  return areaCourseList
-};
 
 const generateCourseString = (course) => {
   return `${course.code}, ${course.title}`;
@@ -172,9 +162,11 @@ export const areRequirementsMet = (
   let depthCourses = [];
 
   initializeAreaCoursesList(areaCoursesList, timetable.kernel);
-  timetable.courses.forEach((courseObject) => {
-    updateAreaCoursesList(courseObject, areaCoursesList);
-  });
+  timetable.courses
+    .filter((courseObject) => courseObject.position !== OVERLOADED_POSITION)
+    .forEach((courseObject) => {
+      updateAreaCoursesList(courseObject, areaCoursesList);
+    });
 
   // Look at kernel areas that are not also depth areas
   timetable?.kernel
@@ -354,7 +346,8 @@ export const areRequirementsMet = (
         (depthCourseObject) =>
           depthCourseObject.course === generateCourseString(courseObject.course)
       ) &&
-      courseObject.course.code !== ECE472_CODE
+      courseObject.course.code !== ECE472_CODE &&
+      courseObject.position !== OVERLOADED_POSITION
   ).length;
 
   setIsOtherCoursesMet(otherCoursesAmount >= 11);

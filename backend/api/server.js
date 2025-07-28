@@ -31,6 +31,8 @@ const {
   UPDATE_AREAS_PATH,
   SKILLS_INTERESTS_PATH,
   OVERLOAD_PATH,
+  TERMS,
+  POSITIONS,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
 
@@ -555,10 +557,8 @@ server.post(Path.TIMETABLE, async (req, res, next) => {
       !numberValid(timetableCourseData?.term) ||
       !numberValid(timetableCourseData?.position) ||
       !numberValid(timetableCourseData?.timetableId) ||
-      timetableCourseData?.term < 1 ||
-      timetableCourseData?.term > 4 ||
-      timetableCourseData?.position < 1 ||
-      timetableCourseData?.position > 5
+      !TERMS.includes(timetableCourseData?.term) ||
+      !POSITIONS.includes(timetableCourseData?.position)
     ) {
       throw new Error(INVALID_TIMETABLE_COURSE_DETAILS_ERROR);
     }

@@ -10,7 +10,7 @@ const { ECE_AREAS } = require("../../frontend/src/utils/constants");
 const {
   initializeAreaCoursesList,
   updateAreaCoursesList,
-} = require("../../frontend/src/utils/requirementsCheck");
+} = require("../utils/areaCoursesListHelpers");
 const Course = require("../api/course-model");
 
 const userId = 9; // Possesses approximately 40 courses in their shopping cart

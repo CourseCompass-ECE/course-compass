@@ -8,7 +8,7 @@ import {
 import {
   initializeAreaCoursesList,
   updateAreaCoursesList,
-} from "../../frontend/src/utils/requirementsCheck.js";
+} from "./areaCoursesListHelpers.js";
 import {
   ECE472_CODE,
   ECE_AREAS,
