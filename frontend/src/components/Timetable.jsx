@@ -27,6 +27,7 @@ import {
   MAXIMUM_DURATION,
   OVERLOAD_PATH,
   OVERLOADED_POSITION,
+  CONFLICTING_TIMETABLE_ERROR
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -148,8 +149,6 @@ const Timetable = () => {
   const DEPTH_AREA_CHANGES = "Depth Area Changes:";
   const INSUFFICIENT_COURSES_PROVIDED =
     "At least 1 course must be added to overload the timetable";
-  const CONFLICTING_TIMETABLE_ERROR =
-    "Current timetable faces conflicts that must be addressed before overloading";
 
   const filteredCoursesInCart = coursesInCart.filter(
     (course) =>

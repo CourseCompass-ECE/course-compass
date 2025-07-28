@@ -2,12 +2,12 @@ import {
   ECE472_CODE,
   initialErrors,
   OVERLOADED_POSITION,
-  KERNEL_DEPTH_COURSES_NEEDED,
-} from "../../frontend/src/utils/constants";
+  KERNEL_DEPTH_COURSES_NEEDED
+} from "../../frontend/src/utils/constants.js";
 import {
   initializeAreaCoursesList,
   updateAreaCoursesList,
-} from "./areaCoursesListHelpers";
+} from "./areaCoursesListHelpers.js";
 
 const PREREQ_INDEX = 0;
 const COREQ_INDEX = 1;
