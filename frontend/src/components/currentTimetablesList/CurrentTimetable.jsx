@@ -42,7 +42,7 @@ const CurrentTimetable = (props) => {
         {COURSES_SCHEDULED}{" "}
         <span
           style={{ fontFamily: "var(--text-font)" }}
-        >{`${props.timetable.courses.length} / 20 courses`}</span>
+        >{`${props.notOverloadedCourses.length} / 20 courses + ${props.overloadedCourses.length} overloaded`}</span>
       </h4>
       <h4 className="email-header">{DESCRIPTION}</h4>
       <h5 className="email-header email-body" style={{ height: "35%" }}>

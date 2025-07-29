@@ -439,6 +439,7 @@ export const DEPTH_TEXT = "Depth Areas";
 
 export const AMOUNT_OF_KERNEL_AREAS = 4;
 export const AMOUNT_OF_DEPTH_AREAS = 2;
+export const KERNEL_DEPTH_COURSES_NEEDED = 8;
 
 const PREREQ_ERRORS = "Prerequisite Errors";
 const COREQ_ERRORS = "Corequisite Errors";
@@ -471,3 +472,8 @@ export const CREATE_ACCOUNT = "Create Account";
 export const CONTINUE = "Continue";
 
 export const OVERLOADED_POSITION = 6;
+export const TERMS = [1, 2, 3, 4];
+export const POSITIONS = [1, 2, 3, 4, 5, 6];
+
+export const CONFLICTING_TIMETABLE_ERROR =
+  "Current timetable faces conflicts that must be addressed before overloading";
