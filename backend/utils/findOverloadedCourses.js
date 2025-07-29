@@ -1,6 +1,12 @@
 import {
+  CERTIFICATE,
+  COMPUTER,
+  COMPUTER_AREAS,
   CONFLICTING_TIMETABLE_ERROR,
+  ELECTRICAL,
+  ELECTRICAL_AREAS,
   GENERIC_ERROR,
+  MINOR,
   OVERLOADED_POSITION,
   TERMS,
 } from "../../frontend/src/utils/constants.js";
@@ -8,7 +14,12 @@ import User from "../api/user-model.js";
 import Timetable from "../api/timetable-model.js";
 import Course from "../api/course-model.js";
 import { createIdListFromObjectList } from "./findRecommendedCourses.js";
-import { isValidIgnoringOverloaded } from "./requirementCheckHelpers.js";
+import {
+  findNonOverloadedCourses,
+  isValidIgnoringOverloaded,
+} from "./requirementCheckHelpers.js";
+import { generateCoursesWithScores } from "./generateTimetable.js";
+import { std } from "mathjs";
 
 const NO_COURSE = "No Overloaded Course";
 const NO_CODE = "Not Applicable";
@@ -16,6 +27,26 @@ const MIN_TERM = 1;
 const MAX_TERM = 5;
 const REQUIREMENTS_CONFLICT =
   "1 or more of the courses have requirements not being met by the rest of the timetable";
+const INITIAL_UPPER_PERCENTAGE_BOUND = 30;
+const SCORE_BUMP = 70;
+
+const MISSED_AREA_HEAVINESS = 3;
+const DIFFERENT_DESIGNATION_HEAVINESS = 6;
+const MISSED_MINOR_HEAVINESS = 2;
+const MISSED_CERT_HEAVINESS = 1;
+const INCREASED_LECTURE_HEAVINESS_STD_MULTIPLIER = 4;
+const INCREASED_TUTORIAL_HEAVINESS_STD_MULTIPLIER = 5;
+const INCREASED_PRACTICAL_HEAVINESS_STD_MULTIPLIER = 9;
+const STRONG_RECOMMENDATION_HEAVINESS_STD_MULTIPLIER = -7;
+const STD_MULTIPLIERS = [
+  INCREASED_LECTURE_HEAVINESS_STD_MULTIPLIER,
+  INCREASED_TUTORIAL_HEAVINESS_STD_MULTIPLIER,
+  INCREASED_PRACTICAL_HEAVINESS_STD_MULTIPLIER,
+  STRONG_RECOMMENDATION_HEAVINESS_STD_MULTIPLIER,
+];
+const COURSES_PER_TERM = 5;
+const WITHIN_TERM_DIFFERENCE_MULTIPLER = 1.5;
+const BETWEEN_TERM_DIFFERENCE_MULTIPLER = 2.5;
 
 const findAvailableTermsAndRemainingPrereq = (
   timetable,
@@ -37,9 +68,7 @@ const findAvailableTermsAndRemainingPrereq = (
   if (exclusionIdSet.intersection(otherOverloadedCoursesIdSet).size !== 0)
     return null;
 
-  let nonOverloadedCourses = timetable.courses.filter(
-    (courseObject) => courseObject.position !== OVERLOADED_POSITION
-  );
+  let nonOverloadedCourses = findNonOverloadedCourses(timetable.courses);
   let nonOverloadedTimetableCourseIds = new Set(
     nonOverloadedCourses.map((courseObject) => courseObject.course.id)
   );
@@ -233,6 +262,175 @@ const findValidOptions = (
   return validOptions;
 };
 
+const findMinorsCertificatesSet = (minorsCertificates, minorOrCertificate) => {
+  return new Set(
+    minorsCertificates
+      .filter(
+        (minorCertificate) =>
+          minorCertificate.minorOrCertificate === minorOrCertificate
+      )
+      .map((minorCertificate) => minorCertificate.title)
+  );
+};
+
+const findHeavinessScore = (
+  user,
+  course,
+  meanValues,
+  standardDevValues,
+  coursesWithScores
+) => {
+  let heavinessScore = 0;
+
+  let userAreasSet = new Set(user.eceAreas);
+  let courseAreasSet = new Set(course.area);
+  course.area.forEach((eceArea) => {
+    if (!userAreasSet.has(eceArea)) {
+      heavinessScore += MISSED_AREA_HEAVINESS;
+    }
+  });
+
+  let courseDesignation = null;
+  if (courseAreasSet.intersection(new Set(ELECTRICAL_AREAS)).size === 0)
+    courseDesignation = COMPUTER;
+  if (courseAreasSet.intersection(new Set(COMPUTER_AREAS)).size === 0)
+    courseDesignation = ELECTRICAL;
+
+  if (courseDesignation && user.desiredDesignation !== courseDesignation)
+    heavinessScore += DIFFERENT_DESIGNATION_HEAVINESS;
+
+  let userMinorsSet = findMinorsCertificatesSet(
+    user.desiredMinorsCertificates,
+    MINOR
+  );
+  let userCertificatesSet = findMinorsCertificatesSet(
+    user.desiredMinorsCertificates,
+    CERTIFICATE
+  );
+  let courseMinorsSet = findMinorsCertificatesSet(
+    course.minorsCertificates,
+    MINOR
+  );
+  let courseCertificatesSet = findMinorsCertificatesSet(
+    course.minorsCertificates,
+    CERTIFICATE
+  );
+
+  heavinessScore +=
+    MISSED_MINOR_HEAVINESS * userMinorsSet.difference(courseMinorsSet).size;
+  heavinessScore +=
+    MISSED_CERT_HEAVINESS *
+    userCertificatesSet.difference(courseCertificatesSet).size;
+
+  let standardDevValuesArray = Object.values(standardDevValues);
+  Object.values(meanValues).forEach((meanValue, index) => {
+    const standardDev = standardDevValuesArray[index];
+    let dataPoint;
+    switch (index) {
+      case 0:
+        dataPoint = course.lectureHours;
+        break;
+      case 1:
+        dataPoint = course.tutorialHours;
+        break;
+      case 2:
+        dataPoint = course.practicalHours;
+        break;
+      case 3:
+        dataPoint = coursesWithScores.get(course.id);
+        break;
+    }
+
+    heavinessScore +=
+      calculateZScore(dataPoint, meanValue, standardDev) *
+      STD_MULTIPLIERS[index];
+  });
+
+  return heavinessScore;
+};
+
+const calculateAverageHeavinessScore = (
+  user,
+  timetable,
+  term,
+  allCourses,
+  meanValues,
+  standardDevValues,
+  coursesWithScores
+) => {
+  let termCourses = timetable.courses.filter(
+    (courseObject) =>
+      courseObject.term === term &&
+      courseObject.position !== OVERLOADED_POSITION
+  );
+  let heavinessScoreSum = 0;
+
+  termCourses.forEach(
+    (courseObject) =>
+      (heavinessScoreSum += findHeavinessScore(
+        user,
+        allCourses.find((course) => course.id === courseObject.courseId),
+        meanValues,
+        standardDevValues,
+        coursesWithScores
+      ))
+  );
+  return heavinessScoreSum / COURSES_PER_TERM;
+};
+
+const findCombinationHeavinessScore = (
+  user,
+  allCourses,
+  validOption,
+  averageTermHeaviness,
+  meanValues,
+  standardDevValues,
+  coursesWithScores
+) => {
+  let heavinessScore = 0;
+
+  validOption
+    .filter((courseObject) => courseObject.id !== null)
+    .forEach((courseObject) => {
+      let course = allCourses.find((course) => course.id === courseObject.id);
+      let courseHeavinessScore = findHeavinessScore(
+        user,
+        course,
+        meanValues,
+        standardDevValues,
+        coursesWithScores
+      );
+
+      heavinessScore +=
+        Math.abs(
+          courseHeavinessScore - averageTermHeaviness[courseObject.term - 1]
+        ) * WITHIN_TERM_DIFFERENCE_MULTIPLER;
+      averageTermHeaviness[courseObject.term - 1] =
+        (averageTermHeaviness[courseObject.term - 1] * COURSES_PER_TERM +
+          courseHeavinessScore) /
+        (COURSES_PER_TERM + 1);
+    });
+
+  const averageTimetableHeavinessScore = calculateMean(averageTermHeaviness);
+  averageTermHeaviness.forEach(
+    (avgTermScore) =>
+      (heavinessScore +=
+        Math.abs(avgTermScore - averageTimetableHeavinessScore) *
+        BETWEEN_TERM_DIFFERENCE_MULTIPLER)
+  );
+  return heavinessScore;
+};
+
+const calculateMean = (numbersArray) => {
+  return numbersArray.reduce((a, b) => a + b) / numbersArray.length;
+};
+
+// Z-score enables computation of number of standard deviations away from mean each piece of data is in a data set with an approximately normally
+// distributed structure (helpful for determining how heavy/not heavy each course is for LEC/PRA/TUT & similarly for recommendation score)
+const calculateZScore = (dataPoint, mean, standardDev) => {
+  return (dataPoint - mean) / standardDev;
+};
+
 export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
   const user = await User.findUserById(userId);
   const timetable = await User.findUserTimetableByIds(timetableId, userId);
@@ -269,13 +467,90 @@ export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
 
   let validOptions = findValidOptions(courseOptions, [], 0, []);
   if (validOptions.length === 0) throw new Error(REQUIREMENTS_CONFLICT);
-  let validOptionObjects = validOptions.map((option) => {
-    return { courses: option, score: Math.round(Math.random() * 1000) / 10 };
+
+  let nonOverloadedTimetableCourseIdsSet = new Set(
+    findNonOverloadedCourses(timetable.courses).map(
+      (courseObject) => courseObject.courseId
+    )
+  );
+  let overloadedCourseIdsSet = new Set(courseIds);
+  const coursesWithScores = await generateCoursesWithScores(
+    allCourses,
+    userId,
+    allCourses.filter(
+      (course) =>
+        nonOverloadedTimetableCourseIdsSet.has(course.id) ||
+        overloadedCourseIdsSet.has(course.id)
+    )
+  );
+
+  const datasetsAssociatedWithMeans = {
+    lectureHours: allCourses.map((course) => course.lectureHours),
+    tutorialHours: allCourses.map((course) => course.tutorialHours),
+    practicalHours: allCourses.map((course) => course.practicalHours),
+    recommendedScores: [...coursesWithScores.values()],
+  };
+  const meanValues = {
+    meanLectureHours: calculateMean(datasetsAssociatedWithMeans.lectureHours),
+    meanTutorialHours: calculateMean(datasetsAssociatedWithMeans.tutorialHours),
+    meanPracticalHours: calculateMean(
+      datasetsAssociatedWithMeans.practicalHours
+    ),
+    meanRecommendedScore: calculateMean(
+      datasetsAssociatedWithMeans.recommendedScores
+    ),
+  };
+  const standardDevValues = {
+    lectureHoursStd: std(datasetsAssociatedWithMeans.lectureHours),
+    tutorialHoursStd: std(datasetsAssociatedWithMeans.tutorialHours),
+    practicalHoursStd: std(datasetsAssociatedWithMeans.practicalHours),
+    recommendedScoresStd: std(datasetsAssociatedWithMeans.recommendedScores),
+  };
+
+  // Score combinations based on how imbalanced the average heaviness score is between terms & between the course & its term
+  let averageTermHeaviness = TERMS.map((term) =>
+    calculateAverageHeavinessScore(
+      user,
+      timetable,
+      term,
+      allCourses,
+      meanValues,
+      standardDevValues,
+      coursesWithScores
+    )
+  );
+  let validOptionObjects = validOptions.map((validOption) => {
+    return {
+      courses: validOption,
+      score: findCombinationHeavinessScore(
+        user,
+        allCourses,
+        validOption,
+        structuredClone(averageTermHeaviness),
+        meanValues,
+        standardDevValues,
+        coursesWithScores
+      ),
+    };
   });
 
-  return validOptionObjects
-    .sort((optionA, optionB) => optionB.score - optionA.score)
-    .slice(0, 3);
+  validOptionObjects.sort((optionA, optionB) => optionA.score - optionB.score);
+  let minScore = validOptionObjects[0].score;
+  let maxScore = validOptionObjects[validOptionObjects.length - 1].score;
+
+  // Inverse min-max normalization with a range of 30 to 100%
+  validOptionObjects.forEach(
+    (validOptionObject) =>
+      (validOptionObject.score =
+        Math.round(
+          (((maxScore - validOptionObject.score) / (maxScore - minScore)) *
+            INITIAL_UPPER_PERCENTAGE_BOUND +
+            SCORE_BUMP) *
+            10
+        ) / 10)
+  );
+
+  return validOptionObjects.slice(0, 3);
 };
 
 export const updateOverloadedCourses = async (courses, timetable, userId) => {

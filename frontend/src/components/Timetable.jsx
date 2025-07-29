@@ -27,7 +27,7 @@ import {
   MAXIMUM_DURATION,
   OVERLOAD_PATH,
   OVERLOADED_POSITION,
-  CONFLICTING_TIMETABLE_ERROR
+  CONFLICTING_TIMETABLE_ERROR,
 } from "../utils/constants";
 import { fetchCoursesInCart } from "../utils/fetchShoppingCart";
 import ExploreCourse from "./exploreCourseList/ExploreCourse";
@@ -36,7 +36,10 @@ import { areRequirementsMet } from "../utils/requirementsCheck";
 import { updateCoursesInCart } from "../utils/updateCourses";
 import { Slider, Checkbox } from "@mui/material";
 import ErrorModal from "./errorModal/ErrorModal";
-import { isValidIgnoringOverloaded } from "../../../backend/utils/requirementCheckHelpers";
+import {
+  findNonOverloadedCourses,
+  isValidIgnoringOverloaded,
+} from "../../../backend/utils/requirementCheckHelpers";
 
 const Timetable = () => {
   const OVERLOADED_COURSES_TITLE = "Overloaded Courses";
@@ -1235,9 +1238,11 @@ const Timetable = () => {
       <ErrorModal
         title={PLAN_COURSES_TO_OVERLOAD}
         message={null}
-        timetableCourses={timetable?.courses?.filter(
-          (courseObject) => courseObject.position !== OVERLOADED_POSITION
-        )}
+        timetableCourses={
+          timetable?.courses
+            ? findNonOverloadedCourses(timetable.courses)
+            : null
+        }
         coursesInCart={coursesInCart}
         coursesPlanToOverload={coursesPlanToOverload}
         setCoursesPlanToOverload={setCoursesPlanToOverload}

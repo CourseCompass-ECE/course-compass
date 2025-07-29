@@ -16,6 +16,7 @@ import {
   checkForPrereqErrors,
   findNonDepthKernelAreaCourses,
   findDepthKernelAreaCourses,
+  findNonOverloadedCourses,
 } from "../../../backend/utils/requirementCheckHelpers.js";
 
 const checkDesignation = (
@@ -56,9 +57,7 @@ export const areRequirementsMet = (
   let depthCourses = [];
 
   initializeAreaCoursesList(areaCoursesList, timetable.kernel);
-  let nonOverloadedCourses = timetable.courses.filter(
-    (courseObject) => courseObject.position !== OVERLOADED_POSITION
-  );
+  let nonOverloadedCourses = findNonOverloadedCourses(timetable.courses);
   nonOverloadedCourses.forEach((courseObject) => {
     updateAreaCoursesList(courseObject, areaCoursesList);
   });
