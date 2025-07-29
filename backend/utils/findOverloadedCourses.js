@@ -18,6 +18,7 @@ import {
   findNonOverloadedCourses,
   isValidIgnoringOverloaded,
 } from "./requirementCheckHelpers.js";
+import { generateCoursesWithScores } from "./generateTimetable.js";
 
 const NO_COURSE = "No Overloaded Course";
 const NO_CODE = "Not Applicable";
@@ -25,17 +26,26 @@ const MIN_TERM = 1;
 const MAX_TERM = 5;
 const REQUIREMENTS_CONFLICT =
   "1 or more of the courses have requirements not being met by the rest of the timetable";
-const INITIAL_UPPER_PERCENTAGE_BOUND = 70;
-const SCORE_BUMP = 30;
+const INITIAL_UPPER_PERCENTAGE_BOUND = 30;
+const SCORE_BUMP = 70;
 
 const MISSED_AREA_HEAVINESS = 3;
 const DIFFERENT_DESIGNATION_HEAVINESS = 6;
 const MISSED_MINOR_HEAVINESS = 2;
 const MISSED_CERT_HEAVINESS = 1;
-const INCREASED_LECTURE_HEAVINESS = 4;
-const INCREASED_TUTORIAL_HEAVINESS = 5;
-const INCREASED_LAB_HEAVINESS = 9;
+const INCREASED_LECTURE_HEAVINESS_STD_MULTIPLIER = 4;
+const INCREASED_TUTORIAL_HEAVINESS_STD_MULTIPLIER = 5;
+const INCREASED_PRACTICAL_HEAVINESS_STD_MULTIPLIER = 9;
+const WEAK_RECOMMENDATION_HEAVINESS_STD_MULTIPLIER = 7;
+const STD_MULTIPLIERS = [
+  INCREASED_LECTURE_HEAVINESS_STD_MULTIPLIER,
+  INCREASED_TUTORIAL_HEAVINESS_STD_MULTIPLIER,
+  INCREASED_PRACTICAL_HEAVINESS_STD_MULTIPLIER,
+  WEAK_RECOMMENDATION_HEAVINESS_STD_MULTIPLIER,
+];
 const COURSES_PER_TERM = 5;
+const WITHIN_TERM_DIFFERENCE_MULTIPLER = 1.5;
+const BETWEEN_TERM_DIFFERENCE_MULTIPLER = 2.5;
 
 const findAvailableTermsAndRemainingPrereq = (
   timetable,
@@ -308,9 +318,16 @@ const findHeavinessScore = (user, course) => {
   return heavinessScore;
 };
 
-const calculateAverageHeavinessScore = (user, timetable, term, allCourses) => {
+const calculateAverageHeavinessScore = (
+  user,
+  timetable,
+  term,
+  allCourses
+) => {
   let termCourses = timetable.courses.filter(
-    (courseObject) => courseObject.term === term
+    (courseObject) =>
+      courseObject.term === term &&
+      courseObject.position !== OVERLOADED_POSITION
   );
   let heavinessScoreSum = 0;
 
@@ -318,10 +335,51 @@ const calculateAverageHeavinessScore = (user, timetable, term, allCourses) => {
     (courseObject) =>
       (heavinessScoreSum += findHeavinessScore(
         user,
-        allCourses.find((course) => course.id === courseObject.courseId)
+        allCourses.find((course) => course.id === courseObject.courseId),
       ))
   );
   return heavinessScoreSum / COURSES_PER_TERM;
+};
+
+const findCombinationHeavinessScore = (
+  user,
+  allCourses,
+  validOption,
+  averageTermHeaviness
+) => {
+  let heavinessScore = 0;
+
+  validOption
+    .filter((courseObject) => courseObject.id !== null)
+    .forEach((courseObject) => {
+      let course = allCourses.find((course) => course.id === courseObject.id);
+      let courseHeavinessScore = findHeavinessScore(
+        user,
+        course
+      );
+
+      heavinessScore +=
+        Math.abs(
+          courseHeavinessScore - averageTermHeaviness[courseObject.term - 1]
+        ) * WITHIN_TERM_DIFFERENCE_MULTIPLER;
+      averageTermHeaviness[courseObject.term - 1] =
+        (averageTermHeaviness[courseObject.term - 1] * COURSES_PER_TERM +
+          courseHeavinessScore) /
+        (COURSES_PER_TERM + 1);
+    });
+
+  const averageTimetableHeavinessScore = calculateMean(averageTermHeaviness);
+  averageTermHeaviness.forEach(
+    (avgTermScore) =>
+      (heavinessScore +=
+        Math.abs(avgTermScore - averageTimetableHeavinessScore) *
+        BETWEEN_TERM_DIFFERENCE_MULTIPLER)
+  );
+  return heavinessScore;
+};
+
+const calculateMean = (numbersArray) => {
+  return numbersArray.reduce((a, b) => a + b) / numbersArray.length;
 };
 
 export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
@@ -362,19 +420,29 @@ export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
   if (validOptions.length === 0) throw new Error(REQUIREMENTS_CONFLICT);
 
   // Score combinations based on how imbalanced the average heaviness score is between terms & between the course & its term
-  let averageTermHeaviness = TERMS.map((term) => // to be used
-    calculateAverageHeavinessScore(user, timetable, term, allCourses)
+  let averageTermHeaviness = TERMS.map((term) =>
+    calculateAverageHeavinessScore(
+      user,
+      timetable,
+      term,
+      allCourses
+    )
   );
   let validOptionObjects = validOptions.map((validOption) => {
     return {
       courses: validOption,
-      score: 0,
+      score: findCombinationHeavinessScore(
+        user,
+        allCourses,
+        validOption,
+        structuredClone(averageTermHeaviness)
+      ),
     };
   });
 
-  validOptionObjects.sort((optionA, optionB) => optionB.score - optionA.score);
-  let maxScore = validOptionObjects[0];
-  let minScore = validOptionObjects[validOptionObjects.length - 1];
+  validOptionObjects.sort((optionA, optionB) => optionA.score - optionB.score);
+  let minScore = validOptionObjects[0].score;
+  let maxScore = validOptionObjects[validOptionObjects.length - 1].score;
 
   // Inverse min-max normalization with a range of 30 to 100%
   validOptionObjects.forEach(
