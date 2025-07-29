@@ -1,6 +1,12 @@
 import {
+  CERTIFICATE,
+  COMPUTER,
+  COMPUTER_AREAS,
   CONFLICTING_TIMETABLE_ERROR,
+  ELECTRICAL,
+  ELECTRICAL_AREAS,
   GENERIC_ERROR,
+  MINOR,
   OVERLOADED_POSITION,
   TERMS,
 } from "../../frontend/src/utils/constants.js";
@@ -8,7 +14,10 @@ import User from "../api/user-model.js";
 import Timetable from "../api/timetable-model.js";
 import Course from "../api/course-model.js";
 import { createIdListFromObjectList } from "./findRecommendedCourses.js";
-import { isValidIgnoringOverloaded } from "./requirementCheckHelpers.js";
+import {
+  findNonOverloadedCourses,
+  isValidIgnoringOverloaded,
+} from "./requirementCheckHelpers.js";
 
 const NO_COURSE = "No Overloaded Course";
 const NO_CODE = "Not Applicable";
@@ -16,6 +25,17 @@ const MIN_TERM = 1;
 const MAX_TERM = 5;
 const REQUIREMENTS_CONFLICT =
   "1 or more of the courses have requirements not being met by the rest of the timetable";
+const INITIAL_UPPER_PERCENTAGE_BOUND = 70;
+const SCORE_BUMP = 30;
+
+const MISSED_AREA_HEAVINESS = 3;
+const DIFFERENT_DESIGNATION_HEAVINESS = 6;
+const MISSED_MINOR_HEAVINESS = 2;
+const MISSED_CERT_HEAVINESS = 1;
+const INCREASED_LECTURE_HEAVINESS = 4;
+const INCREASED_TUTORIAL_HEAVINESS = 5;
+const INCREASED_LAB_HEAVINESS = 9;
+const COURSES_PER_TERM = 5;
 
 const findAvailableTermsAndRemainingPrereq = (
   timetable,
@@ -37,9 +57,7 @@ const findAvailableTermsAndRemainingPrereq = (
   if (exclusionIdSet.intersection(otherOverloadedCoursesIdSet).size !== 0)
     return null;
 
-  let nonOverloadedCourses = timetable.courses.filter(
-    (courseObject) => courseObject.position !== OVERLOADED_POSITION
-  );
+  let nonOverloadedCourses = findNonOverloadedCourses(timetable.courses);
   let nonOverloadedTimetableCourseIds = new Set(
     nonOverloadedCourses.map((courseObject) => courseObject.course.id)
   );
@@ -233,6 +251,79 @@ const findValidOptions = (
   return validOptions;
 };
 
+const findMinorsCertificatesSet = (minorsCertificates, minorOrCertificate) => {
+  return new Set(
+    minorsCertificates
+      .filter(
+        (minorCertificate) =>
+          minorCertificate.minorOrCertificate === minorOrCertificate
+      )
+      .map((minorCertificate) => minorCertificate.title)
+  );
+};
+
+const findHeavinessScore = (user, course) => {
+  let heavinessScore = 0;
+
+  let userAreasSet = new Set(user.eceAreas);
+  let courseAreasSet = new Set(course.area);
+  course.area.forEach((eceArea) => {
+    if (!userAreasSet.has(eceArea)) {
+      heavinessScore += MISSED_AREA_HEAVINESS;
+    }
+  });
+
+  let courseDesignation = null;
+  if (courseAreasSet.intersection(new Set(ELECTRICAL_AREAS)).size === 0)
+    courseDesignation = COMPUTER;
+  if (courseAreasSet.intersection(new Set(COMPUTER_AREAS)).size === 0)
+    courseDesignation = ELECTRICAL;
+
+  if (courseDesignation && user.desiredDesignation !== courseDesignation)
+    heavinessScore += DIFFERENT_DESIGNATION_HEAVINESS;
+
+  let userMinorsSet = findMinorsCertificatesSet(
+    user.desiredMinorsCertificates,
+    MINOR
+  );
+  let userCertificatesSet = findMinorsCertificatesSet(
+    user.desiredMinorsCertificates,
+    CERTIFICATE
+  );
+  let courseMinorsSet = findMinorsCertificatesSet(
+    course.minorsCertificates,
+    MINOR
+  );
+  let courseCertificatesSet = findMinorsCertificatesSet(
+    course.minorsCertificates,
+    CERTIFICATE
+  );
+
+  heavinessScore +=
+    MISSED_MINOR_HEAVINESS * userMinorsSet.difference(courseMinorsSet).size;
+  heavinessScore +=
+    MISSED_CERT_HEAVINESS *
+    userCertificatesSet.difference(courseCertificatesSet).size;
+
+  return heavinessScore;
+};
+
+const calculateAverageHeavinessScore = (user, timetable, term, allCourses) => {
+  let termCourses = timetable.courses.filter(
+    (courseObject) => courseObject.term === term
+  );
+  let heavinessScoreSum = 0;
+
+  termCourses.forEach(
+    (courseObject) =>
+      (heavinessScoreSum += findHeavinessScore(
+        user,
+        allCourses.find((course) => course.id === courseObject.courseId)
+      ))
+  );
+  return heavinessScoreSum / COURSES_PER_TERM;
+};
+
 export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
   const user = await User.findUserById(userId);
   const timetable = await User.findUserTimetableByIds(timetableId, userId);
@@ -269,13 +360,35 @@ export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
 
   let validOptions = findValidOptions(courseOptions, [], 0, []);
   if (validOptions.length === 0) throw new Error(REQUIREMENTS_CONFLICT);
-  let validOptionObjects = validOptions.map((option) => {
-    return { courses: option, score: Math.round(Math.random() * 1000) / 10 };
+
+  // Score combinations based on how imbalanced the average heaviness score is between terms & between the course & its term
+  let averageTermHeaviness = TERMS.map((term) => // to be used
+    calculateAverageHeavinessScore(user, timetable, term, allCourses)
+  );
+  let validOptionObjects = validOptions.map((validOption) => {
+    return {
+      courses: validOption,
+      score: 0,
+    };
   });
 
-  return validOptionObjects
-    .sort((optionA, optionB) => optionB.score - optionA.score)
-    .slice(0, 3);
+  validOptionObjects.sort((optionA, optionB) => optionB.score - optionA.score);
+  let maxScore = validOptionObjects[0];
+  let minScore = validOptionObjects[validOptionObjects.length - 1];
+
+  // Inverse min-max normalization with a range of 30 to 100%
+  validOptionObjects.forEach(
+    (validOptionObject) =>
+      (validOptionObject.score =
+        Math.round(
+          (((maxScore - validOptionObject.score) / (maxScore - minScore)) *
+            INITIAL_UPPER_PERCENTAGE_BOUND +
+            SCORE_BUMP) *
+            10
+        ) / 10)
+  );
+
+  return validOptionObjects.slice(0, 3);
 };
 
 export const updateOverloadedCourses = async (courses, timetable, userId) => {

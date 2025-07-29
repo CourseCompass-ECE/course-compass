@@ -2,7 +2,7 @@ import {
   ECE472_CODE,
   initialErrors,
   OVERLOADED_POSITION,
-  KERNEL_DEPTH_COURSES_NEEDED
+  KERNEL_DEPTH_COURSES_NEEDED,
 } from "../../frontend/src/utils/constants.js";
 import {
   initializeAreaCoursesList,
@@ -34,6 +34,12 @@ const createCourseObject = (currentCourseObject, newCourse) => {
     ...currentCourseObject,
     course: generateCourseString(newCourse),
   };
+};
+
+export const findNonOverloadedCourses = (courses) => {
+  return courses.filter(
+    (courseObject) => courseObject.position !== OVERLOADED_POSITION
+  );
 };
 
 export const checkForPrereqErrors = (errorsObject, courses) => {
@@ -123,9 +129,7 @@ export const checkForExclusionErrors = (errorsObject, courses) => {
 };
 
 export const isValidIgnoringOverloaded = (timetable) => {
-  let nonOverloadedCourses = timetable.courses.filter(
-    (courseObject) => courseObject.position !== OVERLOADED_POSITION
-  );
+  let nonOverloadedCourses = findNonOverloadedCourses(timetable.courses);
 
   let errorObjectList = structuredClone(initialErrors);
   checkForPrereqErrors(errorObjectList, nonOverloadedCourses);
