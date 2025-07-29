@@ -32,7 +32,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
 
-const CreateAccountStepSix = (props) => {
+const CreateAccountStepSixLearningGoal = (props) => {
   const navigate = useNavigate();
   const [learningGoalError, setLearningGoalError] = useState("");
   const [submissionError, setSubmissionError] = useState("");
@@ -461,4 +461,4 @@ const CreateAccountStepSix = (props) => {
   );
 };
 
-export default CreateAccountStepSix;
+export default CreateAccountStepSixLearningGoal;

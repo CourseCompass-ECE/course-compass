@@ -1,10 +1,10 @@
 import { useState } from "react";
-import CreateAccountStepOne from "./createAccountSteps/CreateAccountStepOne";
-import CreateAccountStepTwo from "./createAccountSteps/CreateAccountStepTwo";
-import CreateAccountStepThree from "./createAccountSteps/CreateAccountStepThree";
-import CreateAccountStepFour from "./createAccountSteps/CreateAccountStepFour";
-import CreateAccountStepFive from "./createAccountSteps/CreateAccountStepFive";
-import CreateAccountStepSix from "./createAccountSteps/CreateAccountStepSix";
+import CreateAccountStepOneLoginInfo from "./createAccountSteps/CreateAccountStepOneLoginInfo";
+import CreateAccountStepTwoPfp from "./createAccountSteps/CreateAccountStepTwoPfp";
+import CreateAccountStepThreeResume from "./createAccountSteps/CreateAccountStepThreeResume";
+import CreateAccountStepFourSkillsInterests from "./createAccountSteps/CreateAccountStepFourSkillsInterests";
+import CreateAccountStepFiveMinorsCerts from "./createAccountSteps/CreateAccountStepFiveMinorsCerts";
+import CreateAccountStepSixLearningGoal from "./createAccountSteps/CreateAccountStepSixLearningGoal";
 
 const CreateAccount = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -36,7 +36,7 @@ const CreateAccount = () => {
     switch (currentStep) {
       case 1:
         return (
-          <CreateAccountStepOne
+          <CreateAccountStepOneLoginInfo
             fullName={fullName}
             setFullName={setFullName}
             email={email}
@@ -49,7 +49,7 @@ const CreateAccount = () => {
         );
       case 2:
         return (
-          <CreateAccountStepTwo
+          <CreateAccountStepTwoPfp
             setCurrentStep={setCurrentStep}
             currentStep={currentStep}
             pfp={pfp}
@@ -60,7 +60,7 @@ const CreateAccount = () => {
         );
       case 3:
         return (
-          <CreateAccountStepThree
+          <CreateAccountStepThreeResume
             setCurrentStep={setCurrentStep}
             currentStep={currentStep}
             setResume={setResume}
@@ -74,7 +74,7 @@ const CreateAccount = () => {
         );
       case 4:
         return (
-          <CreateAccountStepFour
+          <CreateAccountStepFourSkillsInterests
             setCurrentStep={setCurrentStep}
             currentStep={currentStep}
             eceAreas={eceAreas}
@@ -87,7 +87,7 @@ const CreateAccount = () => {
         );
       case 5:
         return (
-          <CreateAccountStepFive
+          <CreateAccountStepFiveMinorsCerts
             setCurrentStep={setCurrentStep}
             currentStep={currentStep}
             desiredDesignation={desiredDesignation}
@@ -100,7 +100,7 @@ const CreateAccount = () => {
         );
       case 6:
         return (
-          <CreateAccountStepSix
+          <CreateAccountStepSixLearningGoal
             fullName={fullName}
             email={email}
             password={password}

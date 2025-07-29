@@ -10,7 +10,7 @@ import {
 } from "../../utils/resumeHelperFunctions";
 import ParsingLoader from "./ParsingLoader";
 
-const CreateAccountStepThree = (props) => {
+const CreateAccountStepThreeResume = (props) => {
   const [resumeError, setResumeError] = useState("");
   const [isLoadingDocx, setIsLoadingDocx] = useState(false);
   const fileInputRef = useRef();
@@ -184,4 +184,4 @@ const CreateAccountStepThree = (props) => {
   );
 };
 
-export default CreateAccountStepThree;
+export default CreateAccountStepThreeResume;

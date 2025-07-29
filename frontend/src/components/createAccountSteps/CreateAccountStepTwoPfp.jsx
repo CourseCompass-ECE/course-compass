@@ -2,7 +2,7 @@ import { useState } from "react";
 import CreateAccountButton from "./CreateAccountButton";
 import { CONTINUE } from "../../utils/constants";
 
-const CreateAccountStepTwo = (props) => {
+const CreateAccountStepTwoPfp = (props) => {
   const [pfpError, setPfpError] = useState("");
   const STEP_TITLE = "Add a Profile Picture";
   const PFP_ALT = "User's profile picture";
@@ -74,4 +74,4 @@ const CreateAccountStepTwo = (props) => {
   );
 };
 
-export default CreateAccountStepTwo;
+export default CreateAccountStepTwoPfp;
