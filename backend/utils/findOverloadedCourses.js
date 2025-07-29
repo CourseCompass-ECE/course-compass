@@ -90,7 +90,7 @@ const findAvailableTermsAndRemainingPrereq = (
   if (termsOfPrerequisites.length < courseOption.course.prerequisiteAmount) {
     remainingPrereqCount =
       courseOption.course.prerequisiteAmount - termsOfPrerequisites.length;
-    prereqOptions = [...prereqFromOverloaded];
+    prereqOptions = prereqFromOverloaded;
   }
 
   if (coreqTerm && latestPrereqTerm && coreqTerm <= latestPrereqTerm)
@@ -99,7 +99,11 @@ const findAvailableTermsAndRemainingPrereq = (
     return { availableTerms: [coreqTerm], prereqOptions, remainingPrereqCount };
   else
     return {
-      availableTerms: TERMS.filter((term) => term > latestPrereqTerm),
+      availableTerms: TERMS.filter(
+        (term) =>
+          term > (latestPrereqTerm ? latestPrereqTerm : 0) &&
+          term > (remainingPrereqCount ? remainingPrereqCount : 0)
+      ),
       prereqOptions,
       remainingPrereqCount,
     };
@@ -118,43 +122,113 @@ const generateRemainingSlots = (remainingTerms) => {
   });
 };
 
+const isCurrentTermInvalid = (
+  courseOptions,
+  currentCourseIndex,
+  currentTermUsed,
+  currentTermsUsed
+) => {
+  if (
+    courseOptions[currentCourseIndex].remainingPrereqCount > 0 &&
+    currentTermUsed === 1
+  )
+    return true;
+
+  for (const [courseOptionIndex, courseOption] of courseOptions
+    .filter((_, index) => index < currentCourseIndex)
+    .entries()) {
+    if (courseOption.remainingPrereqCount > 0) {
+      let prereqMetAlreadyFromOtherOverloaded = 0;
+      let prereqLeft = new Set([...courseOption.prereqOptions]);
+      currentTermsUsed.forEach((alreadyUsedTerm, index) => {
+        let addedCourseId = courseOptions[index].course.id;
+        prereqLeft.delete(addedCourseId);
+
+        if (
+          courseOption.prereqOptions.has(addedCourseId) &&
+          alreadyUsedTerm < currentTermsUsed[courseOptionIndex]
+        )
+          prereqMetAlreadyFromOtherOverloaded++;
+      });
+
+      let remainderPrereqCount =
+        courseOption.remainingPrereqCount - prereqMetAlreadyFromOtherOverloaded;
+
+      if (
+        prereqMetAlreadyFromOtherOverloaded >= courseOption.remainingPrereqCount
+      )
+        continue;
+      else if (remainderPrereqCount > prereqLeft.size) return true;
+      // Checking if every remaining prerequisite option among the overloaded courses must be used to meet this course's prerequisites, yet it is placed
+      // in same term or later term from this course
+      else if (
+        remainderPrereqCount === prereqLeft.size &&
+        currentTermUsed >= currentTermsUsed[courseOptionIndex]
+      )
+        return true;
+      // Checking if the amount of remaining available terms before the term containing the course with prerequisite requirements is not large enough to fill it
+      // with all of its prerequisites
+      else if (
+        TERMS.filter(
+          (term) =>
+            term < currentTermsUsed[courseOptionIndex] &&
+            !currentTermsUsed.includes(term)
+        ).length < remainderPrereqCount
+      )
+        return true;
+    }
+  }
+
+  return false;
+};
+
 const findValidOptions = (
   courseOptions,
   validOptions,
   currentCourseIndex,
   currentTermsUsed
 ) => {
-  courseOptions[currentCourseIndex].availableTerms
-    .filter((term) => !currentTermsUsed.includes(term))
-    .forEach((currentTermUsed) => {
-      currentTermsUsed.push(currentTermUsed);
+  for (const currentTermUsed of courseOptions[
+    currentCourseIndex
+  ].availableTerms.filter((term) => !currentTermsUsed.includes(term))) {
+    if (
+      isCurrentTermInvalid(
+        courseOptions,
+        currentCourseIndex,
+        currentTermUsed,
+        currentTermsUsed
+      )
+    )
+      continue;
 
-      if (courseOptions.length > currentCourseIndex + 1) {
-        findValidOptions(
-          courseOptions,
-          validOptions,
-          currentCourseIndex + 1,
-          currentTermsUsed
-        );
-      } else {
-        let overloadedCourses = currentTermsUsed.map((termUsed, index) => {
-          return {
-            title: courseOptions[index].course.title,
-            code: courseOptions[index].course.code,
-            id: courseOptions[index].course.id,
-            term: termUsed,
-          };
-        });
-        validOptions.push([
-          ...overloadedCourses,
-          ...generateRemainingSlots(
-            TERMS.filter((term) => !currentTermsUsed.includes(term))
-          ),
-        ]);
-      }
+    currentTermsUsed.push(currentTermUsed);
 
-      currentTermsUsed.pop();
-    });
+    if (courseOptions.length > currentCourseIndex + 1) {
+      findValidOptions(
+        courseOptions,
+        validOptions,
+        currentCourseIndex + 1,
+        currentTermsUsed
+      );
+    } else {
+      let overloadedCourses = currentTermsUsed.map((termUsed, index) => {
+        return {
+          title: courseOptions[index].course.title,
+          code: courseOptions[index].course.code,
+          id: courseOptions[index].course.id,
+          term: termUsed,
+        };
+      });
+      validOptions.push([
+        ...overloadedCourses,
+        ...generateRemainingSlots(
+          TERMS.filter((term) => !currentTermsUsed.includes(term))
+        ),
+      ]);
+    }
+
+    currentTermsUsed.pop();
+  }
 
   return validOptions;
 };
