@@ -19,6 +19,7 @@ import {
   isValidIgnoringOverloaded,
 } from "./requirementCheckHelpers.js";
 import { generateCoursesWithScores } from "./generateTimetable.js";
+import { std } from "mathjs";
 
 const NO_COURSE = "No Overloaded Course";
 const NO_CODE = "Not Applicable";
@@ -36,12 +37,12 @@ const MISSED_CERT_HEAVINESS = 1;
 const INCREASED_LECTURE_HEAVINESS_STD_MULTIPLIER = 4;
 const INCREASED_TUTORIAL_HEAVINESS_STD_MULTIPLIER = 5;
 const INCREASED_PRACTICAL_HEAVINESS_STD_MULTIPLIER = 9;
-const WEAK_RECOMMENDATION_HEAVINESS_STD_MULTIPLIER = 7;
+const STRONG_RECOMMENDATION_HEAVINESS_STD_MULTIPLIER = -7;
 const STD_MULTIPLIERS = [
   INCREASED_LECTURE_HEAVINESS_STD_MULTIPLIER,
   INCREASED_TUTORIAL_HEAVINESS_STD_MULTIPLIER,
   INCREASED_PRACTICAL_HEAVINESS_STD_MULTIPLIER,
-  WEAK_RECOMMENDATION_HEAVINESS_STD_MULTIPLIER,
+  STRONG_RECOMMENDATION_HEAVINESS_STD_MULTIPLIER,
 ];
 const COURSES_PER_TERM = 5;
 const WITHIN_TERM_DIFFERENCE_MULTIPLER = 1.5;
@@ -272,7 +273,13 @@ const findMinorsCertificatesSet = (minorsCertificates, minorOrCertificate) => {
   );
 };
 
-const findHeavinessScore = (user, course) => {
+const findHeavinessScore = (
+  user,
+  course,
+  meanValues,
+  standardDevValues,
+  coursesWithScores
+) => {
   let heavinessScore = 0;
 
   let userAreasSet = new Set(user.eceAreas);
@@ -315,6 +322,30 @@ const findHeavinessScore = (user, course) => {
     MISSED_CERT_HEAVINESS *
     userCertificatesSet.difference(courseCertificatesSet).size;
 
+  let standardDevValuesArray = Object.values(standardDevValues);
+  Object.values(meanValues).forEach((meanValue, index) => {
+    const standardDev = standardDevValuesArray[index];
+    let dataPoint;
+    switch (index) {
+      case 0:
+        dataPoint = course.lectureHours;
+        break;
+      case 1:
+        dataPoint = course.tutorialHours;
+        break;
+      case 2:
+        dataPoint = course.practicalHours;
+        break;
+      case 3:
+        dataPoint = coursesWithScores.get(course.id);
+        break;
+    }
+
+    heavinessScore +=
+      calculateZScore(dataPoint, meanValue, standardDev) *
+      STD_MULTIPLIERS[index];
+  });
+
   return heavinessScore;
 };
 
@@ -322,7 +353,10 @@ const calculateAverageHeavinessScore = (
   user,
   timetable,
   term,
-  allCourses
+  allCourses,
+  meanValues,
+  standardDevValues,
+  coursesWithScores
 ) => {
   let termCourses = timetable.courses.filter(
     (courseObject) =>
@@ -336,6 +370,9 @@ const calculateAverageHeavinessScore = (
       (heavinessScoreSum += findHeavinessScore(
         user,
         allCourses.find((course) => course.id === courseObject.courseId),
+        meanValues,
+        standardDevValues,
+        coursesWithScores
       ))
   );
   return heavinessScoreSum / COURSES_PER_TERM;
@@ -345,7 +382,10 @@ const findCombinationHeavinessScore = (
   user,
   allCourses,
   validOption,
-  averageTermHeaviness
+  averageTermHeaviness,
+  meanValues,
+  standardDevValues,
+  coursesWithScores
 ) => {
   let heavinessScore = 0;
 
@@ -355,7 +395,10 @@ const findCombinationHeavinessScore = (
       let course = allCourses.find((course) => course.id === courseObject.id);
       let courseHeavinessScore = findHeavinessScore(
         user,
-        course
+        course,
+        meanValues,
+        standardDevValues,
+        coursesWithScores
       );
 
       heavinessScore +=
@@ -380,6 +423,12 @@ const findCombinationHeavinessScore = (
 
 const calculateMean = (numbersArray) => {
   return numbersArray.reduce((a, b) => a + b) / numbersArray.length;
+};
+
+// Z-score enables computation of number of standard deviations away from mean each piece of data is in a data set with an approximately normally
+// distributed structure (helpful for determining how heavy/not heavy each course is for LEC/PRA/TUT & similarly for recommendation score)
+const calculateZScore = (dataPoint, mean, standardDev) => {
+  return (dataPoint - mean) / standardDev;
 };
 
 export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
@@ -419,13 +468,55 @@ export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
   let validOptions = findValidOptions(courseOptions, [], 0, []);
   if (validOptions.length === 0) throw new Error(REQUIREMENTS_CONFLICT);
 
+  let nonOverloadedTimetableCourseIdsSet = new Set(
+    findNonOverloadedCourses(timetable.courses).map(
+      (courseObject) => courseObject.courseId
+    )
+  );
+  let overloadedCourseIdsSet = new Set(courseIds);
+  const coursesWithScores = await generateCoursesWithScores(
+    allCourses,
+    userId,
+    allCourses.filter(
+      (course) =>
+        nonOverloadedTimetableCourseIdsSet.has(course.id) ||
+        overloadedCourseIdsSet.has(course.id)
+    )
+  );
+
+  const datasetsAssociatedWithMeans = {
+    lectureHours: allCourses.map((course) => course.lectureHours),
+    tutorialHours: allCourses.map((course) => course.tutorialHours),
+    practicalHours: allCourses.map((course) => course.practicalHours),
+    recommendedScores: [...coursesWithScores.values()],
+  };
+  const meanValues = {
+    meanLectureHours: calculateMean(datasetsAssociatedWithMeans.lectureHours),
+    meanTutorialHours: calculateMean(datasetsAssociatedWithMeans.tutorialHours),
+    meanPracticalHours: calculateMean(
+      datasetsAssociatedWithMeans.practicalHours
+    ),
+    meanRecommendedScore: calculateMean(
+      datasetsAssociatedWithMeans.recommendedScores
+    ),
+  };
+  const standardDevValues = {
+    lectureHoursStd: std(datasetsAssociatedWithMeans.lectureHours),
+    tutorialHoursStd: std(datasetsAssociatedWithMeans.tutorialHours),
+    practicalHoursStd: std(datasetsAssociatedWithMeans.practicalHours),
+    recommendedScoresStd: std(datasetsAssociatedWithMeans.recommendedScores),
+  };
+
   // Score combinations based on how imbalanced the average heaviness score is between terms & between the course & its term
   let averageTermHeaviness = TERMS.map((term) =>
     calculateAverageHeavinessScore(
       user,
       timetable,
       term,
-      allCourses
+      allCourses,
+      meanValues,
+      standardDevValues,
+      coursesWithScores
     )
   );
   let validOptionObjects = validOptions.map((validOption) => {
@@ -435,7 +526,10 @@ export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
         user,
         allCourses,
         validOption,
-        structuredClone(averageTermHeaviness)
+        structuredClone(averageTermHeaviness),
+        meanValues,
+        standardDevValues,
+        coursesWithScores
       ),
     };
   });
