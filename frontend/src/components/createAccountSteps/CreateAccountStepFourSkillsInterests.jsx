@@ -3,7 +3,7 @@ import { useState } from "react";
 import RenderDropdownMenu from "../../utils/renderDropdown";
 import CreateAccountButton from "./CreateAccountButton";
 
-const CreateAccountStepFour = (props) => {
+const CreateAccountStepFourSkillsInterests = (props) => {
   const [eceAreasError, setEceAreasError] = useState("");
   const [interestsError, setInterestsError] = useState("");
   const [skillsError, setSkillsError] = useState("");
@@ -88,4 +88,4 @@ const CreateAccountStepFour = (props) => {
   );
 };
 
-export default CreateAccountStepFour;
+export default CreateAccountStepFourSkillsInterests;

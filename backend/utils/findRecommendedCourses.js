@@ -449,11 +449,11 @@ export const findMatchesToRelatedUsersCourses = async (
         (course) => course.id === cartCourse.id
       );
       if (courseMatchingOtherUserCart) {
+        let foundInFavoritesMultiplier = favoriteIdList.has(cartCourse.id)
+          ? FAVORITED_CART_COURSE_MULTIPLER
+          : 1;
         courseMatchingOtherUserCart.score +=
-          COURSE_LIKED_ACROSS_SIMILAR_USERS *
-          (favoriteIdList.has(cartCourse.id)
-            ? FAVORITED_CART_COURSE_MULTIPLER
-            : 1);
+          COURSE_LIKED_ACROSS_SIMILAR_USERS * foundInFavoritesMultiplier;
       }
     });
 
@@ -644,7 +644,8 @@ export const findRecommendedCourses = async (
 
   scoreCoursesAgainstUser(coursesWithScores, user);
 
-  // If more than two times the rolling average worth of courses are present (and not scoring courses for the purpose of timetable ranking), filter them down
+  // If equal/more than two times the rolling average worth of courses are present (and not scoring courses for the purpose of 
+  // timetable ranking), filter them down
   if (
     coursesWithScores.length >= NUM_COURSES_ROLLING_AVERAGE * 2 &&
     !isRankingTimetableCourses

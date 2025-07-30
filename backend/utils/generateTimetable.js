@@ -14,7 +14,7 @@ import {
   ECE_AREAS,
   AMOUNT_OF_KERNEL_AREAS,
   MAXIMUM_DURATION,
-  KERNEL_DEPTH_COURSES_NEEDED
+  KERNEL_DEPTH_COURSES_NEEDED,
 } from "../../frontend/src/utils/constants.js";
 
 const MINIMUM_COURSES = 20;
@@ -70,15 +70,10 @@ const isPrereqOrCoreqMet = (
   if (prereqOrCoreqAmount === 0) return true;
   else if (prereqOrCoreqList.length < prereqOrCoreqAmount) return false;
 
-  let requirementsMet = 0;
-  prereqOrCoreqList.forEach((requirementCourse, index) => {
-    if (shoppingCartIdList.has(requirementCourse.id)) {
-      requirementsMet++;
-    } else {
-      prereqOrCoreqList.splice(index, 1);
-    }
-  });
-  if (requirementsMet >= prereqOrCoreqAmount) return true;
+  prereqOrCoreqList = prereqOrCoreqList.filter((requirementCourse) =>
+    shoppingCartIdList.has(requirementCourse.id)
+  );
+  if (prereqOrCoreqList.length >= prereqOrCoreqAmount) return true;
   return false;
 };
 
@@ -123,8 +118,9 @@ const areMinimumRequirementsMet = (course, shoppingCartIdList) => {
       course.corequisiteAmount,
       shoppingCartIdList
     )
-  )
+  ) {
     return false;
+  }
   return true;
 };
 
@@ -202,7 +198,6 @@ const checkActionIsLegal = (
   let uniqueCourseIdsRemaining = new Set([]);
 
   for (const areaCourseList of areaCourseLists) {
-    let uniqueCourseIdsRemainingForArea = 0;
     let remainingCourses = remainingCoursesNeeded(
       timetableDepths,
       areaCourseList.area,
@@ -216,22 +211,28 @@ const checkActionIsLegal = (
     // If remaining courses needed for given area matches courses that are available (so it needs all the courses available), then ensure another
     // area does not also rely on those courses to meet its requirements (otherwise, it is invalid)
     if (coursesAvailable.length === remainingCourses) {
+      // Loop through all other ECE areas
       for (const otherAreaCourseList of areaCourseLists.filter(
         (otherAreaCourseList) => otherAreaCourseList.area != areaCourseList.area
       )) {
-        let remainingCoursesNeededOtherArea = remainingCoursesNeeded(
+        // Difference between total courses needed for the area (3 for depth, 1 for non-depth) & total courses already added to this area
+        const remainingCoursesNeededOtherArea = remainingCoursesNeeded(
           timetableDepths,
           otherAreaCourseList.area,
           usedCourseIds
         );
+        // Course ids that have not already been used across all 4 areas & are not needed by the current area being explored (areaCourseList) because the current area needs
+        // all of the courses available to it
+        const idsAvailableToMeetAreaReq = otherAreaCourseList.courses.filter(
+          (courseId) =>
+            !uniqueCourseIdsUsed.has(courseId) &&
+            !coursesAvailable.includes(courseId)
+        );
 
+        // If the "otherAreaCourseList" being explored has 1+ courses still needing to be added, but the courses available to it ("idsAvailableToMeetAreaReq") are not enough, action is illegal
         if (
           remainingCoursesNeededOtherArea.length !== 0 &&
-          otherAreaCourseList.courses.filter(
-            (courseId) =>
-              !uniqueCourseIdsUsed.has(courseId) &&
-              !coursesAvailable.includes(courseId)
-          ).length < remainingCoursesNeededOtherArea
+          idsAvailableToMeetAreaReq.length < remainingCoursesNeededOtherArea
         ) {
           currentAreaAddingTo?.courses?.delete(courseId);
           return false;
@@ -239,12 +240,11 @@ const checkActionIsLegal = (
       }
     }
 
-    coursesAvailable.forEach((courseId) => {
-      uniqueCourseIdsRemaining.add(courseId);
-      uniqueCourseIdsRemainingForArea++;
-    });
+    uniqueCourseIdsRemaining = uniqueCourseIdsRemaining.union(
+      new Set(coursesAvailable)
+    );
 
-    if (remainingCourses > uniqueCourseIdsRemainingForArea) {
+    if (remainingCourses > coursesAvailable.length) {
       currentAreaAddingTo?.courses?.delete(courseId);
       return false;
     }
@@ -1891,7 +1891,9 @@ export const generateTimetable = async (
     case 0:
       throw new Error(
         NO_TIMETABLE_POSSIBLE +
-          (anyDepth && !anyKernelDepth ? CONSIDER_ANY_KERNEL_DEPTH_MESSAGE : "") +
+          (anyDepth && !anyKernelDepth
+            ? CONSIDER_ANY_KERNEL_DEPTH_MESSAGE
+            : "") +
           (duration < MAXIMUM_DURATION ? CONSIDER_INCREASING_DURATION : "")
       );
     default:

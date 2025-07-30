@@ -8,7 +8,7 @@ import {
 import RenderDropdownMenu from "../../utils/renderDropdown";
 import CreateAccountButton from "./CreateAccountButton";
 
-const CreateAccountStepFive = (props) => {
+const CreateAccountStepFiveMinorsCerts = (props) => {
   const [desiredDesignationError, setDesiredDesignationError] = useState("");
   const [desiredMinorsError, setDesiredMinorsError] = useState("");
   const [desiredCertificatesError, setDesiredCertificatesError] = useState("");
@@ -103,4 +103,4 @@ const CreateAccountStepFive = (props) => {
   );
 };
 
-export default CreateAccountStepFive;
+export default CreateAccountStepFiveMinorsCerts;

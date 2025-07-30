@@ -10,7 +10,7 @@ import {
 import CreateAccountButton from "./CreateAccountButton";
 import { EMAIL_ERROR, CONTINUE } from "../../utils/constants";
 
-const CreateAccountStepOne = (props) => {
+const CreateAccountStepOneLoginInfo = (props) => {
   const [fullNameError, setFullNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -159,4 +159,4 @@ const CreateAccountStepOne = (props) => {
   );
 };
 
-export default CreateAccountStepOne;
+export default CreateAccountStepOneLoginInfo;
