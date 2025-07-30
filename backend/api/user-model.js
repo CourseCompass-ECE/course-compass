@@ -120,6 +120,20 @@ const courseFieldsToInclude = {
 };
 
 module.exports = {
+  async findAllUsers() {
+    return await prisma.user.findMany({
+      include: {
+        skillsInterests: true,
+        desiredMinorsCertificates: true,
+        shoppingCart: true,
+        favorites: true,
+        removedFromCart: true,
+        removedFromFavorites: true,
+        rejectedRecommendations: true,
+      },
+    });
+  },
+
   async create(newUser) {
     let minorsCertificates = newUser.desiredMinors.map((minor) => {
       return {
@@ -193,17 +207,7 @@ module.exports = {
   },
 
   async findAllOtherUsers(userId) {
-    const userData = await prisma.user.findMany({
-      include: {
-        skillsInterests: true,
-        desiredMinorsCertificates: true,
-        shoppingCart: true,
-        favorites: true,
-        removedFromCart: true,
-        removedFromFavorites: true,
-        rejectedRecommendations: true,
-      },
-    });
+    const userData = await this.findAllUsers();
     return userData.filter((user) => user.id !== userId);
   },
 

@@ -53,6 +53,7 @@ export const NUM_COURSES_ROLLING_AVERAGE = 8;
 const ANOMALY_SCORE_JUMP_MULTIPLIER = 2.5;
 const CUTOFF_PERCENTAGE_FROM_TOTAL_COURSES = 0.5;
 const JUMP_FROM_TOP_SCORE_PERCENTAGE_CUTOFF = 0.25;
+const MIN_THRESHOLD_TO_CONSIDER_OTHER_USER_COURSES = 10;
 
 // Constants used when finding similar users & using their recommended courses to adjust course ratings
 const COURSES_IN_SAME_LIST = 0.5;
@@ -623,6 +624,13 @@ export const findRecommendedCourses = async (
         (course) => !shoppingCartCourseIds.has(course.id)
       );
   if (coursesWithScores.length === 0) return [];
+  // If similar user does not have a lot of courses in their recommendation list, ignore them due to skewed recommendation scores on
+  // such a small sample size that will incorrectly modify scores of returned recommended courses
+  else if (
+    !checkOtherUsersCourses &&
+    coursesWithScores.length < MIN_THRESHOLD_TO_CONSIDER_OTHER_USER_COURSES
+  )
+    return [];
   const userActivityData = [
     {
       title: SHOPPING_CART,
@@ -644,7 +652,7 @@ export const findRecommendedCourses = async (
 
   scoreCoursesAgainstUser(coursesWithScores, user);
 
-  // If equal/more than two times the rolling average worth of courses are present (and not scoring courses for the purpose of 
+  // If equal/more than two times the rolling average worth of courses are present (and not scoring courses for the purpose of
   // timetable ranking), filter them down
   if (
     coursesWithScores.length >= NUM_COURSES_ROLLING_AVERAGE * 2 &&

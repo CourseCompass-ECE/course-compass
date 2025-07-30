@@ -35,6 +35,7 @@ const {
   POSITIONS,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
+const { RAW_DATA_ENDPOINT } = require("../utils/constants");
 
 const express = require("express");
 const helmet = require("helmet");
@@ -53,7 +54,11 @@ const {
   generateTimetable,
   addTimetable,
 } = require("../utils/generateTimetable");
-const { findOverloadedCourses, updateOverloadedCourses } = require("../utils/findOverloadedCourses");
+const {
+  findOverloadedCourses,
+  updateOverloadedCourses,
+} = require("../utils/findOverloadedCourses");
+const { getRawData } = require("../utils/getRawData");
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
@@ -612,7 +617,25 @@ server.get(`${Path.EXPLORE}${RECOMMENDATIONS_PATH}`, async (req, res, next) => {
       false,
       []
     );
-    res.status(200).json({ recommendedCourses });
+
+    const response = await fetch(`${process.env.FAST_API_ENDPOINT}`, {
+      method: "GET",
+    });
+    if (response.ok) {
+      const data = await response.json();
+      res.status(200).json({ recommendedCourses, modelData: data });
+    } else {
+      throw new Error();
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.get(`${RAW_DATA_ENDPOINT}`, async (req, res, next) => {
+  try {
+    const rawData = await getRawData();
+    res.status(200).json({ rawData });
   } catch (err) {
     next(err);
   }
@@ -682,8 +705,7 @@ server.put(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
     else if (
       courses.some(
         (course) =>
-          !ONLY_NUMBERS.test(course.id) ||
-          !ONLY_NUMBERS.test(course.term)
+          !ONLY_NUMBERS.test(course.id) || !ONLY_NUMBERS.test(course.term)
       )
     )
       throw new Error(INVALID_COURSES_PROVIDED);

@@ -6,4 +6,8 @@ node_modules
 # Dependency directories
 node_modules/
 
+# Python model environment files
+.venv/
+__pycache__/
+
 /generated/prisma

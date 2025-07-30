@@ -128,3 +128,5 @@ export const stopwords = [
   "should",
   "now",
 ];
+
+export const RAW_DATA_ENDPOINT = "/raw-data";
