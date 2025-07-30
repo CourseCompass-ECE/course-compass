@@ -195,7 +195,8 @@ const isCurrentTermInvalid = (
   for (const [courseOptionIndex, courseOption] of courseOptions
     .filter((_, index) => index < currentCourseIndex)
     .entries()) {
-    if (courseOption.prereqOptions) { // courseOption is course of focus
+    if (courseOption.prereqOptions) {
+      // courseOption is course of focus
       // Find other already added overloaded courses that are placed in a term prior to the current overloaded course of focus & are part of the course's
       // prerequisites list
       let prereqMetAlreadyFromOtherOverloaded = 0;
@@ -212,9 +213,7 @@ const isCurrentTermInvalid = (
       });
 
       // Number of prerequisites still needing to be met by remaining overloaded courses not already added in a specific term
-      let remainderPrereqCount =
-        courseOption.course.prerequisiteAmount -
-        prereqMetAlreadyFromOtherOverloaded -
+      let nonOverloadedCoursesMeetingPrereq =
         findNonOverloadedCoursesMeetingPrereq(
           currentTermsUsed[courseOptionIndex],
           new Set(
@@ -222,6 +221,10 @@ const isCurrentTermInvalid = (
           ),
           nonOverloadedCourses
         );
+      let remainderPrereqCount =
+        courseOption.course.prerequisiteAmount -
+        prereqMetAlreadyFromOtherOverloaded -
+        nonOverloadedCoursesMeetingPrereq;
 
       if (remainderPrereqCount <= 0) continue;
       else if (remainderPrereqCount > prereqLeft.size) return true;
@@ -545,7 +548,13 @@ export const findOverloadedCourses = async (userId, courseIds, timetableId) => {
   });
 
   let nonOverloadedCourses = findNonOverloadedCourses(timetable.courses);
-  let validOptions = findValidOptions(courseOptions, [], 0, [], nonOverloadedCourses);
+  let validOptions = findValidOptions(
+    courseOptions,
+    [],
+    0,
+    [],
+    nonOverloadedCourses
+  );
   if (validOptions.length === 0) throw new Error(REQUIREMENTS_CONFLICT);
 
   let nonOverloadedTimetableCourseIdsSet = new Set(
