@@ -8,7 +8,7 @@ University of Toronto Computer & Electrical Engineering students face strict, co
 ## Video Walkthrough
 <div>
     <a href="https://www.loom.com/share/620e3cb468de43efb1ba461415bcbb53">
-      <p>CourseCompass: Streamlining Timetable Creation for ECE Students at U of T - Watch Video</p>
+      <p>CourseCompass: Streamlining Timetable Creation for ECE Students at U of T</p>
     </a>
     <a href="https://www.loom.com/share/620e3cb468de43efb1ba461415bcbb53">
       <img style="max-width:300px;" src="https://cdn.loom.com/sessions/thumbnails/620e3cb468de43efb1ba461415bcbb53-57be4d6c904cc8dd-full-play.gif">
