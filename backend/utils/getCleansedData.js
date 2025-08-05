@@ -1,13 +1,24 @@
 import Course from "../api/course-model.js";
 import User from "../api/user-model.js";
 import { findRecommendedCourses } from "./findRecommendedCourses.js";
-import { ECE_AREAS, DESIGNATIONS } from "../../frontend/src/utils/constants.js";
+import {
+  ECE_AREAS,
+  DESIGNATIONS,
+  SKILL,
+  MINOR
+} from "../../frontend/src/utils/constants.js";
 
 const POSITIVE_SAMPLE_CUTOFF = 70;
 const POSITIVE_SAMPLE = 1;
 const NEGATIVE_SAMPLE = 0;
 const FOUND = 1;
 const NOT_FOUND = 0;
+const IS_SPECIFIC = 1;
+const IS_NOT_SPECIFIC = 0;
+const IS_SKILL = 1;
+const IS_NOT_SKILL_BUT_IS_INTEREST = 0;
+const IS_MINOR = 1;
+const IS_NOT_MINOR_BUT_IS_CERTIFICATE = 0;
 
 const createEceAreaEncoding = (areaList) => {
   return Object.keys(ECE_AREAS).map((eceArea) =>
@@ -18,22 +29,25 @@ const createEceAreaEncoding = (areaList) => {
 const createSkillsInterestsObjectList = (skillsInterestsList) => {
   return skillsInterestsList.map((skillInterest) => ({
     id: skillInterest.id,
-    skillOrInterest: skillInterest.skillOrInterest,
-    isSpecific: skillInterest.isSpecific,
+    skillOrInterest:
+      skillInterest.skillOrInterest === SKILL
+        ? IS_SKILL
+        : IS_NOT_SKILL_BUT_IS_INTEREST,
+    isSpecific: skillInterest.isSpecific ? IS_SPECIFIC : IS_NOT_SPECIFIC,
   }));
 };
 
 const createMinorsCertificatesObjectList = (minorsCertificatesList) => {
   return minorsCertificatesList.map((minorCertificate) => ({
     id: minorCertificate.id,
-    minorOrCertificate: minorCertificate.minorOrCertificate,
+    minorOrCertificate: minorCertificate.minorOrCertificate === MINOR ? IS_MINOR : IS_NOT_MINOR_BUT_IS_CERTIFICATE,
   }));
 };
 
-export const getRawData = async () => {
+export const getCleansedData = async () => {
   const allCourses = await Course.findCourses();
   const allUsers = await User.findAllUsers();
-  let rawData = [];
+  let cleansedData = [];
 
   await Promise.all(
     allUsers.map(async (user) => {
@@ -46,7 +60,7 @@ export const getRawData = async () => {
       );
 
       recommendedCourses.forEach((recommendedCourse) => {
-        rawData.push({
+        cleansedData.push({
           userId: user.id,
           userFeatures: {
             skillsInterests: createSkillsInterestsObjectList(
@@ -83,5 +97,5 @@ export const getRawData = async () => {
     })
   );
 
-  return rawData;
+  return cleansedData;
 };

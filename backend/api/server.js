@@ -58,7 +58,7 @@ const {
   findOverloadedCourses,
   updateOverloadedCourses,
 } = require("../utils/findOverloadedCourses");
-const { getRawData } = require("../utils/getRawData");
+const { getCleansedData } = require("../utils/getCleansedData");
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
@@ -634,8 +634,8 @@ server.get(`${Path.EXPLORE}${RECOMMENDATIONS_PATH}`, async (req, res, next) => {
 
 server.get(`${RAW_DATA_ENDPOINT}`, async (req, res, next) => {
   try {
-    const rawData = await getRawData();
-    res.status(200).json({ rawData });
+    const cleansedData = await getCleansedData();
+    res.status(200).json({ cleansedData });
   } catch (err) {
     next(err);
   }
