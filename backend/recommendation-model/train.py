@@ -165,12 +165,7 @@ if __name__ == '__main__':
     model.compile(optimizer="adam", loss=tf.keras.losses.BinaryCrossentropy(), metrics=["accuracy"]) 
     summary = model.fit(dataset, epochs=NUMBER_OF_EPOCHS, steps_per_epoch=stepsPerEpoch)
 
-    model.save(MODEL_FILE_PATH)
+    tf.keras.models.save_model(model, MODEL_FILE_PATH)
 
     # Display summary of 
     print (f"Summary: \n{summary.history}")
-    
-
-
-
-

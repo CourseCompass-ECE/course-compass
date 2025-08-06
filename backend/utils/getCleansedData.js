@@ -5,7 +5,7 @@ import {
   ECE_AREAS,
   DESIGNATIONS,
   SKILL,
-  MINOR
+  MINOR,
 } from "../../frontend/src/utils/constants.js";
 
 const POSITIVE_SAMPLE_CUTOFF = 65;
@@ -41,11 +41,53 @@ const createSkillsInterestsObjectList = (skillsInterestsList) => {
 const createMinorsCertificatesObjectList = (minorsCertificatesList) => {
   return minorsCertificatesList.map((minorCertificate) => ({
     id: minorCertificate.id,
-    minorOrCertificate: minorCertificate.minorOrCertificate === MINOR ? IS_MINOR : IS_NOT_MINOR_BUT_IS_CERTIFICATE,
+    minorOrCertificate:
+      minorCertificate.minorOrCertificate === MINOR
+        ? IS_MINOR
+        : IS_NOT_MINOR_BUT_IS_CERTIFICATE,
   }));
 };
 
-export const getCleansedData = async () => {
+const generateCleansedFeatures = (user, course) => {
+  return {
+    userId: user.id,
+    userFeatures: {
+      skillsInterests: createSkillsInterestsObjectList(user.skillsInterests),
+      eceAreas: createEceAreaEncoding(user.eceAreas),
+      desiredDesignation: Object.keys(DESIGNATIONS).map((designation) =>
+        user.desiredDesignation === designation ? FOUND : NOT_FOUND
+      ),
+      minorsCertificates: createMinorsCertificatesObjectList(
+        user.desiredMinorsCertificates
+      ),
+      learningGoal: user.learningGoal.slice(0, MAX_LEARNING_GOALS),
+    },
+    courseId: course.id,
+    courseFeatures: {
+      description: course.description,
+      title: course.title,
+      eceAreas: createEceAreaEncoding(course.area),
+      skillsInterests: createSkillsInterestsObjectList(course.skillsInterests),
+      minorsCertificates: createMinorsCertificatesObjectList(
+        course.minorsCertificates
+      ),
+    },
+  };
+};
+
+export const getCleansedLiveData = async (userId, courses) => {
+  const user = await User.findUserById(userId);
+  if (!user || !courses) throw new Error();
+  let cleansedData = [];
+
+  courses.filter(course => !course.inUserShoppingCart).map((course) => {
+    cleansedData.push(generateCleansedFeatures(user, course));
+  });
+
+  return cleansedData;
+};
+
+export const getCleansedTrainingData = async () => {
   const allCourses = await Course.findCourses();
   const allUsers = await User.findAllUsers();
   let cleansedData = [];
@@ -62,37 +104,16 @@ export const getCleansedData = async () => {
 
       recommendedCourses.forEach((recommendedCourse) => {
         cleansedData.push({
-          userId: user.id,
-          userFeatures: {
-            skillsInterests: createSkillsInterestsObjectList(
-              user.skillsInterests
-            ),
-            eceAreas: createEceAreaEncoding(user.eceAreas),
-            desiredDesignation: Object.keys(DESIGNATIONS).map((designation) =>
-              user.desiredDesignation === designation ? FOUND : NOT_FOUND
-            ),
-            minorsCertificates: createMinorsCertificatesObjectList(
-              user.desiredMinorsCertificates
-            ),
-            learningGoal: user.learningGoal.slice(0, MAX_LEARNING_GOALS),
-          },
-          courseId: recommendedCourse.id,
-          courseFeatures: {
-            description: recommendedCourse.description,
-            title: recommendedCourse.title,
-            eceAreas: createEceAreaEncoding(recommendedCourse.area),
-            skillsInterests: createSkillsInterestsObjectList(
-              recommendedCourse.skillsInterests
-            ),
-            minorsCertificates: createMinorsCertificatesObjectList(
-              recommendedCourse.minorsCertificates
-            ),
-          },
+          ...generateCleansedFeatures(user, recommendedCourse),
           label:
             recommendedCourse.score > POSITIVE_SAMPLE_CUTOFF
               ? POSITIVE_SAMPLE
               : NEGATIVE_SAMPLE,
-          weight: Math.round(Math.abs(recommendedCourse.score - POSITIVE_SAMPLE_CUTOFF) + POSITIVE_SAMPLE_CUTOFF) / 100,
+          weight:
+            Math.round(
+              Math.abs(recommendedCourse.score - POSITIVE_SAMPLE_CUTOFF) +
+                POSITIVE_SAMPLE_CUTOFF
+            ) / 100,
         });
       });
     })

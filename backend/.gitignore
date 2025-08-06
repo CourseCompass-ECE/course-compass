@@ -6,6 +6,9 @@ node_modules
 # Dependency directories
 node_modules/
 
+# Python venv dependencies list
+req.txt
+
 # Python model environment files
 pythonenv/
 __pycache__/

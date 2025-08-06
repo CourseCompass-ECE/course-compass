@@ -22,3 +22,5 @@ SECOND_DENSE_LAYER = 64
 TFRECORD_FILE_PATH = "./recommendation-model/samples.tfrecord"
 TFRECORD_BUFFER_SIZE = 512 * 512 # 256kB
 MODEL_FILE_PATH = "./recommendation-model/model.keras"
+
+MAX_RECOMMENDED_COURSES = 15

@@ -130,3 +130,4 @@ export const stopwords = [
 ];
 
 export const RAW_DATA_ENDPOINT = "/raw-data";
+export const TOP_COURSES_ENDPOINT = "/find-top-recommended-courses"
