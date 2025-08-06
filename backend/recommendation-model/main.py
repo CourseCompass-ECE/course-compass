@@ -103,6 +103,9 @@ def topRecommendedCourses(userId, predictedRecommendationScores, courseIdsList):
 # find embeddings for each course/user, find similarity, compute overall loss, train via backpropagation using Adam optimizer, export two-tower model to use
 @app.patch("/run-model")
 async def root(userCourseDataObject: UserCourseDataList):
+    if len(userCourseDataObject.userCourseDataList) == 0:
+        return { "twoTowerRecommendedCourses": [] }
+
     model = tf.keras.models.load_model(MODEL_FILE_PATH, safe_mode=False)
 
     stringEmbeddingModel = SentenceTransformer("all-MiniLM-L6-v2")
