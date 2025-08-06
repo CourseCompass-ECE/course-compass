@@ -4,10 +4,8 @@ import os
 import requests
 import json
 from sentence_transformers import SentenceTransformer
-from constants import PADDING_VALUE, MAX_SKILLS_INTERESTS_LENGTH, MAX_MINORS_CERTIFICATES_LENGTH
+from constants import PADDING_VALUE, MAX_SKILLS_INTERESTS_LENGTH, MAX_MINORS_CERTIFICATES_LENGTH, TFRECORD_FILE_PATH, BATCH_SIZE
 import numpy as np
-
-TFRECORD_FILE_PATH = "./recommendation-model/samples.tfrecord"
 
 def convertIntListToIntFeature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
@@ -54,11 +52,12 @@ def createTfRecordEntry(datapoint, stringEmbeddingModel):
         "userSkillsInterestsIds": convertIntListToIntFeature(userSkillsInterestsIds),
         "userSkillsInterestsSkillOrInterest": convertIntListToIntFeature(userSkillsInterestsSkillOrInterest),
         "userSkillsInterestsIsSpecific": convertIntListToIntFeature(userSkillsInterestsIsSpecific),
-        "userEceAreas": convertIntListToIntFeature(datapoint["userFeatures"]["eceAreas"]),
-        "userDesiredDesignation": convertIntListToIntFeature(datapoint["userFeatures"]["desiredDesignation"]),
+        "userEceAreas": convertFloatListToFloatFeature(datapoint["userFeatures"]["eceAreas"]),
+        "userDesiredDesignation": convertFloatListToFloatFeature(datapoint["userFeatures"]["desiredDesignation"]),
         "userMinorsCertificatesIds": convertIntListToIntFeature(userMinorsCertificatesIds),
         "userMinorsCertificatesMinorOrCertificate": convertIntListToIntFeature(userMinorsCertificatesMinorOrCertificate),
         "userLearningGoals": convertFloatListToFloatFeature(userLearningGoals.flatten().tolist()),
+        "userLearningGoalsCount": convertIntListToIntFeature([len(datapoint["userFeatures"]["learningGoal"])]),
 
         "courseSkillsInterestsIds": convertIntListToIntFeature(courseSkillsInterestsIds),
         "courseSkillsInterestsSkillOrInterest": convertIntListToIntFeature(courseSkillsInterestsSkillOrInterest),
@@ -67,7 +66,10 @@ def createTfRecordEntry(datapoint, stringEmbeddingModel):
         "courseMinorsCertificatesMinorOrCertificate": convertIntListToIntFeature(courseMinorsCertificatesMinorOrCertificate),
         "courseTitle": convertFloatListToFloatFeature(courseTitle.tolist()),
         "courseDescription": convertFloatListToFloatFeature(courseDescription.tolist()),
-        "courseEceAreas": convertIntListToIntFeature(datapoint["courseFeatures"]["eceAreas"]),
+        "courseEceAreas": convertFloatListToFloatFeature(datapoint["courseFeatures"]["eceAreas"]),
+
+        "label": convertIntListToIntFeature([datapoint["label"]]),
+        "weight": convertFloatListToFloatFeature([datapoint["weight"]]),
     }
 
     return convertFeatureObjectToExampleObject(features)
@@ -83,7 +85,7 @@ if __name__ == '__main__':
         if (response.ok):
             data = json.loads(response.content)
             datapoints = []
-            stringEmbeddingModel = SentenceTransformer('all-MiniLM-L6-v2')
+            stringEmbeddingModel = SentenceTransformer("all-MiniLM-L6-v2")
             
             for datapoint in data["cleansedData"]:
                 datapoints.append(createTfRecordEntry(datapoint, stringEmbeddingModel))

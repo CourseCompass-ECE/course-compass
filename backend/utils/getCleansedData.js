@@ -8,17 +8,18 @@ import {
   MINOR
 } from "../../frontend/src/utils/constants.js";
 
-const POSITIVE_SAMPLE_CUTOFF = 70;
+const POSITIVE_SAMPLE_CUTOFF = 65;
 const POSITIVE_SAMPLE = 1;
 const NEGATIVE_SAMPLE = 0;
 const FOUND = 1;
 const NOT_FOUND = 0;
-const IS_SPECIFIC = 1;
-const IS_NOT_SPECIFIC = 0;
-const IS_SKILL = 1;
-const IS_NOT_SKILL_BUT_IS_INTEREST = 0;
-const IS_MINOR = 1;
-const IS_NOT_MINOR_BUT_IS_CERTIFICATE = 0;
+const IS_SPECIFIC = 2;
+const IS_NOT_SPECIFIC = 1;
+const IS_SKILL = 2;
+const IS_NOT_SKILL_BUT_IS_INTEREST = 1;
+const IS_MINOR = 2;
+const IS_NOT_MINOR_BUT_IS_CERTIFICATE = 1;
+const MAX_LEARNING_GOALS = 3;
 
 const createEceAreaEncoding = (areaList) => {
   return Object.keys(ECE_AREAS).map((eceArea) =>
@@ -73,7 +74,7 @@ export const getCleansedData = async () => {
             minorsCertificates: createMinorsCertificatesObjectList(
               user.desiredMinorsCertificates
             ),
-            learningGoal: user.learningGoal,
+            learningGoal: user.learningGoal.slice(0, MAX_LEARNING_GOALS),
           },
           courseId: recommendedCourse.id,
           courseFeatures: {
@@ -91,7 +92,7 @@ export const getCleansedData = async () => {
             recommendedCourse.score > POSITIVE_SAMPLE_CUTOFF
               ? POSITIVE_SAMPLE
               : NEGATIVE_SAMPLE,
-          weight: Math.round(recommendedCourse.score) / 100,
+          weight: Math.round(Math.abs(recommendedCourse.score - POSITIVE_SAMPLE_CUTOFF) + POSITIVE_SAMPLE_CUTOFF) / 100,
         });
       });
     })
