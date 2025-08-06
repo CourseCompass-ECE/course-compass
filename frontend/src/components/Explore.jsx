@@ -222,7 +222,7 @@ const Explore = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setRecommendedCourses(data?.recommendedCourses);
+        setRecommendedCourses(data?.twoTowerRecommendedCourses);
       } else {
         setRecommendedError(RECOMMEND_COURSES_ERROR);
       }

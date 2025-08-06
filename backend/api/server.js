@@ -35,6 +35,10 @@ const {
   POSITIONS,
 } = require("../../frontend/src/utils/constants");
 const { Path } = require("../../frontend/src/utils/enums");
+const {
+  RAW_DATA_ENDPOINT,
+  TOP_COURSES_ENDPOINT,
+} = require("../utils/constants");
 
 const express = require("express");
 const helmet = require("helmet");
@@ -53,7 +57,14 @@ const {
   generateTimetable,
   addTimetable,
 } = require("../utils/generateTimetable");
-const { findOverloadedCourses, updateOverloadedCourses } = require("../utils/findOverloadedCourses");
+const {
+  findOverloadedCourses,
+  updateOverloadedCourses,
+} = require("../utils/findOverloadedCourses");
+const {
+  getCleansedTrainingData,
+  getCleansedLiveData,
+} = require("../utils/getCleansedData");
 
 const INVALID_USER_DETAILS_ERROR = "Invalid details provided";
 const INVALID_EMAIL_DETAILS_ERROR = "Invalid email details provided";
@@ -612,7 +623,65 @@ server.get(`${Path.EXPLORE}${RECOMMENDATIONS_PATH}`, async (req, res, next) => {
       false,
       []
     );
-    res.status(200).json({ recommendedCourses });
+
+    const cleansedLiveData = await getCleansedLiveData(userId, courses);
+    const response = await fetch(`${process.env.FAST_API_ENDPOINT}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userCourseDataList: cleansedLiveData }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      res.status(200).json({
+        recommendedCourses,
+        twoTowerRecommendedCourses: data.twoTowerRecommendedCourses,
+      });
+    } else {
+      throw new Error();
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.get(`${RAW_DATA_ENDPOINT}`, async (req, res, next) => {
+  try {
+    const cleansedData = await getCleansedTrainingData();
+    res.status(200).json({ cleansedData });
+  } catch (err) {
+    next(err);
+  }
+});
+
+server.post(`${TOP_COURSES_ENDPOINT}`, async (req, res, next) => {
+  const recommendationData = req.body;
+
+  try {
+    if (
+      !recommendationData.userId ||
+      !recommendationData.scores ||
+      !recommendationData.courseIds ||
+      !recommendationData.maxScores
+    )
+      throw new Error();
+
+    let courses = await Course.findCourses(recommendationData.userId);
+    courses = courses.filter((course) => !course.inUserShoppingCart);
+    courses.forEach((course) => {
+      const index = recommendationData.courseIds.findIndex(
+        (id) => id === course.id
+      );
+      course.score = Math.round(recommendationData.scores[index] * 1000) / 10;
+    });
+
+    courses.sort((crsA, crsB) => crsB.score - crsA.score);
+
+    res.status(200).json({
+      recommendedCourses: courses.slice(0, recommendationData.maxScores),
+    });
   } catch (err) {
     next(err);
   }
@@ -682,8 +751,7 @@ server.put(`${Path.TIMETABLE}${OVERLOAD_PATH}`, async (req, res, next) => {
     else if (
       courses.some(
         (course) =>
-          !ONLY_NUMBERS.test(course.id) ||
-          !ONLY_NUMBERS.test(course.term)
+          !ONLY_NUMBERS.test(course.id) || !ONLY_NUMBERS.test(course.term)
       )
     )
       throw new Error(INVALID_COURSES_PROVIDED);
